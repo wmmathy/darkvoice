@@ -13,6 +13,7 @@ import json
 import re
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 PATTERNS = (
@@ -97,6 +98,16 @@ def self_test() -> None:
     ):
         if not dependency_findings(invalid):
             raise RuntimeError("Mutable/unverified dependency fixture was not rejected")
+    with tempfile.TemporaryDirectory(prefix="darkvoice-scanner-fixture-") as directory:
+        fixture_root = Path(directory)
+        subprocess.run(["git", "init", "-q", directory], check=True, capture_output=True)
+        (fixture_root / "planted.txt").write_text("\n".join(planted), encoding="utf-8")
+        subprocess.run(["git", "add", "planted.txt"], cwd=directory, check=True, capture_output=True)
+        result = subprocess.run([sys.executable, str(Path(__file__).resolve())], cwd=directory,
+                                capture_output=True, text=True)
+        report = result.stdout + result.stderr
+        if result.returncode != 1 or any(fixture in report for fixture in planted):
+            raise RuntimeError("Planted-file scan failed to reject safely")
     print("PASS: planted credential and dependency fixtures; matched contents withheld")
 
 
