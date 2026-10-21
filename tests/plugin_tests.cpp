@@ -132,6 +132,7 @@ void renderingTests() {
 }
 } // namespace
 int main() {
+    juce::ScopedJuceInitialiser_GUI runtime;
     try {
         stateTests();
         renderingTests();
