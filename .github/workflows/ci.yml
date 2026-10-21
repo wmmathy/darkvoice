@@ -1,0 +1,97 @@
+name: Build and tests
+
+on:
+  pull_request:
+  push:
+    branches: [main, 'feature/**', 'fix/**', 'refactor/**', 'docs/**']
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  core:
+    name: Core / ${{ matrix.os }} / ${{ matrix.configuration }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-14]
+        configuration: [Debug, Release]
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Configure C++20 engine and core
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=${{ matrix.configuration }} -DBUILD_TESTING=ON
+      - name: Build with warnings as errors
+        run: cmake --build build --config ${{ matrix.configuration }} --parallel 2
+      - name: Run core and DSP regression suites
+        run: ctest --test-dir build --build-config ${{ matrix.configuration }} --output-on-failure --no-tests=error
+
+  sanitizers:
+    name: Core / Linux / ASan and UBSan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Configure sanitizer build
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=ON -DDARKVOICE_ENABLE_SANITIZERS=ON
+      - name: Build
+        run: cmake --build build --parallel 2
+      - name: Run memory and undefined behavior checks
+        env:
+          ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
+          UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+        run: ctest --test-dir build --output-on-failure --no-tests=error
+
+  products:
+    name: JUCE products / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-14]
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Install Linux audio and window-system development dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends libasound2-dev libx11-dev libxext-dev libxinerama-dev libxrandr-dev libxcursor-dev libfreetype6-dev libfontconfig1-dev libgl1-mesa-dev xvfb xauth
+      - name: Configure Vocal, Master and Studio
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON -DDARKVOICE_BUILD_PRODUCTS=ON
+      - name: Build VST3 and standalone, plus AU on macOS
+        run: python3 tools/ci-build.py build/product-build.log cmake --build build --config Release --parallel 2
+      - name: Run headless processor, state and DSP tests
+        run: ctest --test-dir build --build-config Release --output-on-failure --no-tests=error
+      - name: Exercise real editor controls on a virtual display
+        if: runner.os == 'Linux'
+        run: |
+          xvfb-run -a build/darkvoice_gui_smoke /tmp/darkvoice-ui.png 2>&1 | tee build/gui-smoke.log
+          if grep -Eq 'JUCE Assertion failure|Leaked objects detected' build/gui-smoke.log; then exit 1; fi
+      - name: Validate unsigned development Audio Units
+        if: runner.os == 'macOS'
+        run: |
+          mkdir -p "$HOME/Library/Audio/Plug-Ins/Components"
+          ditto 'build/DarkVoiceVocal_artefacts/Release/AU/DarkVoice Vocal.component' "$HOME/Library/Audio/Plug-Ins/Components/DarkVoice Vocal.component"
+          ditto 'build/DarkVoiceMaster_artefacts/Release/AU/DarkVoice Master.component' "$HOME/Library/Audio/Plug-Ins/Components/DarkVoice Master.component"
+          killall -9 AudioComponentRegistrar || true
+          /usr/bin/auval -v aufx Dvvc Dkvc
+          /usr/bin/auval -v aufx Dvms Dkvc
+      - name: Retain current-run test evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: product-test-logs-${{ matrix.os }}
+          path: |
+            build/Testing/Temporary/
+            build/product-build.log
+          if-no-files-found: warn
+          retention-days: 14
+
+# Building or running auval on a runner does not establish GarageBand/Logic
+# compatibility, notarization, Intel/Apple Silicon coverage, or listening quality.

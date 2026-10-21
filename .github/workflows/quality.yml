@@ -1,0 +1,46 @@
+name: Source quality and credential checks
+
+on:
+  pull_request:
+  push:
+    branches: [main, 'feature/**', 'fix/**', 'refactor/**', 'docs/**']
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  source-quality:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Install pinned formatter and static analyzer
+        run: |
+          python3 -m venv /tmp/darkvoice-quality-tools
+          /tmp/darkvoice-quality-tools/bin/python -m pip install --disable-pip-version-check clang-format==19.1.7
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends cppcheck
+      - name: Check project C++ formatting
+        shell: bash
+        run: |
+          mapfile -d '' files < <(git ls-files -z -- 'src/*.cpp' 'src/*.hpp' 'include/*.cpp' 'include/*.hpp' 'tests/*.cpp' 'tests/*.hpp')
+          test "${#files[@]}" -gt 0
+          /tmp/darkvoice-quality-tools/bin/clang-format --version
+          /tmp/darkvoice-quality-tools/bin/clang-format --dry-run --Werror "${files[@]}"
+      - name: Analyze independent DSP core
+        run: |
+          cppcheck --version
+          cppcheck --check-level=exhaustive --std=c++20 --language=c++ --enable=warning,performance,portability --error-exitcode=1 -I include src/AudioEngine.cpp include/darkvoice/AudioEngine.hpp include/darkvoice/GainProcessor.hpp
+      - name: Test offline checkers and scan tracked files
+        run: |
+          python3 tools/check-secrets.py --self-test
+          python3 tools/check-secrets.py
+          python3 tools/check-secrets.py --check-dependencies
+
+# These limited source checks do not establish a comprehensive security audit,
+# license compatibility, dependency vulnerability status, or real-time safety.
+# No secret-bearing context or publication permission is used for pull requests.

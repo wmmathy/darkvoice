@@ -40,10 +40,14 @@ profiles and export. A module list is not an established interface contract.
 
 ## Preserved provisional work
 
-The v0 mono/stereo gain header, tests and CMake/CI branches are preserved separately.
-Gain is a primitive only. Its block-step changes, limited contract and zero-latency
-report do not satisfy full automation, quality modes or product latency requirements.
-No plugin, standalone, pitch, harmony, AI, mix, master or export feature is complete.
+The preserved v0 gain primitive and tests are integrated without deleting their
+original branches. The versioned v1 AudioEngine and JUCE host contract are now
+implemented: smoothed gain, HP, starter saturation/compression, dry/wet, bypass,
+meters, APVTS automation/state and functional editor controls. Vocal/Master VST3
+shells and the Studio standalone wrapper build on Linux. This is not the complete
+Vocal/Master/Studio product: pitch, harmony, AI, mixing, mastering and export remain
+planned. Gain-only/chain-zero latency is not a suite-wide latency claim.
 
-JUCE/SDK/codec/model license evaluation and macOS SDK/host availability remain
-unverified. No background scheduler or persistent autonomous service is configured.
+JUCE 8.0.6 uses the user-selected AGPL route; bundled SDK licenses were inspected
+and future dependencies must be open source (DEPENDENCIES.md). Future codec/model
+choices and macOS/host validation remain pending. No background scheduler or persistent autonomous service is configured.
