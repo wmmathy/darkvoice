@@ -63,3 +63,14 @@ code signing and notarization need appropriate authorization and credentials.
 Update status, tests and changelog alongside milestones. Preserve exact specification
 text; record interpretations and proposed amendments separately. On blocked work,
 record evidence and next action, then continue only independent authorized work.
+
+## Open-source dependency policy
+
+User selected AGPLv3 open-source distribution and requires open-source dependencies
+for further development. Project-authored code is AGPL-3.0-only; see LICENSE.
+Use JUCE under its AGPLv3 option and the bundled VST3 SDK's GPLv3 option.
+Do not introduce proprietary SDKs/models/services or commercial-license dependencies
+as product dependencies. Prefer local open-source implementations; inspect license
+compatibility and redistribution notices before integrating any library/model/codec.
+Apple platform build tools and host validation are external platform requirements,
+not a claim that Apple's tools or DAWs are open source.
