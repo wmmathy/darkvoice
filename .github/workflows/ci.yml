@@ -29,7 +29,7 @@ jobs:
       - name: Build with warnings as errors
         run: cmake --build build --config ${{ matrix.configuration }} --parallel 2
       - name: Run core and DSP regression suites
-        run: ctest --test-dir build --build-config ${{ matrix.configuration }} --output-on-failure --no-tests=error
+        run: python3 tools/ci-build.py build/test-run.log ctest --test-dir build --build-config ${{ matrix.configuration }} --output-on-failure --no-tests=error
 
   sanitizers:
     name: Core / Linux / ASan and UBSan
@@ -45,7 +45,7 @@ jobs:
         env:
           ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
           UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
-        run: ctest --test-dir build --output-on-failure --no-tests=error
+        run: python3 tools/ci-build.py build/test-run.log ctest --test-dir build --output-on-failure --no-tests=error
 
   products:
     name: JUCE products / ${{ matrix.os }}
@@ -109,7 +109,7 @@ jobs:
         run: python3 tools/ci-build.py build/product-build.log cmake --build build --config Release --parallel 2
       # Build trees and CTest results are never restored from cache.
       - name: Run headless processor, preset, state and DSP tests
-        run: ctest --test-dir build --build-config Release --output-on-failure --no-tests=error
+        run: python3 tools/ci-build.py build/test-run.log ctest --test-dir build --build-config Release --output-on-failure --no-tests=error
       - name: Exercise real editor controls on a virtual display
         if: runner.os == 'Linux'
         shell: bash
@@ -136,6 +136,7 @@ jobs:
           path: |
             build/Testing/Temporary/
             build/product-build.log
+            build/test-run.log
             build/gui-smoke.log
           if-no-files-found: warn
           retention-days: 14

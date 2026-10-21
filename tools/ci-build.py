@@ -35,7 +35,7 @@ def main():
                 output.flush()
                 print(line, end='', flush=True)
                 recent.append(line.rstrip())
-                if 'error:' in line.lower() and len(errors) < 5:
+                if any(marker in line.lower() for marker in ('error:', 'fail', 'sanitizer:', 'assertion failure', 'leaked objects')) and len(errors) < 5:
                     errors.append(line.rstrip())
         status = process.wait()
     if status:
