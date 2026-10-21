@@ -134,3 +134,11 @@ ordinary new/new[] probes and synthetic signals. New native CI/auval is pending.
   tests failed. Raw log host remains unavailable; test commands now emit
   API-readable failure annotations while preserving actual exit status. Diagnosis
   and final-revision native validation remain in progress.
+
+## Neutral EQ portability fix
+
+CI failure annotations at 98f1c8a isolated all four supported-rate failures to
+the exact neutral-effects identity assertion on macOS. Zero-gain RBJ bands now
+use identity coefficients directly, avoiding platform-dependent cancellation
+rounding without relaxing the test. Linux products rebuild and 11/11 CTest suites
+pass after this fix; native CI for the fix remains pending.

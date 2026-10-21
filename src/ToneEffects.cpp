@@ -32,6 +32,10 @@ struct Biquad {
 };
 // Robert Bristow-Johnson cookbook biquads: fixed shelf slope S=1, peak Q.
 Coefficients coefficients(double rate, double hz, double gainDb, double q, int kind) noexcept {
+    // A zero-gain band is exactly neutral. Avoid pole/zero cancellation whose
+    // rounding depends on the platform's floating-point contraction rules.
+    if (gainDb == 0.0)
+        return {};
     const double a = std::pow(10.0, gainDb / 40.0);
     const double omega = 2.0 * std::numbers::pi * hz / rate;
     const double cosine = std::cos(omega), sine = std::sin(omega);
