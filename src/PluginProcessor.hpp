@@ -1,4 +1,5 @@
 #pragma once
+#include "DryPitchAnalyzer.hpp"
 #include "PresetBank.hpp"
 #include <array>
 #include <atomic>
@@ -54,12 +55,19 @@ class DarkVoiceProcessor final : public juce::AudioProcessor {
     }
     darkvoice::PresetValues snapshotPresetValues() const;
     bool applyPreset(const darkvoice::PresetValues &);
+    float dryPitchHz() const noexcept {
+        return dryAnalysis_.frequencyHz();
+    }
+    float dryPitchConfidence() const noexcept {
+        return dryAnalysis_.confidence();
+    }
     juce::AudioProcessorValueTreeState parameters;
 
   private:
     static juce::AudioProcessorValueTreeState::ParameterLayout createParameters();
     darkvoice::EngineParameters snapshot() const noexcept;
     darkvoice::AudioEngine engine_;
+    darkvoice::DryPitchAnalyzer dryAnalysis_;
     std::array<std::atomic<float> *, darkvoice::parameterSchema.size()> raw_{};
     std::atomic<float> inputPeak_{0}, outputPeak_{0};
     std::size_t maximumFrames_ = 0;

@@ -1,4 +1,5 @@
 #include "PluginEditor.hpp"
+#include <cmath>
 namespace {
 const juce::Colour background{0xff111418}, panel{0xff1c2229}, accent{0xffe54b52}, text{0xffecedf0};
 constexpr std::array<const char *, 20> ids{
@@ -88,6 +89,9 @@ DarkVoiceEditor::DarkVoiceEditor(DarkVoiceProcessor &p, juce::File root)
     status_.setColour(juce::Label::textColourId, juce::Colour(0xffb5bdc7));
     status_.setFont(juce::Font(juce::FontOptions(12.0f)));
     addAndMakeVisible(meter_);
+    pitch_.setColour(juce::Label::textColourId, juce::Colour(0xffb5bdc7));
+    pitch_.setName("Dry pitch analysis");
+    addAndMakeVisible(pitch_);
     addAndMakeVisible(status_);
     search_.setName("Search presets");
     search_.setTextToShowWhenEmpty("Search presets", juce::Colour(0xff9ba6b4));
@@ -274,8 +278,24 @@ void DarkVoiceEditor::resized() {
     }
     bypass_.setBounds(28, getHeight() - 82, 200, 28);
     meter_.setBounds(240, getHeight() - 82, getWidth() - 268, 28);
+    pitch_.setBounds(24, getHeight() - 56, getWidth() - 48, 22);
 }
 void DarkVoiceEditor::timerCallback() {
+    const float frequency = processor_.dryPitchHz(), confidence = processor_.dryPitchConfidence();
+    if (frequency > 0 && std::isfinite(frequency) && confidence >= 0.8f) {
+        const double midi = 69.0 + 12.0 * std::log2(frequency / 440.0);
+        const int nearest = static_cast<int>(std::round(midi));
+        constexpr const char *notes[]{"C",  "C#", "D",  "D#", "E",  "F",
+                                      "F#", "G",  "G#", "A",  "A#", "B"};
+        pitch_.setText("Dry input: " + juce::String(notes[nearest % 12]) +
+                           juce::String(nearest / 12 - 1) + " / " + juce::String(frequency, 1) +
+                           " Hz / " + juce::String((midi - nearest) * 100, 0) +
+                           " cents / confidence " + juce::String(confidence * 100, 0) +
+                           "% (analysis only)",
+                       juce::dontSendNotification);
+    } else
+        pitch_.setText("Dry input pitch: -- (analysis only, no correction)",
+                       juce::dontSendNotification);
     const auto db = [](float value) {
         return value > 0 ? juce::String(juce::Decibels::gainToDecibels(value), 1)
                          : juce::String("-inf");

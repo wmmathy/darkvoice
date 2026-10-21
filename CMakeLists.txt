@@ -119,7 +119,7 @@ if(DARKVOICE_BUILD_PRODUCTS)
             COPY_PLUGIN_AFTER_BUILD FALSE
             VST3_CATEGORIES Fx
             AU_MAIN_TYPE kAudioUnitType_Effect)
-        target_sources(${target} PRIVATE src/PluginProcessor.cpp src/PluginEditor.cpp src/PresetBank.cpp)
+        target_sources(${target} PRIVATE src/PluginProcessor.cpp src/PluginEditor.cpp src/PresetBank.cpp src/DryPitchAnalyzer.cpp)
         target_include_directories(${target} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src")
         target_link_libraries(${target} PRIVATE DarkVoice::Engine juce::juce_audio_utils
             juce::juce_recommended_config_flags)
@@ -150,6 +150,15 @@ if(DARKVOICE_BUILD_PRODUCTS)
             "${darkvoice_juce_dir}/modules" "${CMAKE_CURRENT_SOURCE_DIR}/include")
         target_compile_features(darkvoice_preset_tests PRIVATE cxx_std_20)
         target_compile_definitions(darkvoice_preset_tests PRIVATE JUCE_GLOBAL_MODULE_SETTINGS_INCLUDED=1)
+        add_executable(darkvoice_analysis_worker_tests tests/analysis_worker_tests.cpp)
+        target_link_libraries(darkvoice_analysis_worker_tests PRIVATE DarkVoiceVocal)
+        target_include_directories(darkvoice_analysis_worker_tests PRIVATE
+            "${darkvoice_juce_dir}/modules" "${CMAKE_CURRENT_SOURCE_DIR}/include")
+        target_compile_features(darkvoice_analysis_worker_tests PRIVATE cxx_std_20)
+        target_compile_definitions(darkvoice_analysis_worker_tests PRIVATE JUCE_GLOBAL_MODULE_SETTINGS_INCLUDED=1)
+        add_test(NAME analysis.worker COMMAND darkvoice_analysis_worker_tests)
+        set_tests_properties(analysis.worker PROPERTIES TIMEOUT 30
+            FAIL_REGULAR_EXPRESSION "JUCE Assertion failure;Leaked objects detected")
         add_test(NAME presets.persistence COMMAND darkvoice_preset_tests)
         set_tests_properties(presets.persistence PROPERTIES TIMEOUT 60
             FAIL_REGULAR_EXPRESSION "JUCE Assertion failure;Leaked objects detected")

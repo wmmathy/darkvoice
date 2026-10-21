@@ -28,7 +28,7 @@ class DarkVoiceEditor final : public juce::AudioProcessorEditor, private juce::T
         attachments_;
     juce::ToggleButton bypass_{"Bypass processing"};
     std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> bypassAttachment_;
-    juce::Label meter_, status_;
+    juce::Label meter_, status_, pitch_;
     darkvoice::PresetBank bank_;
     juce::TextEditor search_, name_;
     juce::ComboBox presets_;

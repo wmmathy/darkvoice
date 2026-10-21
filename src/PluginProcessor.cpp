@@ -82,12 +82,17 @@ void DarkVoiceProcessor::prepareToPlay(double rate, int maxFrames) {
         (void)engine_.setParameters(snapshot());
         engine_.reset();
     }
+    if (prepared_)
+        (void)dryAnalysis_.prepare(rate);
+    else
+        dryAnalysis_.release();
     inputPeak_.store(0, std::memory_order_relaxed);
     outputPeak_.store(0, std::memory_order_relaxed);
     setLatencySamples(static_cast<int>(engine_.latencySamples()));
 }
 void DarkVoiceProcessor::releaseResources() {
     prepared_ = false;
+    dryAnalysis_.release();
     engine_.reset();
     inputPeak_.store(0, std::memory_order_relaxed);
     outputPeak_.store(0, std::memory_order_relaxed);
@@ -101,6 +106,7 @@ void DarkVoiceProcessor::processBlock(juce::AudioBuffer<float> &audio, juce::Mid
         outputPeak_.store(0, std::memory_order_relaxed);
         return;
     }
+    dryAnalysis_.push(audio);
     (void)engine_.setParameters(snapshot());
     float inPeak = 0, outPeak = 0;
     const auto frames = static_cast<std::size_t>(audio.getNumSamples());

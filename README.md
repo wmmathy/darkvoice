@@ -16,8 +16,8 @@ The product targets are **DarkVoice Vocal** and **DarkVoice Master** (VST3; AU o
 macOS), and **DarkVoice Studio** (standalone, currently hosting the starter chain).
 Master currently exposes that same starter chain: LUFS, true-peak limiting and
 complete-song Auto Master are not implemented. Track recording/import/editing, track-aware pitch correction, harmony, Voice DNA/AI,
-Auto Mix and audio export remain planned. A separately tested dry pitch analyzer
-exists for worker/offline use; it is not connected as live correction or coaching.
+Auto Mix and audio export remain planned. A background analyzer displays the measured dry input note, frequency and
+confidence. It is not live pitch correction, target-note coaching or track following.
 
 ## Build
 

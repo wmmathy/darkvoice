@@ -102,3 +102,11 @@ GUI smoke exercises all20 controls, actual factory-preset audio and default stor
 standalone startup/screenshot pass. Scoped cppcheck and formatter pass. Native CI
 for this revision is pending; previous milestone's evidence is not reused as a
 passing claim for these changes. No public release is authorized/published.
+
+
+Dry pitch telemetry now runs on a dedicated worker behind a bounded SPSC ring,
+with actual note/frequency/confidence display. It adds no audio-path correction
+or saved voice recordings. Local11/11 suites, GUI feedback and a focused
+ThreadSanitizer harness pass. MacOS new-test failures in the initial CI revision
+are under investigation; do not merge or reuse foundation AU evidence for this
+increment. The lead continues direct integration from the preserved work packages.

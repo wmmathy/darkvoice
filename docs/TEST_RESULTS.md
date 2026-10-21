@@ -114,3 +114,23 @@ parent-directory replacement races. Pitch analysis is bounded worker-only YIN,
 not live correction; octave errors/real-vocal accuracy remain unqualified.
 No callback allocation, hard deadline or listening certification follows from
 ordinary new/new[] probes and synthetic signals. New native CI/auval is pending.
+
+
+## Dry pitch telemetry continuation
+
+- Local products rebuild and 11/11 CTest suites pass. analysis.worker has14 checks
+  covering actual F0, untouched input, ring overrun recovery, rate/lifecycle changes,
+  stereo downmix and ordinary per-producer-thread allocation checks.
+- The processor test detects a quiet dry A2 even when input/output gains attenuate
+  rendered audio below the detector gate, proving the tap precedes DSP.
+- Real GUI timer feedback shows A2 from generated input; all20 controls and actual
+  preset audio still pass the display smoke. The harness pumps real timers because
+  it has no native event loop. Standalone startup/default writable storage pass.
+- Focused ThreadSanitizer harness compiled JUCE core/audio-basics, PitchDetector and
+  DryPitchAnalyzer with instrumentation, exercised concurrent producer/consumer and
+  shutdown, and exited0 with no findings. Harness/source/logs remain under
+  /tmp/darkvoice-thread-* in this instance. This is not full host qualification.
+- Native CI at0a4e2e5 passed Linux products and Linux core/sanitizers, but macOS
+  tests failed. Raw log host remains unavailable; test commands now emit
+  API-readable failure annotations while preserving actual exit status. Diagnosis
+  and final-revision native validation remain in progress.

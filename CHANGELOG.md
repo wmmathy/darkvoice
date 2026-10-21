@@ -23,3 +23,5 @@
   version hints; honor XDG_CONFIG_HOME for writable Linux preset storage.
 - Add worker-only monophonic dry pitch analysis with synthetic accuracy/voicing
   tests; live track-aware correction and harmony remain future work.
+- Display measured dry input note/frequency/confidence using a bounded worker
+  queue; verify dry-before-DSP input, overflow/lifecycle and concurrency behavior.

@@ -1,9 +1,11 @@
 #include "PluginEditor.hpp"
+#include <chrono>
 #include <cmath>
 #include <filesystem>
 #include <iostream>
 #include <memory>
 #include <set>
+#include <thread>
 #include <vector>
 namespace {
 void collect(juce::Component &root, std::vector<juce::Component *> &result,
@@ -158,6 +160,39 @@ int main(int argc, char **argv) {
         }
         if (difference < 0.01)
             return 13;
+        // Feed a sustained dry A2, then dispatch the real UI timer and inspect feedback.
+        for (int block = 0; block < 32; ++block) {
+            for (int c = 0; c < 2; ++c)
+                for (int i = 0; i < 512; ++i)
+                    actual.setSample(c, i,
+                                     0.2f * static_cast<float>(std::sin(
+                                                (block * 512 + i) * 2.0 *
+                                                juce::MathConstants<double>::pi * 110.0 / 48000)));
+            processor.processBlock(actual, midi);
+        }
+        const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(5);
+        while (std::abs(processor.dryPitchHz() - 110.0f) > 1.0f &&
+               std::chrono::steady_clock::now() < deadline)
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        if (std::abs(processor.dryPitchHz() - 110.0f) > 1.0f)
+            return 15;
+        bool pitchShown = false;
+        const auto uiDeadline = std::chrono::steady_clock::now() + std::chrono::seconds(2);
+        while (!pitchShown && std::chrono::steady_clock::now() < uiDeadline) {
+            // This smoke harness has no native message loop. Pump actual pending
+            // timers until the editor has consumed the asynchronous worker result.
+            juce::Timer::callPendingTimersSynchronously();
+            for (auto *component : components)
+                if (auto *label = dynamic_cast<juce::Label *>(component);
+                    label && label->getName() == "Dry pitch analysis")
+                    pitchShown = label->getText().contains("Dry input: A2");
+            if (!pitchShown)
+                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        }
+        if (!pitchShown) {
+            std::cerr << "Dry pitch result did not reach editor timer\n";
+            return 16;
+        }
         auto image = editor->createComponentSnapshot(editor->getLocalBounds());
         if (image.isNull())
             return 5;
@@ -169,7 +204,7 @@ int main(int argc, char **argv) {
                 return 6;
         }
         std::cout << "GUI smoke passed: 20 controls, all parameter attachments, bypass, actual "
-                     "factory preset audio, snapshot\n";
+                     "factory preset audio, dry-pitch feedback, snapshot\n";
         return 0;
     }();
     root.deleteRecursively();
