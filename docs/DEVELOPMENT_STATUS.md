@@ -65,3 +65,20 @@ record/import/editing, Auto Mix, full stereo mastering, QC/export and complete U
 The Master shell is not functional full-song mastering. No true-peak/LUFS or AI
 capability is represented by the current controls. Signing/notarization, actual
 DAW/listening/CPU tests and release qualification remain unrun.
+
+## M2 active work packages
+
+User reaffirmed automatic commits/pushes and continued feature development. PR #2
+is confirmed merged into main at 2eb1f28 (externally); checkout is based on that
+unchanged source tree. Main default-branch setting remains separate.
+
+Shared v2 contracts/parameter schema established before assignment. Effects DSP
+owns ToneEffects.cpp and effects_tests.cpp. Engine integration owns AudioEngine.cpp
+and engine_tests.cpp (AudioEngine.hpp private details only, coordinate API changes).
+Preset persistence owns PresetBank.hpp/.cpp and preset_tests.cpp (public API fixed).
+Host/UI owns PluginProcessor/Editor and plugin_tests/gui_smoke. Build integration
+owns CMake/workflows and review of dependency/cache setup. QA is read-only across
+packages. Each uses an isolated feature branch/worktree. Lead owns contracts,
+integration and handoff docs. Acceptance: numerical EQ/delay/reverb signal tests,
+real controls, schema-v1 migration/v2 roundtrip, persistent preset operations,
+actual preset changes in rendered audio, all-rate/layout and sanitizer coverage.

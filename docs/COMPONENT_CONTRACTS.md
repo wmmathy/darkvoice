@@ -129,3 +129,15 @@ favorites, rename, import/export, version-1 migration, explicit file-size/range/
 validation and local UUID-based filenames. Never overwrite another user preset on
 import/save-as. Updates use atomic file replacement, outside the audio callback.
 No project media, profiles, credentials or network services are part of this bank.
+
+PresetBank JSON format v2: object with schemaVersion=2, name and parameters (all
+20 known non-bypass IDs, finite numbers only); stored user files also carry UUID
+id. v1 uses schemaVersion=1 and exactly the 7 original non-bypass IDs; migrate by
+adding v2 defaults. This is separate from APVTS state schema. Files <=1MiB, names
+trimmed/nonempty <=80 characters without controls, direct user files bounded to
+512. Import regenerates UUID regardless of external id. Export refuses existing
+destination. Favorites are separate local metadata, including factory IDs. refresh
+keeps valid entries/factories, reports malformed user files without deleting them.
+The shared PresetBank public API is in src/PresetBank.hpp; pointers from find are
+invalidated on mutations. Public API changes require lead coordination; private
+helpers are implementation-owned.
