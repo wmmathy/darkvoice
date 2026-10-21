@@ -13,3 +13,5 @@
   checks; preserve open-source AGPLv3 licensing and reproducible cloud setup.
 - Correct state-number parsing, optimized test allocator warnings and JUCE UI
   string encoding assertions found during QA/integration.
+- Make state parsing portable across Apple libc++ versions and preserve decimal
+  state roundtrips under non-English global locales.

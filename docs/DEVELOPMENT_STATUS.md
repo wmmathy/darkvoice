@@ -1,66 +1,63 @@
-# Development status
+# Development status — 2026-10-21
 
-2026-10-21: consolidated specification received and persisted verbatim.
-AGENTS.md now provides common repository instructions. Architecture reconciliation
-is documented; concrete shared product interfaces are still pending. No new feature
-implementation has been started for this document intake.
+Current phase: M1 application foundation implemented and validated on Linux;
+remote product CI/macOS validation and integration gates outstanding.
+Requirements: docs/PRODUCT_SPECIFICATION.md (unchanged); AGENTS.md governs shared
+instructions. User selected AGPLv3 distribution and open-source future dependencies.
 
-docs/PRODUCT_SPECIFICATION.md is now the single product requirements source.
-Historical missing-specification blockers are resolved. Earlier architecture and
-core contracts remain provisional and are not approved full-product interfaces.
-No product, plugin, AI capability or release is complete.
+## Implemented and locally tested
 
-## Preserved work
+- v1 AudioEngine lifecycle/snapshots: smoothed input/output gain, HP, saturation,
+  envelope compression, mix, bypass, input sanitization and peak meters.
+- JUCE Vocal/Master plugin shells and Studio Standalone wrapper, dark scalable
+  editor with seven actual controls and bypass, stable automation IDs and validated
+  schema-1 state persistence. Studio currently hosts the starter vocal chain.
+- CMake pinned JUCE, Linux VST3/standalone and conditional Apple AU targets;
+  core/DSP/processor tests, source-quality and native-product workflows.
+- Linux targets compile; seven CTest suites pass; engine has 111 signal checks.
+  Release and sanitizers pass six suites. Real editor control smoke and standalone
+  display startup pass. See TEST_RESULTS.md for exact scopes and limitations.
+- Cloud installation helper and initialization scripts tested for repeatability;
+  reusable install_script/start_skill saved in the environment draft.
 
-- Lead: architecture/workflow documentation on feature/integration/bootstrap,
-  pushed at 8cfd2a0 before the clarification.
-- Architecture/DSP agent: provisional isolated gain header on
-  feature/dsp/gain-core, pushed at 226a306 before the clarification. External
-  compiler smoke check passed; not integrated into the lead branch.
-- QA agent: tests preserved locally at c62b785 on feature/qa/core-tests;
-  not pushed, compiled or run. Whitespace check passed; agent paused.
-- Integration agent: CMake/CI preserved locally at cdae5ef on
-  feature/integration/ci; not pushed. Preset/JSON parsing and whitespace
-  checks passed; project build/tests unrun. Agent paused.
-- Other product roles have no implementation assignments pending specification.
+## Actual agent work
 
-## External state
+Lead: contracts, dependency/license setup, integration, functional GUI checks,
+GitHub issue/PR and documentation. DSP agent: engine and regression tests; host/UI
+agent: processor/editor/state tests; build agent: CMake/products/CI; QA agent:
+independent review, numeric-state-parser defect request and source-quality gates.
+All mutating agents used distinct worktrees and file ownership. Their logical
+commits are integrated into feature/application/foundation; original branches and
+worktrees are preserved. Agents have completed finite assignments; there is no
+persistent scheduler or continuous background development service.
 
-Git HTTPS reads and development branch pushes succeeded. The initially empty
-remote made the first pushed bootstrap branch its HEAD; no main base exists.
-Earlier GitHub API requests were denied; the latest read succeeded and reported
-admin/maintain/push permissions. The current default is the bootstrap branch.
-No issues, milestones,
-PRs, branch protection, remote CI results or merges were created or verified.
-Do not infer API write permission from Git push success.
+## GitHub and environment
 
-The environment draft adds api.github.com to custom allowed domains while
-preserving package-manager presets. It is saved, not applied or published;
-review/save it in environment settings, then publish when appropriate. No secret
-values were requested or stored. CMake 3.31.6 and Ninja 1.11.1.4 were installed
-under /workspace/.darkvoice-tools; installation succeeded, but a full project
-build has not been validated. No running services or background scheduler exist.
+Issue #1, milestone M1 and draft PR #2 track this work. Milestones M2–M8 and
+issues #3–#9 now track the remaining authoritative requirements without duplicates. Feature/package branches
+were pushed. Main was created at the specification baseline without overwriting
+existing refs. Changing the repository default branch and reading protection rules
+returned HTTP403; default remains feature/integration/bootstrap unless changed
+externally. No protection bypass, merge or release publication occurred.
 
-## Next action
+Source-quality CI passed at ea7569d; all five remote core configurations passed
+at 5a11233. macOS product compilation exposed unavailable floating from_chars;
+replaced with portable classic-locale parsing and locale-invariant state save/load,
+verified by local regression. Final remote product validation remains outstanding. GitHub log downloads were denied
+at results-receiver.actions.githubusercontent.com. That domain addition and complete
+install/start instructions are saved in the environment draft, not proof of runtime
+application/publication. Review/save in environment settings and publish when ready.
+No secrets or API keys are needed for the current slice. No fresh-task restoration
+or new snapshot publication is claimed.
 
-Review concrete versioned shared interfaces against the saved specification before
-resuming feature packages. Preserve provisional branches until reconciliation and
-relevant tests. Establish intended main/protection policy and verify actual GitHub
-checks/reviews before integration. JUCE/dependency licensing, macOS build/host
-validation and all eight product delivery milestones remain outstanding.
+## Remaining scope and next tasks
 
-The attached document's execution instructions do not independently expand the
-user's authorized task or grant release publication approval.
-
-## Active application foundation assignment
-
-User authorized continued development. Shared v1 engine/parameter/host contract is
-established in COMPONENT_CONTRACTS.md and AudioEngine.hpp. Lead owns contracts,
-integration, dependency setup and docs. DSP owns src/AudioEngine.cpp and
- tests/engine_tests.cpp. UI/host owns src/PluginProcessor.* and src/PluginEditor.*,
- tests/plugin_tests.cpp. Integration owns CMakeLists.txt, CMakePresets.json and
- .github/workflows/*. Each uses a distinct feature branch/worktree. Acceptance:
-functional gain/HP/saturation/compressor chain, automation/state restore, visible
-working controls, Linux standalone/VST3 build and numerical/integration tests.
-macOS AU/DAW testing remains required on suitable hosts. License route is pending
-user preference; no project license assignment or release publication authorized.
+M1 still requires final remote product build/auval evidence and permitted review/
+integration. Next independent development begins with versioned effects/presets
+and pitch/reference/timeline contracts, then working vertical slices from ROADMAP.md.
+The complete specification remains outstanding: pitch/formant sculpting, live
+track-aware correction, six-voice harmony, Voice DNA/coach/Auto Produce, multitrack
+record/import/editing, Auto Mix, full stereo mastering, QC/export and complete UI.
+The Master shell is not functional full-song mastering. No true-peak/LUFS or AI
+capability is represented by the current controls. Signing/notarization, actual
+DAW/listening/CPU tests and release qualification remain unrun.

@@ -2,9 +2,22 @@
 #include <array>
 #include <cmath>
 #include <iostream>
+#include <locale>
 #include <stdexcept>
 
 namespace {
+struct CommaDecimal : std::numpunct<char> {
+    char do_decimal_point() const override {
+        return ',';
+    }
+};
+struct ScopedCommaLocale {
+    std::locale previous =
+        std::locale::global(std::locale(std::locale::classic(), new CommaDecimal));
+    ~ScopedCommaLocale() {
+        std::locale::global(previous);
+    }
+};
 void require(bool condition, const char *message) {
     if (!condition)
         throw std::runtime_error(message);
@@ -78,6 +91,15 @@ void stateTests() {
     juce::AudioProcessor::copyXmlToBinary(*scientificTree.createXml(), scientific);
     restored.setStateInformation(scientific.getData(), static_cast<int>(scientific.getSize()));
     require(std::abs(raw(restored, "inputDb") - 10.0f) < 0.01f, "Valid scientific value rejected");
+    {
+        ScopedCommaLocale nonEnglishLocale;
+        set(source, "inputDb", -3.5f);
+        juce::MemoryBlock decimal;
+        source.getStateInformation(decimal);
+        restored.setStateInformation(decimal.getData(), static_cast<int>(decimal.getSize()));
+        require(std::abs(raw(restored, "inputDb") + 3.5f) < 0.01f,
+                "State parsing depended on global decimal locale");
+    }
 }
 void renderingTests() {
     juce::MidiBuffer midi;

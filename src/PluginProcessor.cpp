@@ -1,9 +1,11 @@
 #include "PluginProcessor.hpp"
 #include "PluginEditor.hpp"
 #include <algorithm>
-#include <charconv>
 #include <cmath>
+#include <iomanip>
 #include <limits>
+#include <locale>
+#include <sstream>
 
 namespace {
 constexpr std::array<const char *, 8> ids{"inputDb",     "outputDb", "highPassHz", "drive",
@@ -132,6 +134,15 @@ juce::AudioProcessorEditor *DarkVoiceProcessor::createEditor() {
 void DarkVoiceProcessor::getStateInformation(juce::MemoryBlock &destination) {
     auto state = parameters.copyState();
     state.setProperty("schemaVersion", 1, nullptr);
+    // JUCE numeric var-to-String conversion follows the global C++ locale.
+    // Serialize a canonical decimal representation without changing process locale.
+    for (auto child : state) {
+        std::ostringstream canonical;
+        canonical.imbue(std::locale::classic());
+        canonical << std::setprecision(std::numeric_limits<float>::max_digits10)
+                  << static_cast<float>(child.getProperty("value"));
+        child.setProperty("value", juce::String(canonical.str()), nullptr);
+    }
     if (const auto xml = state.createXml())
         copyXmlToBinary(*xml, destination);
 }
@@ -147,7 +158,7 @@ void DarkVoiceProcessor::setStateInformation(const void *data, int bytes) {
         return;
     std::array<bool, 8> seen{};
     for (int childIndex = 0; childIndex < state.getNumChildren(); ++childIndex) {
-        const auto child = state.getChild(childIndex);
+        auto child = state.getChild(childIndex);
         if (!child.hasType("PARAM") || !child.hasProperty("id") || !child.hasProperty("value"))
             return;
         const auto id = child.getProperty("id").toString();
@@ -157,15 +168,19 @@ void DarkVoiceProcessor::setStateInformation(const void *data, int bytes) {
         if (index == ids.size() || seen[index])
             return;
         const auto token = child.getProperty("value").toString().trim();
-        const auto bytes = token.toRawUTF8();
-        const auto length = static_cast<std::size_t>(token.getNumBytesAsUTF8());
+        // Floating-point from_chars is unavailable in some supported Apple libc++ versions.
+        // State restoration is non-real-time; classic locale and full consumption are explicit.
+        std::istringstream parser(token.toStdString());
+        parser.imbue(std::locale::classic());
         float value = 0;
-        const auto parsed = std::from_chars(bytes, bytes + length, value);
-        if (parsed.ec != std::errc{} || parsed.ptr != bytes + length || !std::isfinite(value) ||
+        parser >> std::noskipws >> value;
+        if (!parser || parser.peek() != std::char_traits<char>::eof() || !std::isfinite(value) ||
             value < minima[index] || value > maxima[index])
             return;
         if (index == 7 && value != 0 && value != 1)
             return;
+        // Store numeric values so APVTS does not need locale-sensitive string conversion.
+        child.setProperty("value", value, nullptr);
         seen[index] = true;
     }
     parameters.replaceState(state);
