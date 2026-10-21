@@ -163,3 +163,23 @@ v1/v2/v3-to-v4 state/preset migration with neutral defaults. Release core passes
 QA strengthening. New native CI/AU validation is unrun. Full sculptor/pitch/
 formants, remaining effects, reference/harmony, AI, sessions/mixing/mastering/export
 and real-host/listening qualification remain outstanding. No new dependencies.
+
+
+## Chorus/width continuation — stacked on PR #15
+
+Main remains b276d49; draft de-esser PR #15 is unmerged. Branch
+feature/effects/chorus-width builds on feature/dynamics/de-esser, preserving prior
+work. Shared Effects v5 contract precedes implementation. Lead owns mutations;
+dedicated read-only agents audit the future pitch backend and review modulation.
+No Actions are dispatched; commits use [skip ci] and native validation is unrun.
+
+Add 3–27ms interpolated stereo chorus and mid/side width after spatial effects,
+four real controls/sixth tab, stable appended AU IDs and strict v1–v4 migration
+to v5 with neutral new defaults. Issue #16 tracks this package. Release core and ASan/UBSan pass11/11, including
+182 focused modulation checks. Local products pass14/14; the 30-control chorus/
+width GUI and standalone smoke pass. Read-only QA identified a JSON double/float
+minimum-boundary issue; the fix and boundary/overflow regressions pass. An initial
+host fixture used an out-of-bounds magnitude-query overload; correction retains
+JUCE assertions and the full suite now passes. The MIT candidate
+audit found material latency/near-silence integration gates; see
+PITCH_BACKEND_AUDIT.md. No pitch/formant processor has been integrated.

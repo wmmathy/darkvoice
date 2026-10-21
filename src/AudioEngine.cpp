@@ -40,7 +40,8 @@ bool AudioEngine::prepare(double sampleRate, std::size_t maxFrames, std::size_t 
     }
     if (!effects_.prepare(sampleRate, maxFrames, channels) ||
         !gate_.prepare(sampleRate, maxFrames, channels) ||
-        !deEsser_.prepare(sampleRate, maxFrames, channels))
+        !deEsser_.prepare(sampleRate, maxFrames, channels) ||
+        !modulation_.prepare(sampleRate, maxFrames, channels))
         return false;
     rate_ = sampleRate;
     maxFrames_ = maxFrames;
@@ -56,13 +57,15 @@ bool AudioEngine::setParameters(const EngineParameters &p) noexcept {
         !inRange(p.thresholdDb, -60.0f, 0.0f) || !inRange(p.ratio, 1.0f, 20.0f) ||
         !inRange(p.mix, 0.0f, 1.0f) || !ToneEffects::valid(toneParameters(p)) ||
         !NoiseGate::valid({p.gateThresholdDb, p.gateRatio, p.gateReleaseMs}) ||
-        !DeEsser::valid({p.deEssHz, p.deEssThresholdDb, p.deEssReductionDb}))
+        !DeEsser::valid({p.deEssHz, p.deEssThresholdDb, p.deEssReductionDb}) ||
+        !ModulationEffects::valid({p.chorusRateHz, p.chorusDepthMs, p.chorusMix, p.stereoWidth}))
         return false;
-    // All snapshots are fully validated before either target is replaced.
+    // All snapshots are fully validated before any target is replaced.
     if (!effects_.setParameters(toneParameters(p)))
         return false;
     (void)gate_.setParameters({p.gateThresholdDb, p.gateRatio, p.gateReleaseMs});
     (void)deEsser_.setParameters({p.deEssHz, p.deEssThresholdDb, p.deEssReductionDb});
+    (void)modulation_.setParameters({p.chorusRateHz, p.chorusDepthMs, p.chorusMix, p.stereoWidth});
     target_ = p;
     return true;
 }
@@ -76,6 +79,7 @@ void AudioEngine::reset() noexcept {
     effects_.reset();
     gate_.reset();
     deEsser_.reset();
+    modulation_.reset();
 }
 
 bool AudioEngine::process(std::span<float *> channels, std::size_t frames) noexcept {
@@ -134,7 +138,8 @@ bool AudioEngine::process(std::span<float *> channels, std::size_t frames) noexc
     std::array<float *, 2> wetChannels{wet_[0].data(), wet_[1].data()};
     if (!gate_.process(std::span<float *>(wetChannels.data(), channels_), frames) ||
         !deEsser_.process(std::span<float *>(wetChannels.data(), channels_), frames) ||
-        !effects_.process(std::span<float *>(wetChannels.data(), channels_), frames))
+        !effects_.process(std::span<float *>(wetChannels.data(), channels_), frames) ||
+        !modulation_.process(std::span<float *>(wetChannels.data(), channels_), frames))
         return false; // Prepared capacities/layout have already been validated.
     for (std::size_t i = 0; i < frames; ++i) {
         smooth(current_.outputDb, target_.outputDb);

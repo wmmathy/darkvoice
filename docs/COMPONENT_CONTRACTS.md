@@ -278,3 +278,8 @@ measured chorus delay/modulation/rate/depth/mix, automation and partition invari
 invalid inputs/allocation failures, no callback allocations, engine/plugin audio,
 v4 migration, GUI attachments, local Release/sanitizers. Native CI remains unrun
 under the user's Actions pause; every commit includes [skip ci].
+
+Preset numeric validation is performed after checked conversion to the float
+parameter domain. Exact JSON decimal minima such as0.1/0.2 map to the advertised
+float bounds; finite/overflow/type checks and meaningful out-of-range rejection
+remain strict. This also corrects the existing mid-Q decimal boundary.

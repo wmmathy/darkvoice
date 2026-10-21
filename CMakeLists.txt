@@ -11,7 +11,7 @@ target_compile_features(darkvoice_core INTERFACE cxx_std_20)
 target_include_directories(darkvoice_core INTERFACE
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>")
 
-add_library(darkvoice_engine STATIC src/AudioEngine.cpp src/ToneEffects.cpp src/PitchDetector.cpp src/NoiseGate.cpp src/DeEsser.cpp)
+add_library(darkvoice_engine STATIC src/AudioEngine.cpp src/ToneEffects.cpp src/PitchDetector.cpp src/NoiseGate.cpp src/DeEsser.cpp src/ModulationEffects.cpp)
 add_library(DarkVoice::Engine ALIAS darkvoice_engine)
 target_link_libraries(darkvoice_engine PUBLIC DarkVoice::Core)
 set_target_properties(darkvoice_engine PROPERTIES POSITION_INDEPENDENT_CODE ON CXX_EXTENSIONS OFF)
@@ -77,6 +77,13 @@ if(BUILD_TESTING)
     darkvoice_strict_warnings(darkvoice_deesser_tests)
     add_test(NAME dynamics.deesser COMMAND darkvoice_deesser_tests)
     set_tests_properties(dynamics.deesser PROPERTIES TIMEOUT 60)
+
+    add_executable(darkvoice_modulation_tests tests/modulation_tests.cpp)
+    target_link_libraries(darkvoice_modulation_tests PRIVATE DarkVoice::Engine)
+    set_target_properties(darkvoice_modulation_tests PROPERTIES CXX_EXTENSIONS OFF)
+    darkvoice_strict_warnings(darkvoice_modulation_tests)
+    add_test(NAME effects.modulation COMMAND darkvoice_modulation_tests)
+    set_tests_properties(effects.modulation PROPERTIES TIMEOUT 60)
 
     add_executable(darkvoice_pitch_tests tests/pitch_tests.cpp)
     target_link_libraries(darkvoice_pitch_tests PRIVATE DarkVoice::Engine)

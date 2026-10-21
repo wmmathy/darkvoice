@@ -60,6 +60,10 @@ void stateTests() {
     set(source, "deEssHz", 5000);
     set(source, "deEssThresholdDb", -30);
     set(source, "deEssReductionDb", 9);
+    set(source, "chorusRateHz", 2.5f);
+    set(source, "chorusDepthMs", 10);
+    set(source, "chorusMix", .25f);
+    set(source, "stereoWidth", 1.7f);
     juce::MemoryBlock state;
     source.getStateInformation(state);
     require(state.getSize() > 0, "State serialization empty");
@@ -74,10 +78,11 @@ void stateTests() {
         require(source.parameters.getParameter(spec.id)->getVersionHint() == (i < 8    ? 1
                                                                               : i < 21 ? 2
                                                                               : i < 24 ? 3
-                                                                                       : 4),
+                                                                              : i < 27 ? 4
+                                                                                       : 5),
                 "AU version hint changed");
         require(std::abs(raw(restored, spec.id) - raw(source, spec.id)) < 0.001f,
-                "Full v4 state roundtrip failed");
+                "Full v5 state roundtrip failed");
     }
     require(source.getTailLengthSeconds() == 40.0, "Spatial tail not reported");
 
@@ -85,7 +90,7 @@ void stateTests() {
     restored.setStateInformation(garbage, sizeof(garbage));
     require(raw(restored, "inputDb") == raw(source, "inputDb"),
             "Malformed state changed parameters");
-    for (const char *version : {"5", "1junk"}) {
+    for (const char *version : {"6", "1junk"}) {
         auto xml = source.parameters.copyState().createXml();
         xml->setAttribute("schemaVersion", version);
         juce::MemoryBlock invalid;
@@ -148,10 +153,15 @@ void stateTests() {
     }
     auto v2 = source.parameters.copyState();
     v2.setProperty("schemaVersion", 2, nullptr);
-    for (const auto *id : {"gateThresholdDb", "gateRatio", "gateReleaseMs", "deEssHz",
-                           "deEssThresholdDb", "deEssReductionDb"})
+    for (const auto *id :
+         {"gateThresholdDb", "gateRatio", "gateReleaseMs", "deEssHz", "deEssThresholdDb",
+          "deEssReductionDb", "chorusRateHz", "chorusDepthMs", "chorusMix", "stereoWidth"})
         v2.removeChild(v2.getChildWithProperty("id", id), nullptr);
     set(restored, "gateRatio", 10);
+    set(restored, "chorusRateHz", 4);
+    set(restored, "chorusDepthMs", 12);
+    set(restored, "chorusMix", .5f);
+    set(restored, "stereoWidth", 2);
     set(restored, "deEssHz", 9000);
     set(restored, "deEssThresholdDb", -50);
     set(restored, "deEssReductionDb", 12);
@@ -164,19 +174,47 @@ void stateTests() {
     require(raw(restored, "deEssHz") == 6000 && raw(restored, "deEssThresholdDb") == -24 &&
                 raw(restored, "deEssReductionDb") == 0,
             "V2 state did not reset active de-esser");
+    require(raw(restored, "chorusMix") == 0 && raw(restored, "stereoWidth") == 1 &&
+                raw(restored, "chorusDepthMs") == 6 &&
+                std::abs(raw(restored, "chorusRateHz") - .8f) < .001f,
+            "V2 state resets modulation");
     auto v3 = source.parameters.copyState();
     v3.setProperty("schemaVersion", 3, nullptr);
-    for (const auto *id : {"deEssHz", "deEssThresholdDb", "deEssReductionDb"})
+    for (const auto *id : {"deEssHz", "deEssThresholdDb", "deEssReductionDb", "chorusRateHz",
+                           "chorusDepthMs", "chorusMix", "stereoWidth"})
         v3.removeChild(v3.getChildWithProperty("id", id), nullptr);
     set(restored, "deEssHz", 9000);
     set(restored, "deEssThresholdDb", -50);
     set(restored, "deEssReductionDb", 12);
+    set(restored, "chorusRateHz", 4);
+    set(restored, "chorusDepthMs", 12);
+    set(restored, "chorusMix", .5f);
+    set(restored, "stereoWidth", 2);
     juce::MemoryBlock v3Data;
     juce::AudioProcessor::copyXmlToBinary(*v3.createXml(), v3Data);
     restored.setStateInformation(v3Data.getData(), static_cast<int>(v3Data.getSize()));
     require(raw(restored, "deEssReductionDb") == 0 && raw(restored, "deEssHz") == 6000 &&
                 raw(restored, "deEssThresholdDb") == -24 && raw(restored, "gateRatio") == 3,
             "V3 state preserves gate and disables de-esser");
+    require(raw(restored, "chorusMix") == 0 && raw(restored, "stereoWidth") == 1 &&
+                raw(restored, "chorusDepthMs") == 6 &&
+                std::abs(raw(restored, "chorusRateHz") - .8f) < .001f,
+            "V3 state resets modulation");
+    auto v4 = source.parameters.copyState();
+    v4.setProperty("schemaVersion", 4, nullptr);
+    for (const auto *id : {"chorusRateHz", "chorusDepthMs", "chorusMix", "stereoWidth"})
+        v4.removeChild(v4.getChildWithProperty("id", id), nullptr);
+    set(restored, "chorusRateHz", 4);
+    set(restored, "chorusDepthMs", 12);
+    set(restored, "chorusMix", .5f);
+    set(restored, "stereoWidth", 2);
+    juce::MemoryBlock v4Data;
+    juce::AudioProcessor::copyXmlToBinary(*v4.createXml(), v4Data);
+    restored.setStateInformation(v4Data.getData(), static_cast<int>(v4Data.getSize()));
+    require(std::abs(raw(restored, "chorusRateHz") - .8f) < .001f &&
+                raw(restored, "chorusDepthMs") == 6 && raw(restored, "chorusMix") == 0 &&
+                raw(restored, "stereoWidth") == 1 && raw(restored, "deEssReductionDb") == 9,
+            "V4 state retains de-esser and resets modulation defaults");
     set(restored, "gateRatio", 1);
     for (const char *badGate : {"NaN", "21", "0"}) {
         auto bad = source.parameters.copyState();
@@ -216,7 +254,7 @@ void stateTests() {
                 "Invalid ID set partially changed state");
     }
     auto values = source.snapshotPresetValues();
-    require(values.size() == 26 && values.count("bypass") == 0,
+    require(values.size() == 30 && values.count("bypass") == 0,
             "Preset must contain only sound parameters");
     values["inputDb"] = 10.0f;
     values["delayMix"] = 0.2f;
@@ -279,6 +317,38 @@ void deEsserAudioTests() {
     require(buffer.getSample(0, 10) == before, "De-esser changed bypassed audio");
     p.releaseResources();
 }
+void modulationAudioTests() {
+    DarkVoiceProcessor p;
+    layout(p, 2);
+    set(p, "stereoWidth", 0);
+    p.prepareToPlay(48000, 512);
+    juce::AudioBuffer<float> buffer(2, 512);
+    juce::MidiBuffer midi;
+    sine(buffer, 48000);
+    for (int i = 0; i < 512; ++i)
+        buffer.setSample(1, i, -buffer.getSample(0, i));
+    p.processBlock(buffer, midi);
+    require(buffer.getMagnitude(0, 0, 512) == 0 && buffer.getMagnitude(1, 0, 512) == 0,
+            "Width controls did not cancel antiphase host side signal");
+    set(p, "bypass", 1);
+    sine(buffer, 48000);
+    const float before = buffer.getSample(0, 10);
+    p.processBlock(buffer, midi);
+    require(buffer.getSample(0, 10) == before, "Width changed bypassed host audio");
+    p.releaseResources();
+    DarkVoiceProcessor chorus;
+    layout(chorus, 1);
+    set(chorus, "chorusMix", .5f);
+    set(chorus, "chorusDepthMs", 0);
+    chorus.prepareToPlay(48000, 512);
+    juce::AudioBuffer<float> impulse(1, 2048);
+    impulse.clear();
+    impulse.setSample(0, 0, 1);
+    chorus.processBlock(impulse, midi);
+    require(impulse.getSample(0, 720) > .4f, "Chorus host parameter did not create delayed audio");
+    chorus.releaseResources();
+}
+
 void renderingTests() {
     juce::MidiBuffer midi;
     for (double rate : {44100.0, 48000.0, 88200.0, 96000.0}) {
@@ -338,6 +408,7 @@ int main() {
         renderingTests();
         gateAudioTests();
         deEsserAudioTests();
+        modulationAudioTests();
         std::cout
             << "PASS plugin state, automation/render, rates/layouts, lifecycle and identity\n";
         return 0;

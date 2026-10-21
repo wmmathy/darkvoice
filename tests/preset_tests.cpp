@@ -35,7 +35,7 @@ struct TemporaryDirectory {
         file.deleteRecursively();
     }
 };
-juce::String jsonFor(const darkvoice::PresetValues &values, int version = 4,
+juce::String jsonFor(const darkvoice::PresetValues &values, int version = 5,
                      const juce::String &name = "Test preset") {
     juce::DynamicObject::Ptr parameters = new juce::DynamicObject();
     for (const auto &[id, value] : values)
@@ -58,7 +58,7 @@ void basicPersistence() {
     for (const auto &preset : bank.presets()) {
         require(preset.factory && !preset.favorite, "Factory flags");
         good(darkvoice::PresetBank::validate(preset.values), "Factory values invalid");
-        require(preset.values.size() == 26 && !preset.values.contains("bypass"),
+        require(preset.values.size() == 30 && !preset.values.contains("bypass"),
                 "Preset excludes bypass");
         factorySnapshots.insert(jsonFor(preset.values).toStdString());
     }
@@ -74,6 +74,8 @@ void basicPersistence() {
     settings["gateThresholdDb"] = -45;
     settings["gateReleaseMs"] = 200;
     settings["deEssReductionDb"] = 6;
+    settings["chorusMix"] = .3f;
+    settings["stereoWidth"] = 1.5f;
     juce::String id;
     good(bank.saveAs("  My voice  ", settings, id), "Save user preset");
     require(id.length() == 32 && bank.find(id) != nullptr, "UUID save identifier");
@@ -150,9 +152,34 @@ void malformedAndMigration() {
                              juce::String::repeatedString("a", 81), juce::String("bad\nname")})
         require(bank.saveAs(name, settings, id).failed(), "Reject invalid name");
     const auto external = temp.file.getChildFile("external.json");
+    {
+        darkvoice::PresetBank boundary(temp.file.getChildFile("boundary"));
+        auto decimal = juce::JSON::parse(jsonFor(settings));
+        auto *numbers = decimal.getDynamicObject()->getProperty("parameters").getDynamicObject();
+        numbers->setProperty("chorusRateHz", 0.1);
+        numbers->setProperty("eqMidQ", 0.2);
+        write(external, juce::JSON::toString(decimal, true));
+        good(boundary.importFile(external, id),
+             "Decimal minima accepted in float parameter domain");
+        require(boundary.find(id)->values.at("chorusRateHz") == .1f &&
+                    boundary.find(id)->values.at("eqMidQ") == .2f,
+                "Decimal minima preserved");
+        for (double bad : {.099, 5.01, std::numeric_limits<double>::max(),
+                           -std::numeric_limits<double>::max()}) {
+            numbers->setProperty("chorusRateHz", bad);
+            write(external, juce::JSON::toString(decimal, true));
+            require(boundary.importFile(external, id).failed(),
+                    "Reject below/above/overflow float boundaries");
+        }
+        numbers->setProperty("chorusRateHz", .1);
+        numbers->setProperty("eqMidQ", .199);
+        write(external, juce::JSON::toString(decimal, true));
+        require(boundary.importFile(external, id).failed(),
+                "Reject meaningfully below existing Q minimum");
+    }
     const auto initial = bank.presets().size();
     for (const auto &data :
-         {juce::String("{}"), juce::String("[]"), juce::String("{broken"), jsonFor(settings, 5),
+         {juce::String("{}"), juce::String("[]"), juce::String("{broken"), jsonFor(settings, 6),
           jsonFor(settings).replace("\"inputDb\": 0.0", "\"inputDb\": true"),
           juce::String("{\"schemaVersion\":2,\"schemaVersion\":1}")}) {
         write(external, data);
@@ -163,7 +190,7 @@ void malformedAndMigration() {
     const auto cleanJson = jsonFor(settings);
     for (const auto &hostile :
          {cleanJson + " trailing-garbage", cleanJson + "{}",
-          cleanJson.replace("\"schemaVersion\": 4", "\"schemaVersion\": 4294967300"),
+          cleanJson.replace("\"schemaVersion\": 5", "\"schemaVersion\": 4294967301"),
           juce::String("{\"nested\":") + juce::String::repeatedString("[", 10000) + "0" +
               juce::String::repeatedString("]", 10000) + "}"}) {
         write(external, hostile);
@@ -194,6 +221,8 @@ void malformedAndMigration() {
     v2.erase("deEssHz");
     v2.erase("deEssThresholdDb");
     v2.erase("deEssReductionDb");
+    for (const auto *id : {"chorusRateHz", "chorusDepthMs", "chorusMix", "stereoWidth"})
+        v2.erase(id);
     v2["eqMidGainDb"] = 4.0f;
     write(external, jsonFor(v2, 2, "Version Two"));
     good(bank.importFile(external, id), "Migrate v2 preset");
@@ -206,6 +235,8 @@ void malformedAndMigration() {
     v3.erase("deEssHz");
     v3.erase("deEssThresholdDb");
     v3.erase("deEssReductionDb");
+    for (const auto *id : {"chorusRateHz", "chorusDepthMs", "chorusMix", "stereoWidth"})
+        v3.erase(id);
     v3["gateRatio"] = 4;
     write(external, jsonFor(v3, 3, "Version Three"));
     good(bank.importFile(external, id), "Migrate v3 preset");
@@ -214,6 +245,18 @@ void malformedAndMigration() {
                 bank.find(id)->values.at("deEssThresholdDb") == -24 &&
                 bank.find(id)->values.at("gateRatio") == 4,
             "V3 preset retains gate and disables de-esser");
+    auto v4 = darkvoice::PresetBank::defaults();
+    for (const auto *key : {"chorusRateHz", "chorusDepthMs", "chorusMix", "stereoWidth"})
+        v4.erase(key);
+    v4["deEssReductionDb"] = 9;
+    write(external, jsonFor(v4, 4, "Version Four"));
+    good(bank.importFile(external, id), "Migrate v4 preset");
+    require(bank.find(id)->values.at("chorusMix") == 0 &&
+                bank.find(id)->values.at("stereoWidth") == 1 &&
+                bank.find(id)->values.at("chorusRateHz") == .8f &&
+                bank.find(id)->values.at("chorusDepthMs") == 6 &&
+                bank.find(id)->values.at("deEssReductionDb") == 9,
+            "V4 preset retains de-esser and neutral modulation");
     darkvoice::PresetValues legacy;
     for (std::size_t i = 0; i < darkvoice::legacyParameterCount; ++i) {
         const auto &spec = darkvoice::parameterSchema[i];
@@ -223,13 +266,13 @@ void malformedAndMigration() {
     legacy["drive"] = .3f;
     write(external, jsonFor(legacy, 1, "Legacy"));
     good(bank.importFile(external, id), "Migrate legacy preset");
-    require(bank.find(id)->values.size() == 26 && bank.find(id)->values.at("delayMix") == 0 &&
+    require(bank.find(id)->values.size() == 30 && bank.find(id)->values.at("delayMix") == 0 &&
                 bank.find(id)->values.at("drive") == .3f,
             "Migration preserves old controls and new defaults");
     const auto broken = temp.file.getChildFile("bank").getChildFile("broken.json");
     write(broken, "broken");
     require(bank.refresh().failed(), "Refresh reports malformed local file");
-    require(bank.find(id) != nullptr && bank.presets().size() == 9,
+    require(bank.find(id) != nullptr && bank.presets().size() == 10,
             "Refresh retains valid files and factories");
     require(broken.loadFileAsString() == "broken", "Malformed user file preserved");
     const auto favorites = temp.file.getChildFile("bank").getChildFile(".favorites.json");

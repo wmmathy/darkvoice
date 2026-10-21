@@ -73,7 +73,7 @@ void snapshotsAndSmoothing() {
     p.mix = 0;
     p.outputDb = 12;
     check(engine.setParameters(p) && reference.setParameters(p), "valid parameter snapshot");
-    const std::array<float darkvoice::EngineParameters::*, 26> fields{
+    const std::array<float darkvoice::EngineParameters::*, 30> fields{
         &darkvoice::EngineParameters::inputDb,
         &darkvoice::EngineParameters::outputDb,
         &darkvoice::EngineParameters::highPassHz,
@@ -99,7 +99,11 @@ void snapshotsAndSmoothing() {
         &darkvoice::EngineParameters::gateReleaseMs,
         &darkvoice::EngineParameters::deEssHz,
         &darkvoice::EngineParameters::deEssThresholdDb,
-        &darkvoice::EngineParameters::deEssReductionDb};
+        &darkvoice::EngineParameters::deEssReductionDb,
+        &darkvoice::EngineParameters::chorusRateHz,
+        &darkvoice::EngineParameters::chorusDepthMs,
+        &darkvoice::EngineParameters::chorusMix,
+        &darkvoice::EngineParameters::stereoWidth};
     for (auto field : fields) {
         auto invalid = p;
         invalid.inputDb = 24;
@@ -232,6 +236,42 @@ void integratedDeEsser(double rate) {
     auto input = sine(rate, 8000, .1), original = input;
     check(run(fx, input, 257) && run(reference, original, 257), "de-esser engine render");
     check(rms(input) < rms(original) * .65, "de-esser changes actual engine audio");
+}
+
+void integratedModulation(double rate) {
+    darkvoice::AudioEngine stereo;
+    check(stereo.prepare(rate, 1024, 2), "modulation stereo engine prepare");
+    darkvoice::EngineParameters p;
+    p.stereoWidth = 0;
+    check(stereo.setParameters(p), "width engine controls");
+    stereo.reset();
+    std::array<float, 512> left{}, right{};
+    for (std::size_t i = 0; i < left.size(); ++i) {
+        left[i] = static_cast<float>(.1 * std::sin(i * .17));
+        right[i] = -.5f * left[i];
+    }
+    std::array<float *, 2> ptr{left.data(), right.data()};
+    check(stereo.process(ptr, 512) && left == right,
+          "width controls fold actual wet engine to mono");
+    p.mix = 0;
+    check(stereo.setParameters(p), "global dry setup");
+    stereo.reset();
+    left.fill(.1f);
+    right.fill(-.2f);
+    check(stereo.process(ptr, 512) && left[100] == .1f && right[100] == -.2f,
+          "global dry preserves original stereo before width");
+    darkvoice::AudioEngine chorus;
+    check(chorus.prepare(rate, 1024, 1), "chorus engine prepare");
+    p = {};
+    p.chorusMix = .5f;
+    p.chorusDepthMs = 0;
+    check(chorus.setParameters(p), "chorus engine controls");
+    chorus.reset();
+    std::vector<float> impulse(static_cast<std::size_t>(rate * .04));
+    impulse[0] = 1;
+    check(run(chorus, impulse, 257), "chorus engine render");
+    const auto delayed = static_cast<std::size_t>(rate * .015);
+    check(impulse[delayed] > .2f, "chorus controls generate actual delayed engine signal");
 }
 
 void isolationBypassAndSafety() {
@@ -449,6 +489,7 @@ int main() {
         integratedEffects(rate);
         integratedGate(rate);
         integratedDeEsser(rate);
+        integratedModulation(rate);
     }
     isolationBypassAndSafety();
     invalidBlocksAndAllocationFailure();

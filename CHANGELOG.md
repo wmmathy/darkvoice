@@ -1,5 +1,14 @@
 # Changelog
 
+## Chorus/stereo-width continuation
+
+- Add interpolated stereo chorus (rate/depth/mix) and mid/side width, neutral by
+  default, with a sixth tab and 30 working sound controls.
+- Append AU hint-5 IDs and migrate state/preset versions1–4 to v5.
+- Record pinned MIT backend audit and latency/near-silence gates for future
+  pitch/formant work. No backend dependency or pitch controls are integrated.
+- Continue local-only validation and [skip ci] while Actions is paused.
+
 ## Split-band de-esser continuation
 
 - Add linked high-band de-essing with frequency, threshold and maximum-reduction
