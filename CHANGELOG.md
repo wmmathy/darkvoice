@@ -1,5 +1,14 @@
 # Changelog
 
+## Linked gate/expander continuation
+
+- Add a stereo-linked downward expander with threshold, ratio and release controls,
+  a separate editor tab and neutral defaults. Preserve delay/reverb tails.
+- Append three stable AU automation IDs; migrate v1/v2 project states and presets
+  into v3 with the gate disabled. No new dependencies.
+- Add numerical gate, stereo, automation, release, lifecycle, real-time allocation,
+  engine/host audio and legacy migration coverage.
+
 ## Unreleased
 
 - Establish architecture and agent ownership contracts for the initial foundation.

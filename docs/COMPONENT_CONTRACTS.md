@@ -177,3 +177,34 @@ correction, target-note coaching or reference synchronization; window/worker
 latency does not contribute to the audio path's compensation. prepare/release must
 not race processBlock; usual JUCE host lifecycle serialization is required. No
 profile recording, file/network/model access or stored voice audio is added.
+
+# Dynamics contract v3 — linked downward expander
+
+Established before implementation. NoiseGate.hpp exposes NoiseGateParameters
+{thresholdDb=-50 [-80,0], ratio=1 [1,20], releaseMs=120 [10,1000]}, prepare,
+setParameters, reset and process with the same supported rates/layouts/capacity
+and atomic invalid-block rejection as ToneEffects. It has no storage allocation,
+locks, I/O or algorithmic latency. One audio-thread owner; prepare off callback.
+
+The linked detector takes the maximum absolute sample across channels, with
+instant attack and 20ms peak release. Below threshold, gain dB is
+(ratio-1)*(detector dB-threshold dB), bounded to [-80,0]. Gain opens over 1ms
+and closes using releaseMs; controls smooth over 10ms. Ratio 1 is disabled;
+fresh/default state preserves normal finite samples exactly. Active processing
+sanitizes nonfinite input and flushes tiny history. No lookahead, hysteresis or
+hard-mute promise; it can attenuate initial transients after silence. Linked gain
+preserves stereo balance, but does not link the earlier starter compressor.
+
+Engine order: input gain/HP/saturation/compressor -> linked expander -> EQ/delay/
+reverb -> global dry/wet/output. Detector therefore sees the compressed wet signal;
+reverb/delay tails remain outside the gate. Global bypass freezes gate history.
+
+Append gateThresholdDb, gateRatio, gateReleaseMs to the existing 21 parameters.
+Old eight AU hints remain 1, next thirteen remain 2, new three use hint 3.
+Project state v3 has 24 IDs; v1 (8 IDs) and v2 (21 IDs) migrate with neutral gate
+values. Preset JSON v3 has 23 non-bypass fields; v1 (7) and v2 (20) migrate to
+neutral gate defaults, retaining strict count/type/range/duplicate validation.
+A separate gate/expander tab exposes all three real automatable controls.
+Acceptance: all rates/layouts, identity/attenuation/opening/release/stereo-link,
+partition invariance, invalid snapshots/blocks, allocation probe, finite behavior,
+engine/preset/state integration and GUI attachment tests. No new dependencies.

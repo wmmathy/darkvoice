@@ -11,7 +11,7 @@ target_compile_features(darkvoice_core INTERFACE cxx_std_20)
 target_include_directories(darkvoice_core INTERFACE
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>")
 
-add_library(darkvoice_engine STATIC src/AudioEngine.cpp src/ToneEffects.cpp src/PitchDetector.cpp)
+add_library(darkvoice_engine STATIC src/AudioEngine.cpp src/ToneEffects.cpp src/PitchDetector.cpp src/NoiseGate.cpp)
 add_library(DarkVoice::Engine ALIAS darkvoice_engine)
 target_link_libraries(darkvoice_engine PUBLIC DarkVoice::Core)
 set_target_properties(darkvoice_engine PROPERTIES POSITION_INDEPENDENT_CODE ON CXX_EXTENSIONS OFF)
@@ -63,6 +63,13 @@ if(BUILD_TESTING)
     darkvoice_strict_warnings(darkvoice_effects_tests)
     add_test(NAME effects.regression COMMAND darkvoice_effects_tests)
     set_tests_properties(effects.regression PROPERTIES TIMEOUT 60)
+
+    add_executable(darkvoice_gate_tests tests/gate_tests.cpp)
+    target_link_libraries(darkvoice_gate_tests PRIVATE DarkVoice::Engine)
+    set_target_properties(darkvoice_gate_tests PROPERTIES CXX_EXTENSIONS OFF)
+    darkvoice_strict_warnings(darkvoice_gate_tests)
+    add_test(NAME dynamics.gate COMMAND darkvoice_gate_tests)
+    set_tests_properties(dynamics.gate PROPERTIES TIMEOUT 60)
 
     add_executable(darkvoice_pitch_tests tests/pitch_tests.cpp)
     target_link_libraries(darkvoice_pitch_tests PRIVATE DarkVoice::Engine)

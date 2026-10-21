@@ -54,6 +54,9 @@ void stateTests() {
     set(source, "eqMidGainDb", 3.5f);
     set(source, "delayMix", 0.2f);
     set(source, "reverbMix", 0.1f);
+    set(source, "gateThresholdDb", -45.0f);
+    set(source, "gateRatio", 3.0f);
+    set(source, "gateReleaseMs", 250.0f);
     juce::MemoryBlock state;
     source.getStateInformation(state);
     require(state.getSize() > 0, "State serialization empty");
@@ -65,11 +68,12 @@ void stateTests() {
     require(raw(restored, "bypass") == 1.0f, "Bypass state not restored");
     for (std::size_t i = 0; i < darkvoice::parameterSchema.size(); ++i) {
         const auto &spec = darkvoice::parameterSchema[i];
-        require(source.parameters.getParameter(spec.id)->getVersionHint() ==
-                    (i < darkvoice::legacyParameterCount ? 1 : 2),
+        require(source.parameters.getParameter(spec.id)->getVersionHint() == (i < 8    ? 1
+                                                                              : i < 21 ? 2
+                                                                                       : 3),
                 "AU version hint changed");
         require(std::abs(raw(restored, spec.id) - raw(source, spec.id)) < 0.001f,
-                "Full v2 state roundtrip failed");
+                "Full v3 state roundtrip failed");
     }
     require(source.getTailLengthSeconds() == 40.0, "Spatial tail not reported");
 
@@ -77,7 +81,7 @@ void stateTests() {
     restored.setStateInformation(garbage, sizeof(garbage));
     require(raw(restored, "inputDb") == raw(source, "inputDb"),
             "Malformed state changed parameters");
-    for (const char *version : {"3", "1junk"}) {
+    for (const char *version : {"4", "1junk"}) {
         auto xml = source.parameters.copyState().createXml();
         xml->setAttribute("schemaVersion", version);
         juce::MemoryBlock invalid;
@@ -89,7 +93,7 @@ void stateTests() {
     }
     for (const char *value : {"NaN", "1.2.3", "100", "", ".", "--1", "1 2"}) {
         auto tree = source.parameters.copyState();
-        tree.setProperty("schemaVersion", 2, nullptr);
+        tree.setProperty("schemaVersion", darkvoice::currentSchemaVersion, nullptr);
         tree.getChildWithProperty("id", "inputDb").setProperty("value", value, nullptr);
         juce::MemoryBlock invalid;
         juce::AudioProcessor::copyXmlToBinary(*tree.createXml(), invalid);
@@ -98,7 +102,7 @@ void stateTests() {
                 "Invalid parameter state accepted");
     }
     auto scientificTree = source.parameters.copyState();
-    scientificTree.setProperty("schemaVersion", 2, nullptr);
+    scientificTree.setProperty("schemaVersion", darkvoice::currentSchemaVersion, nullptr);
     scientificTree.getChildWithProperty("id", "inputDb").setProperty("value", "1e1", nullptr);
     juce::MemoryBlock scientific;
     juce::AudioProcessor::copyXmlToBinary(*scientificTree.createXml(), scientific);
@@ -138,9 +142,29 @@ void stateTests() {
         require(std::abs(raw(restored, spec.id) - spec.defaultValue) < 0.001f,
                 "Legacy effect defaults not restored");
     }
+    auto v2 = source.parameters.copyState();
+    v2.setProperty("schemaVersion", 2, nullptr);
+    for (const auto *id : {"gateThresholdDb", "gateRatio", "gateReleaseMs"})
+        v2.removeChild(v2.getChildWithProperty("id", id), nullptr);
+    set(restored, "gateRatio", 10);
+    juce::MemoryBlock v2Data;
+    juce::AudioProcessor::copyXmlToBinary(*v2.createXml(), v2Data);
+    restored.setStateInformation(v2Data.getData(), static_cast<int>(v2Data.getSize()));
+    require(raw(restored, "gateRatio") == 1 && raw(restored, "gateThresholdDb") == -50 &&
+                std::abs(raw(restored, "eqMidGainDb") - raw(source, "eqMidGainDb")) < .001f,
+            "V2 state preserves effects and disables gate");
+    for (const char *badGate : {"NaN", "21", "0"}) {
+        auto bad = source.parameters.copyState();
+        bad.setProperty("schemaVersion", 3, nullptr);
+        bad.getChildWithProperty("id", "gateRatio").setProperty("value", badGate, nullptr);
+        juce::MemoryBlock data;
+        juce::AudioProcessor::copyXmlToBinary(*bad.createXml(), data);
+        restored.setStateInformation(data.getData(), static_cast<int>(data.getSize()));
+        require(raw(restored, "gateRatio") == 1, "Invalid gate state changed live state");
+    }
     for (int fault = 0; fault < 3; ++fault) {
         auto invalidTree = source.parameters.copyState();
-        invalidTree.setProperty("schemaVersion", 2, nullptr);
+        invalidTree.setProperty("schemaVersion", darkvoice::currentSchemaVersion, nullptr);
         if (fault == 0)
             invalidTree.removeChild(0, nullptr);
         if (fault == 1)
@@ -155,7 +179,7 @@ void stateTests() {
                 "Invalid ID set partially changed state");
     }
     auto values = source.snapshotPresetValues();
-    require(values.size() == 20 && values.count("bypass") == 0,
+    require(values.size() == 23 && values.count("bypass") == 0,
             "Preset must contain only sound parameters");
     values["inputDb"] = 10.0f;
     values["delayMix"] = 0.2f;
@@ -169,6 +193,27 @@ void stateTests() {
     require(!restored.applyPreset(values), "Invalid preset applied");
     require(std::abs(raw(restored, "inputDb") - 10.0f) < 0.01f,
             "Invalid preset partially changed state");
+}
+void gateAudioTests() {
+    DarkVoiceProcessor p;
+    layout(p, 2);
+    set(p, "gateRatio", 4);
+    set(p, "gateThresholdDb", -10);
+    set(p, "gateReleaseMs", 10);
+    p.prepareToPlay(48000, 512);
+    juce::AudioBuffer<float> buffer(2, 512);
+    juce::MidiBuffer midi;
+    for (int i = 0; i < 100; ++i) {
+        sine(buffer, 48000, i * 512);
+        p.processBlock(buffer, midi);
+    }
+    require(buffer.getMagnitude(0, 512) < .004f, "Gate automation did not attenuate host audio");
+    set(p, "bypass", 1);
+    sine(buffer, 48000);
+    const float before = buffer.getSample(0, 10);
+    p.processBlock(buffer, midi);
+    require(buffer.getSample(0, 10) == before, "Gate changed bypassed host audio");
+    p.releaseResources();
 }
 void renderingTests() {
     juce::MidiBuffer midi;
@@ -227,6 +272,7 @@ int main() {
     try {
         stateTests();
         renderingTests();
+        gateAudioTests();
         std::cout
             << "PASS plugin state, automation/render, rates/layouts, lifecycle and identity\n";
         return 0;
