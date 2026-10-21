@@ -35,7 +35,7 @@ struct TemporaryDirectory {
         file.deleteRecursively();
     }
 };
-juce::String jsonFor(const darkvoice::PresetValues &values, int version = 3,
+juce::String jsonFor(const darkvoice::PresetValues &values, int version = 4,
                      const juce::String &name = "Test preset") {
     juce::DynamicObject::Ptr parameters = new juce::DynamicObject();
     for (const auto &[id, value] : values)
@@ -58,7 +58,7 @@ void basicPersistence() {
     for (const auto &preset : bank.presets()) {
         require(preset.factory && !preset.favorite, "Factory flags");
         good(darkvoice::PresetBank::validate(preset.values), "Factory values invalid");
-        require(preset.values.size() == 23 && !preset.values.contains("bypass"),
+        require(preset.values.size() == 26 && !preset.values.contains("bypass"),
                 "Preset excludes bypass");
         factorySnapshots.insert(jsonFor(preset.values).toStdString());
     }
@@ -73,6 +73,7 @@ void basicPersistence() {
     settings["gateRatio"] = 4;
     settings["gateThresholdDb"] = -45;
     settings["gateReleaseMs"] = 200;
+    settings["deEssReductionDb"] = 6;
     juce::String id;
     good(bank.saveAs("  My voice  ", settings, id), "Save user preset");
     require(id.length() == 32 && bank.find(id) != nullptr, "UUID save identifier");
@@ -151,7 +152,7 @@ void malformedAndMigration() {
     const auto external = temp.file.getChildFile("external.json");
     const auto initial = bank.presets().size();
     for (const auto &data :
-         {juce::String("{}"), juce::String("[]"), juce::String("{broken"), jsonFor(settings, 4),
+         {juce::String("{}"), juce::String("[]"), juce::String("{broken"), jsonFor(settings, 5),
           jsonFor(settings).replace("\"inputDb\": 0.0", "\"inputDb\": true"),
           juce::String("{\"schemaVersion\":2,\"schemaVersion\":1}")}) {
         write(external, data);
@@ -162,7 +163,7 @@ void malformedAndMigration() {
     const auto cleanJson = jsonFor(settings);
     for (const auto &hostile :
          {cleanJson + " trailing-garbage", cleanJson + "{}",
-          cleanJson.replace("\"schemaVersion\": 3", "\"schemaVersion\": 4294967299"),
+          cleanJson.replace("\"schemaVersion\": 4", "\"schemaVersion\": 4294967300"),
           juce::String("{\"nested\":") + juce::String::repeatedString("[", 10000) + "0" +
               juce::String::repeatedString("]", 10000) + "}"}) {
         write(external, hostile);
@@ -190,6 +191,9 @@ void malformedAndMigration() {
     v2.erase("gateThresholdDb");
     v2.erase("gateRatio");
     v2.erase("gateReleaseMs");
+    v2.erase("deEssHz");
+    v2.erase("deEssThresholdDb");
+    v2.erase("deEssReductionDb");
     v2["eqMidGainDb"] = 4.0f;
     write(external, jsonFor(v2, 2, "Version Two"));
     good(bank.importFile(external, id), "Migrate v2 preset");
@@ -198,6 +202,18 @@ void malformedAndMigration() {
                 bank.find(id)->values.at("eqMidGainDb") == 4,
             "V2 preset preserves effects and disables gate");
 
+    auto v3 = darkvoice::PresetBank::defaults();
+    v3.erase("deEssHz");
+    v3.erase("deEssThresholdDb");
+    v3.erase("deEssReductionDb");
+    v3["gateRatio"] = 4;
+    write(external, jsonFor(v3, 3, "Version Three"));
+    good(bank.importFile(external, id), "Migrate v3 preset");
+    require(bank.find(id)->values.at("deEssReductionDb") == 0 &&
+                bank.find(id)->values.at("deEssHz") == 6000 &&
+                bank.find(id)->values.at("deEssThresholdDb") == -24 &&
+                bank.find(id)->values.at("gateRatio") == 4,
+            "V3 preset retains gate and disables de-esser");
     darkvoice::PresetValues legacy;
     for (std::size_t i = 0; i < darkvoice::legacyParameterCount; ++i) {
         const auto &spec = darkvoice::parameterSchema[i];
@@ -207,13 +223,13 @@ void malformedAndMigration() {
     legacy["drive"] = .3f;
     write(external, jsonFor(legacy, 1, "Legacy"));
     good(bank.importFile(external, id), "Migrate legacy preset");
-    require(bank.find(id)->values.size() == 23 && bank.find(id)->values.at("delayMix") == 0 &&
+    require(bank.find(id)->values.size() == 26 && bank.find(id)->values.at("delayMix") == 0 &&
                 bank.find(id)->values.at("drive") == .3f,
             "Migration preserves old controls and new defaults");
     const auto broken = temp.file.getChildFile("bank").getChildFile("broken.json");
     write(broken, "broken");
     require(bank.refresh().failed(), "Refresh reports malformed local file");
-    require(bank.find(id) != nullptr && bank.presets().size() == 8,
+    require(bank.find(id) != nullptr && bank.presets().size() == 9,
             "Refresh retains valid files and factories");
     require(broken.loadFileAsString() == "broken", "Malformed user file preserved");
     const auto favorites = temp.file.getChildFile("bank").getChildFile(".favorites.json");

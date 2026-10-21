@@ -185,3 +185,35 @@ and both full product builds/tests. Linux editor smoke and unsigned Vocal/Master
 AU validations pass. Source-quality run 39661596167 also passes. Documentation
 successors rerun CI; these results identify the tested implementation explicitly.
 No DAW/microphone/listening, signing, notarization or public release was performed.
+
+
+## Split-band de-esser — local-only validation (issue #14)
+
+User paused GitHub Actions because credits are exhausted. No workflow was
+dispatched/rerun. New commits use [skip ci]; native macOS/AU validation is unrun
+for this increment. Earlier passing native evidence does not validate these changes.
+
+- Linux Debug Vocal/Master VST3 and Studio standalone build. Product suites pass
+  13/13, Release core 10/10, ASan/UBSan core 10/10.
+- dynamics.deesser passes 209 checks across four rates and mono/stereo: neutral
+  identity (including tiny normals), measured high-band reduction, low-band and
+  mixed-tone preservation, stereo linking, threshold/frequency/depth effects,
+  burst recovery, disable automation, buffer partitions, invalid blocks/snapshots
+  preserving warmed history, hostile samples and ordinary allocation probes.
+- Engine/plugin audio tests exercise actual high-band attenuation and bypass.
+  State/presets v4 roundtrip, strict v1/v2/v3 migration and invalid-value rejection
+  pass. Old AU hints remain stable; new three IDs use hint 4.
+- Xvfb smoke verifies all 26 attachments, actual factory audio, bypass/dry-pitch
+  feedback and the fifth de-esser tab; standalone startup and writable default
+  preset storage pass. Snapshot /tmp/darkvoice-deesser-ui.png in this instance.
+- Formatter19.1.7, exhaustive cppcheck2.17.1 on four DSP/schema files, limited
+  credential/dependency scans and planted-fixture self-test pass.
+- Dedicated read-only DSP QA found a tiny-normal neutral mismatch; lead corrected
+  input/output handling and added explicit normal/subnormal regressions. Recheck
+  found no blocker and requested stronger active-state migration fixtures; lead
+  added all-three-field v2/v3 reset checks. Dedicated architecture agent produced
+  PITCH_FORMANT_PLAN.md; no new backend or pitch/formant feature was implemented.
+
+The one-pole split is not linear-phase or a classifier for sibilance. Maximum
+reduction describes high-band gain, not the whole output. No new dependency,
+physical-device/DAW/listening qualification, signing or public release was added.

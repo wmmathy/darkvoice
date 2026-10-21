@@ -1,5 +1,14 @@
 # Changelog
 
+## Split-band de-esser continuation
+
+- Add linked high-band de-essing with frequency, threshold and maximum-reduction
+  controls and a fifth editor tab. Zero reduction is neutral.
+- Append stable AU hint-4 IDs and migrate state/preset versions 1–3 to v4.
+- Keep Actions paused per user instruction; commits use [skip ci], validation local.
+- Record independent DSP review and a pitch/formant architecture handoff; no new
+  dependency or pitch/formant feature is represented as implemented.
+
 ## Linked gate/expander continuation
 
 - Add a stereo-linked downward expander with threshold, ratio and release controls,

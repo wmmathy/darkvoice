@@ -73,7 +73,7 @@ void snapshotsAndSmoothing() {
     p.mix = 0;
     p.outputDb = 12;
     check(engine.setParameters(p) && reference.setParameters(p), "valid parameter snapshot");
-    const std::array<float darkvoice::EngineParameters::*, 23> fields{
+    const std::array<float darkvoice::EngineParameters::*, 26> fields{
         &darkvoice::EngineParameters::inputDb,
         &darkvoice::EngineParameters::outputDb,
         &darkvoice::EngineParameters::highPassHz,
@@ -96,7 +96,10 @@ void snapshotsAndSmoothing() {
         &darkvoice::EngineParameters::reverbMix,
         &darkvoice::EngineParameters::gateThresholdDb,
         &darkvoice::EngineParameters::gateRatio,
-        &darkvoice::EngineParameters::gateReleaseMs};
+        &darkvoice::EngineParameters::gateReleaseMs,
+        &darkvoice::EngineParameters::deEssHz,
+        &darkvoice::EngineParameters::deEssThresholdDb,
+        &darkvoice::EngineParameters::deEssReductionDb};
     for (auto field : fields) {
         auto invalid = p;
         invalid.inputDb = 24;
@@ -215,6 +218,20 @@ void integratedGate(double rate) {
         dryEnergy += static_cast<double>(reference[i]) * reference[i];
     }
     check(wetEnergy < dryEnergy * .001, "gate controls reduce actual engine signal");
+}
+
+void integratedDeEsser(double rate) {
+    darkvoice::AudioEngine fx, reference;
+    check(fx.prepare(rate, 1024, 1) && reference.prepare(rate, 1024, 1), "de-esser engine prepare");
+    darkvoice::EngineParameters p;
+    p.deEssHz = 2000;
+    p.deEssThresholdDb = -60;
+    p.deEssReductionDb = 12;
+    check(fx.setParameters(p), "de-esser engine controls");
+    fx.reset();
+    auto input = sine(rate, 8000, .1), original = input;
+    check(run(fx, input, 257) && run(reference, original, 257), "de-esser engine render");
+    check(rms(input) < rms(original) * .65, "de-esser changes actual engine audio");
 }
 
 void isolationBypassAndSafety() {
@@ -431,6 +448,7 @@ int main() {
         signalTests(rate);
         integratedEffects(rate);
         integratedGate(rate);
+        integratedDeEsser(rate);
     }
     isolationBypassAndSafety();
     invalidBlocksAndAllocationFailure();

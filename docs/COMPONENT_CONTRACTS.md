@@ -220,7 +220,8 @@ or added sample delay. prepare resets defaults; reset settles targets/history.
 Per-channel one-pole low-pass L=(1-a)*input+a*L, a=exp(-2*pi*frequency/rate).
 High band H=input-L; linked max-absolute high-band detector uses 0.3ms attack,
 50ms release. Desired reduction = min(maxReductionDb, max(0, level-threshold)),
-smoothed with 1ms attenuation attack/50ms recovery. Output=input+(gain-1)*H.
+smoothed with 1ms attenuation attack/50ms recovery; sub-micro-dB gain settles
+to exact unity. Output=input+(gain-1)*H.
 Controls smooth 10ms and settle to exact targets. Max reduction 0 disables
 attenuation, preserving normal finite samples exactly. Nonfinite active inputs
 are sanitized and tiny history flushed. No sibilance classification, brick-wall

@@ -1,6 +1,7 @@
 #pragma once
 #include <array>
 #include <cstddef>
+#include <darkvoice/DeEsser.hpp>
 #include <darkvoice/NoiseGate.hpp>
 #include <darkvoice/ToneEffects.hpp>
 #include <span>
@@ -22,6 +23,7 @@ struct EngineParameters {
     float delayMs = 180.0f, delayFeedback = 0.25f, delayMix = 0.0f;
     float reverbSize = 0.5f, reverbDamping = 0.5f, reverbMix = 0.0f;
     float gateThresholdDb = -50.0f, gateRatio = 1.0f, gateReleaseMs = 120.0f;
+    float deEssHz = 6000.0f, deEssThresholdDb = -24.0f, deEssReductionDb = 0.0f;
 };
 struct EngineMeters {
     float inputPeak = 0.0f;
@@ -48,6 +50,7 @@ class AudioEngine {
     EngineMeters meters_{};
     ToneEffects effects_;
     NoiseGate gate_;
+    DeEsser deEsser_;
     std::array<std::vector<float>, 2> wet_;
 };
 } // namespace darkvoice
