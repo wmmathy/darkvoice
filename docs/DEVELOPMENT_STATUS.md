@@ -51,3 +51,16 @@ validation and all eight product delivery milestones remain outstanding.
 
 The attached document's execution instructions do not independently expand the
 user's authorized task or grant release publication approval.
+
+## Active application foundation assignment
+
+User authorized continued development. Shared v1 engine/parameter/host contract is
+established in COMPONENT_CONTRACTS.md and AudioEngine.hpp. Lead owns contracts,
+integration, dependency setup and docs. DSP owns src/AudioEngine.cpp and
+ tests/engine_tests.cpp. UI/host owns src/PluginProcessor.* and src/PluginEditor.*,
+ tests/plugin_tests.cpp. Integration owns CMakeLists.txt, CMakePresets.json and
+ .github/workflows/*. Each uses a distinct feature branch/worktree. Acceptance:
+functional gain/HP/saturation/compressor chain, automation/state restore, visible
+working controls, Linux standalone/VST3 build and numerical/integration tests.
+macOS AU/DAW testing remains required on suitable hosts. License route is pending
+user preference; no project license assignment or release publication authorized.
