@@ -97,7 +97,7 @@ Lead integrated the isolated agent work, corrected JSON primitive-key parsing,
 version overflow/depth/trailing-input checks, bounded file reads and exclusive
 writes, corrected legacy fixtures and completed the GUI/runtime validation.
 All completed source changes are committed/pushed to feature/effects/presets-m2.
-Local products build; 10 CTest suites pass; Release/sanitized core suites pass8/8.
+Local products build; 11 CTest suites pass; Release/sanitized core suites pass8/8.
 GUI smoke exercises all20 controls, actual factory-preset audio and default storage;
 standalone startup/screenshot pass. Scoped cppcheck and formatter pass. Native CI
 for this revision is pending; previous milestone's evidence is not reused as a
@@ -110,3 +110,15 @@ or saved voice recordings. Local11/11 suites, GUI feedback and a focused
 ThreadSanitizer harness pass. MacOS new-test failures in the initial CI revision
 are under investigation; do not merge or reuse foundation AU evidence for this
 increment. The lead continues direct integration from the preserved work packages.
+
+
+## Current integration checkpoint
+
+The macOS identity failures were isolated to zero-gain EQ cancellation rounding.
+The fix uses identity coefficients for neutral bands and preserves the strict test.
+After the fix: local products 11/11, Release core 8/8 and ASan/UBSan core 8/8
+pass; the GUI/standalone display checks pass again. Native CI at 716c599 passes all seven jobs: Linux/macOS Debug and Release
+core, Linux sanitizers, and both product jobs. Both unsigned development AU
+validations and the Linux GUI smoke pass. PR #11 is ready for review; no merge
+or completed review is claimed. Subsequent documentation commits rerun CI.
+No M2/M3 completion or actual DAW/listening qualification is claimed.

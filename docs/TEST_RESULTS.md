@@ -142,3 +142,13 @@ the exact neutral-effects identity assertion on macOS. Zero-gain RBJ bands now
 use identity coefficients directly, avoiding platform-dependent cancellation
 rounding without relaxing the test. Linux products rebuild and 11/11 CTest suites
 pass after this fix; native CI for the fix remains pending.
+
+
+Final implementation validation at 716c599: GitHub Actions run 39656700867
+passes all seven build/test jobs, including macOS Debug/Release core, Linux
+Debug/Release core and sanitizers, both native product jobs, Linux GUI smoke,
+and unsigned Vocal/Master auval. Source-quality run 39656701080 also passes.
+Local post-fix results: products 11/11, Release core 8/8, ASan/UBSan core 8/8,
+GUI/standalone display smoke pass. Documentation-only successors require their
+own CI; this evidence identifies the tested implementation commit explicitly.
+Actual GarageBand/other DAW sessions, microphone and listening remain unrun.
