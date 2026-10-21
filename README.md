@@ -15,5 +15,6 @@ ctest --test-dir build --output-on-failure
 
 See [architecture](docs/ARCHITECTURE.md), [contracts](docs/COMPONENT_CONTRACTS.md),
 [agent workflow](docs/AGENT_WORKFLOW.md), and [development status](docs/DEVELOPMENT_STATUS.md).
-The original product Master Prompt is required before product-specific implementation.
+The authoritative requirements are in [PRODUCT_SPECIFICATION.md](docs/PRODUCT_SPECIFICATION.md).
+Shared product interfaces remain pending review before independent feature work.
 No JUCE dependency, standalone application, AU or VST3 target exists yet.

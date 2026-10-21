@@ -1,17 +1,14 @@
 # Development status
 
-2026-10-21: paused awaiting the user's consolidated master specification.
+2026-10-21: consolidated specification received and persisted verbatim.
+AGENTS.md now provides common repository instructions. Architecture reconciliation
+is documented; concrete shared product interfaces are still pending. No new feature
+implementation has been started for this document intake.
 
-The user confirmed the original product specification was not supplied. Do not
-infer missing product requirements. Preserve existing work. Once supplied, the
-consolidated specification becomes the single authoritative requirements source;
-persist it verbatim in docs/PRODUCT_SPECIFICATION.md and create AGENTS.md so all
-agents share it. Review architecture and component interfaces before assigning
-independent feature implementation.
-
-Existing architecture and core contracts are provisional bootstrap proposals,
-not approved product requirements. No further feature work is authorized before
-that shared review. No product, plugin, AI capability or release is complete.
+docs/PRODUCT_SPECIFICATION.md is now the single product requirements source.
+Historical missing-specification blockers are resolved. Earlier architecture and
+core contracts remain provisional and are not approved full-product interfaces.
+No product, plugin, AI capability or release is complete.
 
 ## Preserved work
 
@@ -31,7 +28,9 @@ that shared review. No product, plugin, AI capability or release is complete.
 
 Git HTTPS reads and development branch pushes succeeded. The initially empty
 remote made the first pushed bootstrap branch its HEAD; no main base exists.
-GitHub API requests were denied by the network proxy. No issues, milestones,
+Earlier GitHub API requests were denied; the latest read succeeded and reported
+admin/maintain/push permissions. The current default is the bootstrap branch.
+No issues, milestones,
 PRs, branch protection, remote CI results or merges were created or verified.
 Do not infer API write permission from Git push success.
 
@@ -44,8 +43,11 @@ build has not been validated. No running services or background scheduler exist.
 
 ## Next action
 
-Wait for the consolidated master specification, persist it, reconcile provisional
-work with it, agree shared interfaces, then resume isolated agent packages and
-meaningful tests. GitHub integration requires usable API access and verification
-of permissions/protection. Public release publication still requires explicit
-authorization.
+Review concrete versioned shared interfaces against the saved specification before
+resuming feature packages. Preserve provisional branches until reconciliation and
+relevant tests. Establish intended main/protection policy and verify actual GitHub
+checks/reviews before integration. JUCE/dependency licensing, macOS build/host
+validation and all eight product delivery milestones remain outstanding.
+
+The attached document's execution instructions do not independently expand the
+user's authorized task or grant release publication approval.
