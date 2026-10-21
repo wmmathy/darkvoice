@@ -29,6 +29,14 @@ int main(int argc, char **argv) {
                           .getChildFile("darkvoice-gui-" + juce::Uuid().toString());
     int result = [&]() {
         DarkVoiceProcessor processor;
+#if JUCE_LINUX || JUCE_BSD
+        const auto configured = juce::SystemStats::getEnvironmentVariable("XDG_CONFIG_HOME", {});
+        if (juce::File::isAbsolutePath(configured)) {
+            std::unique_ptr<juce::AudioProcessorEditor> standardEditor(processor.createEditor());
+            if (!juce::File(configured).getChildFile("DarkVoiceStudio/Presets").isDirectory())
+                return 14;
+        }
+#endif
         std::unique_ptr<juce::AudioProcessorEditor> editor(new DarkVoiceEditor(processor, root));
         if (!editor || editor->getWidth() < 760 || editor->getHeight() < 720)
             return 1;

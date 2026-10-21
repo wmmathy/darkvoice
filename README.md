@@ -1,15 +1,23 @@
 # DarkVoice Studio
 
 An AGPLv3, local-first vocal production project using C++20, JUCE and CMake.
-This is an early development build. The current slice provides input/output gain,
-high-pass filtering, warmth saturation, envelope compression, dry/wet, bypass,
-peak meters and host parameter/state restoration. Controls operate on real DSP.
+This is an early development build. It provides input/output gain, high-pass,
+warmth saturation, compression, low/high shelves and a parametric mid EQ,
+feedback delay, damped reverb, dry/wet, bypass and peak meters. The grouped editor
+has 20 real DSP controls and versioned host automation/state restoration.
+
+The local preset bank offers six working factory sounds plus user save-as, rename,
+favorites, search and JSON import/export. Factories are read-only; imports/save-as
+create new UUID files and export refuses existing destinations. Presets preserve
+bypass; future pitch/harmony settings remain separate. On Linux XDG_CONFIG_HOME is
+honored; otherwise the platform application-data directory stores user presets.
 
 The product targets are **DarkVoice Vocal** and **DarkVoice Master** (VST3; AU on
 macOS), and **DarkVoice Studio** (standalone, currently hosting the starter chain).
 Master currently exposes that same starter chain: LUFS, true-peak limiting and
-complete-song Auto Master are not implemented. Recording/import/editing,
-track-aware pitch, harmony, Voice DNA/AI, Auto Mix and export remain planned.
+complete-song Auto Master are not implemented. Track recording/import/editing, track-aware pitch correction, harmony, Voice DNA/AI,
+Auto Mix and audio export remain planned. A separately tested dry pitch analyzer
+exists for worker/offline use; it is not connected as live correction or coaching.
 
 ## Build
 

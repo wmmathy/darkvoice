@@ -86,3 +86,31 @@ produce outliers: the observed 96kHz maximum exceeds its 2.667ms buffer period.
 This is a throughput observation, not deadline qualification or a physical-device
 glitch test. Reproduce with retained /tmp/darkvoice-benchmark.cpp and binary in
 this instance; a portable hardware benchmark harness remains future work.
+
+
+## M2 continuation — local validation
+
+- Linux Debug Vocal/Master VST3 and Studio Standalone builds passed.
+- 10/10 CTest suites passed: legacy core5, engine339 checks, effects618 checks,
+  pitch168 checks, presets639 checks, plus processor/state integration.
+- Release core8/8 and ASan/UBSan core8/8 passed; no findings.
+- GUI smoke: all20 control attachments, real factory-preset rendering, bypass
+  preservation and XDG default storage passed; standalone window startup and
+  screenshot inspected. No physical audio device/listening/DAW test was run.
+- Full-token legacy/v2 project-state validation, stable old AU version hints1/new2,
+  locale-independent persistence and legacy parameter defaults are tested.
+- Presets: malformed/deep/duplicate/trailing/oversized/overflow JSON, finite/range/
+  name/identifier checks, symlink rejection, concurrent exclusive exports,
+  import UUID regeneration, favorites/rename/migration/preservation all pass.
+- Formatter19.1.7 and exhaustive cppcheck2.17.1 passed all8 scoped DSP/header files;
+  limited credential/dependency scans and planted-fixture self-test passed.
+
+New reverb is a damped Schroeder design, not separate plate/room/hall algorithms.
+Delay changes can alter pitch naturally. Channels remain independent. Preset file
+I/O is bounded and off the audio thread but synchronous on the message thread.
+No-overwrite commits use same-volume hard links and fail safely where unsupported.
+Path checks reject symlinks; this is not a sandbox against adversarial same-user
+parent-directory replacement races. Pitch analysis is bounded worker-only YIN,
+not live correction; octave errors/real-vocal accuracy remain unqualified.
+No callback allocation, hard deadline or listening certification follows from
+ordinary new/new[] probes and synthetic signals. New native CI/auval is pending.

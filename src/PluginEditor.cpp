@@ -30,10 +30,17 @@ constexpr std::array<const char *, 20> suffixes{" dB", " Hz", "",    " dB", ":1"
                                                 " Hz", " dB", " Hz", " dB", "",   " Hz", " dB",
                                                 " ms", "",    "",    "",    "",   ""};
 juce::File presetDirectory(const juce::File &supplied) {
-    return supplied == juce::File{}
-               ? juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
-                     .getChildFile("DarkVoiceStudio/Presets")
-               : supplied;
+    if (supplied != juce::File{})
+        return supplied;
+#if JUCE_LINUX || JUCE_BSD
+    // JUCE 8.0.6's Linux special-location helper reads user-dirs.dirs rather
+    // than the XDG_CONFIG_HOME process variable. Honor the standard override.
+    const auto configured = juce::SystemStats::getEnvironmentVariable("XDG_CONFIG_HOME", {});
+    if (juce::File::isAbsolutePath(configured))
+        return juce::File(configured).getChildFile("DarkVoiceStudio/Presets");
+#endif
+    return juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
+        .getChildFile("DarkVoiceStudio/Presets");
 }
 } // namespace
 DarkVoiceEditor::DarkVoiceEditor(DarkVoiceProcessor &p, juce::File root)

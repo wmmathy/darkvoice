@@ -82,3 +82,23 @@ packages. Each uses an isolated feature branch/worktree. Lead owns contracts,
 integration and handoff docs. Acceptance: numerical EQ/delay/reverb signal tests,
 real controls, schema-v1 migration/v2 roundtrip, persistent preset operations,
 actual preset changes in rendered audio, all-rate/layout and sanitizer coverage.
+
+
+## M2 continuation — implemented and tested locally
+
+Foundation PR #2 is confirmed merged into main (2eb1f28), and issue #1 is closed.
+This branch adds three-band tone EQ, feedback delay/reverb, six actual factory
+sounds and persistent user presets, a grouped 20-control editor, stable legacy AU
+version hints, and state-v1 migration. Issue #10 tracks this subset of M2 (#3), not
+the entire milestone. A worker-only YIN dry pitch analyzer supports later M3 work;
+no live correction/reference synchronization or coach UI is represented by it.
+
+Lead integrated the isolated agent work, corrected JSON primitive-key parsing,
+version overflow/depth/trailing-input checks, bounded file reads and exclusive
+writes, corrected legacy fixtures and completed the GUI/runtime validation.
+All completed source changes are committed/pushed to feature/effects/presets-m2.
+Local products build; 10 CTest suites pass; Release/sanitized core suites pass8/8.
+GUI smoke exercises all20 controls, actual factory-preset audio and default storage;
+standalone startup/screenshot pass. Scoped cppcheck and formatter pass. Native CI
+for this revision is pending; previous milestone's evidence is not reused as a
+passing claim for these changes. No public release is authorized/published.
