@@ -7,7 +7,7 @@ represented as implemented.
 
 | Milestone | Owners | Dependencies | Acceptance / specification coverage | State |
 | --- | --- | --- | --- | --- |
-| M1 Foundation | Architecture, Integration, DSP, UI, QA | requirements, licenses, v1 interfaces | Three JUCE products; real starter chain, parameter/state/GUI tests; native CI; AU validation evidence | In progress, issue #1 |
+| M1 Foundation | Architecture, Integration, DSP, UI, QA | requirements, licenses, v1 interfaces | Three JUCE products; real starter chain, parameter/state/GUI tests; native CI; AU validation evidence | Tested; awaiting review, issue #1 |
 | M2 Sculptor/effects | DSP, UI, QA | M1, versioned effects/preset interfaces | Independent formant/pitch/character controls; EQ/dynamics/all listed FX; full editable factory presets and migrations (sections 3, 8) | Planned, issue #3 |
 | M3 Track-aware pitch/harmony | Pitch/Reference, Harmony, QA | M1, timeline/transport/latency contracts | Reference import/key/BPM/chords/confidence/manual correction; live changing targets and fallbacks; six voices and mixer; signal accuracy/phase tests (6, 7) | Planned, issue #4 |
 | M4 Discovery/AI | Voice AI/Coach, DSP, UI | dry-analysis/profile contracts; M2/M3 | Optional safe assessments; versioned local DNA export/delete; repeat phrase comparisons; dry-input coaching; editable measurable Auto Produce (4, 5) | Planned, issue #5 |

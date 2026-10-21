@@ -1,7 +1,8 @@
 # Development status — 2026-10-21
 
-Current phase: M1 application foundation implemented and validated on Linux;
-remote product CI/macOS validation and integration gates outstanding.
+Current phase: M1 application foundation implemented and validated locally on
+Linux and by Linux/macOS product CI plus macOS auval. Repository review/integration
+gates remain outstanding.
 Requirements: docs/PRODUCT_SPECIFICATION.md (unchanged); AGENTS.md governs shared
 instructions. User selected AGPLv3 distribution and open-source future dependencies.
 
@@ -43,7 +44,10 @@ externally. No protection bypass, merge or release publication occurred.
 Source-quality CI passed at ea7569d; all five remote core configurations passed
 at 5a11233. macOS product compilation exposed unavailable floating from_chars;
 replaced with portable classic-locale parsing and locale-invariant state save/load,
-verified by local regression. Final remote product validation remains outstanding. GitHub log downloads were denied
+verified by local regression. At 796a409, source-quality/all core CI passed and
+macOS native product builds, processor tests and both auval runs passed. Linux
+Release product builds, seven tests and GUI smoke passed too. Both CI workflows
+are green at source revision 796a409. Real DAW/microphone/listening tests remain unrun. GitHub log downloads were denied
 at results-receiver.actions.githubusercontent.com. That domain addition and complete
 install/start instructions are saved in the environment draft, not proof of runtime
 application/publication. Review/save in environment settings and publish when ready.
@@ -52,8 +56,8 @@ or new snapshot publication is claimed.
 
 ## Remaining scope and next tasks
 
-M1 still requires final remote product build/auval evidence and permitted review/
-integration. Next independent development begins with versioned effects/presets
+M1 build/test evidence is recorded in TEST_RESULTS.md; permitted review/integration
+is still required. PR #2 is ready for review, not merged. Next independent development begins with versioned effects/presets
 and pitch/reference/timeline contracts, then working vertical slices from ROADMAP.md.
 The complete specification remains outstanding: pitch/formant sculpting, live
 track-aware correction, six-voice harmony, Voice DNA/coach/Auto Produce, multitrack

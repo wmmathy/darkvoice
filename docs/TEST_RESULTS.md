@@ -46,17 +46,43 @@ annotation: floating-point std::from_chars is deleted in that Apple libc++ versi
 Replaced it with classic-locale full-token stream parsing. A new locale roundtrip
 regression then exposed JUCE's locale-dependent XML numeric serialization; fixed by
 canonical serialization and validated numeric normalization before state replacement.
-All seven local suites pass again, including that regression. Final macOS product
-rerun is required; no passing AU or macOS plugin claim is made. Linux remote product
-job at 5a11233 remains in progress at the time of this record.
+All seven local suites pass again, including that regression. The rerun results below supersede that failure; they do not establish DAW host testing. The older Linux product job at 5a11233 was superseded by the corrected source revision.
 
-Source-quality CI passed at ea7569d. Some duplicate push/PR runs were cancelled by
-the configured concurrency policy; cancelled is not passed. PR #2 remains draft;
-no merge, release publication or fresh cloud snapshot restoration was verified.
+At 796a409, source-quality CI and all five core configurations passed. The macOS
+product job passed native AU/VST3/Standalone builds, all processor/DSP suites and
+both auval invocations (Vocal Dvvc/Dkvc and Master Dvms/Dkvc). Job
+119365682023 in run 39641368426 confirms each step succeeded. This validates the
+macOS development targets, not actual GarageBand/Logic sessions or signing.
+Linux product job 119365682224 also passed: native Vocal/Master VST3 and Studio
+Standalone Release builds, seven CTest suites, real GUI attachment smoke under
+Xvfb and retained test evidence. Build-and-tests run 39641368426 and source-quality
+run 39641368435 both completed successfully at code revision 796a409.
+
+Some duplicate push/PR runs were cancelled by the configured concurrency policy;
+cancelled is not passed. No merge, release publication or fresh cloud snapshot
+restoration was verified.
 
 ## Unrun product qualification
 
-macOS AU/VST3/Standalone build and auval on the final revision; Apple Silicon/Intel
-coverage; VST3 validator; GarageBand/Logic/REAPER/Cubase; microphone/recording;
+Explicit Apple Silicon/Intel architecture coverage; VST3 validator;
+GarageBand/Logic/REAPER/Cubase; microphone/recording;
 DAW automation/session restoration; measured latency/CPU/glitches; listening and
 all future pitch/harmony/AI/mix/master/export acceptance remain outstanding.
+
+## Exploratory cloud timing (not a real-time guarantee)
+
+GCC14 -O3, stereo 256-frame blocks, 5,000 blocks/rate (1.28M frames), copied
+synthetic input, HP80Hz/drive0.4/ratio3, one processing thread:
+
+| Rate | Elapsed | Audio-duration ratio | Maximum observed block |
+| --- | --- | --- | --- |
+| 44.1kHz | 0.259s | 0.89% | 1.114ms |
+| 48kHz | 0.254s | 0.95% | 0.458ms |
+| 88.2kHz | 0.302s | 2.08% | 2.232ms |
+| 96kHz | 0.263s | 1.98% | 3.363ms |
+
+Average ratio includes buffer copying and clock overhead. Cloud scheduling can
+produce outliers: the observed 96kHz maximum exceeds its 2.667ms buffer period.
+This is a throughput observation, not deadline qualification or a physical-device
+glitch test. Reproduce with retained /tmp/darkvoice-benchmark.cpp and binary in
+this instance; a portable hardware benchmark harness remains future work.
