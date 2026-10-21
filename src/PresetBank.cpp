@@ -150,7 +150,7 @@ juce::String encode(const Preset &preset) {
     std::ostringstream stream;
     stream.imbue(std::locale::classic());
     stream << std::setprecision(std::numeric_limits<float>::max_digits10)
-           << "{\"schemaVersion\":2,\"id\":" << quote(preset.id)
+           << "{\"schemaVersion\":3,\"id\":" << quote(preset.id)
            << ",\"name\":" << quote(preset.name) << ",\"parameters\":{";
     bool first = true;
     for (const auto &[id, value] : preset.values) {
@@ -173,7 +173,8 @@ juce::Result decode(const juce::File &file, Preset &preset, bool local) {
             return fail("Unknown preset property");
     const auto version = object->getProperty("schemaVersion");
     if (!(version.isInt() || version.isInt64()) ||
-        (static_cast<juce::int64>(version) != 1 && static_cast<juce::int64>(version) != 2))
+        (static_cast<juce::int64>(version) < 1 ||
+         static_cast<juce::int64>(version) > currentSchemaVersion))
         return fail("Unsupported preset schema version");
     const auto name = object->getProperty("name");
     if (!name.isString() || !validName(name.toString().trim()))
@@ -186,14 +187,15 @@ juce::Result decode(const juce::File &file, Preset &preset, bool local) {
         return fail("Preset identifier does not match filename");
     const auto parameters = object->getProperty("parameters");
     const auto *values = parameters.getDynamicObject();
-    const int expected = static_cast<int>(version) == 1 ? 7 : 20;
+    const auto count = parameterCountForVersion(static_cast<int>(version));
+    const int expected = static_cast<int>(count - 1);
     if (!values || values->getProperties().size() != expected)
         return fail("Missing or extra preset parameters");
     auto candidate = PresetBank::defaults();
     std::size_t position = 0;
     for (const auto &spec : parameterSchema) {
         const auto index = position++;
-        if (spec.boolean || (static_cast<int>(version) == 1 && index >= legacyParameterCount))
+        if (spec.boolean || index >= count)
             continue;
         const auto value = values->getProperty(spec.id);
         if (!numeric(value))

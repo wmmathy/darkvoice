@@ -152,3 +152,28 @@ Local post-fix results: products 11/11, Release core 8/8, ASan/UBSan core 8/8,
 GUI/standalone display smoke pass. Documentation-only successors require their
 own CI; this evidence identifies the tested implementation commit explicitly.
 Actual GarageBand/other DAW sessions, microphone and listening remain unrun.
+
+
+## Linked gate/expander (issue #12) — local validation
+
+- Full Linux Debug products build (Vocal/Master VST3, Studio standalone) and
+  current CTest run pass 12/12. Release and ASan/UBSan core suites pass 9/9.
+- dynamics.gate passes 153 checks: four rates, mono/stereo, exact default identity,
+  -60 dBFS -> -20 dB gain at threshold -40/ratio 2, linked stereo balance,
+  reopening/release timing, neutral disable automation, partition invariance,
+  invalid inputs/prepare/snapshots, nonfinite/subnormal samples and ordinary
+  new/new[] allocation probes. Engine and actual plugin audio exercise the gate.
+- v1/v2 project and preset migrations retain prior values and disable the gate;
+  v3 roundtrips active controls. Old AU hints remain 1/2 and appended IDs use 3.
+  Invalid state/preset values still reject before replacement.
+- Xvfb smoke verifies all 23 real attachments, factory audio, bypass and dry-pitch
+  feedback; selects/renders the gate tab. Standalone startup and default writable
+  preset directory pass. Current snapshot: /tmp/darkvoice-gate-ui.png.
+- Formatter19.1.7, exhaustive cppcheck2.17.1 on four scoped DSP/schema files,
+  limited credential/dependency scans and scanner self-test pass.
+- Initial host check used a stale pre-v3 test object; rebuilding its target and
+  rerunning the full current suite passes. No assertions were disabled.
+- Native CI/AU validation for this increment is pending. Earlier PR #11 results
+  do not establish new native validation. No physical device/DAW/listening or hard
+  real-time deadline qualification was performed. Expander has no lookahead or
+  hysteresis and may attenuate initial transients; maximum attenuation is 80 dB.

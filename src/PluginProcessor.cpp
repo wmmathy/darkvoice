@@ -14,7 +14,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout DarkVoiceProcessor::createPa
     juce::AudioProcessorValueTreeState::ParameterLayout layout;
     for (std::size_t i = 0; i < darkvoice::parameterSchema.size(); ++i) {
         const auto &spec = darkvoice::parameterSchema[i];
-        const int version = i < darkvoice::legacyParameterCount ? 1 : 2;
+        const int version = darkvoice::parameterVersion(i);
         if (spec.boolean)
             layout.add(std::make_unique<juce::AudioParameterBool>(
                 juce::ParameterID{spec.id, version}, spec.name, spec.defaultValue != 0));
@@ -72,6 +72,9 @@ darkvoice::EngineParameters DarkVoiceProcessor::snapshot() const noexcept {
     p.reverbSize = raw_[18]->load(std::memory_order_relaxed);
     p.reverbDamping = raw_[19]->load(std::memory_order_relaxed);
     p.reverbMix = raw_[20]->load(std::memory_order_relaxed);
+    p.gateThresholdDb = raw_[21]->load(std::memory_order_relaxed);
+    p.gateRatio = raw_[22]->load(std::memory_order_relaxed);
+    p.gateReleaseMs = raw_[23]->load(std::memory_order_relaxed);
     return p;
 }
 void DarkVoiceProcessor::prepareToPlay(double rate, int maxFrames) {
@@ -136,7 +139,7 @@ juce::AudioProcessorEditor *DarkVoiceProcessor::createEditor() {
 }
 void DarkVoiceProcessor::getStateInformation(juce::MemoryBlock &destination) {
     auto state = parameters.copyState();
-    state.setProperty("schemaVersion", 2, nullptr);
+    state.setProperty("schemaVersion", darkvoice::currentSchemaVersion, nullptr);
     // JUCE numeric var-to-String conversion follows the global C++ locale.
     // Serialize a canonical decimal representation without changing process locale.
     for (auto child : state) {
@@ -156,10 +159,9 @@ void DarkVoiceProcessor::setStateInformation(const void *data, int bytes) {
     if (!xml || !xml->hasTagName("DarkVoiceState"))
         return;
     const auto version = xml->getStringAttribute("schemaVersion");
-    if (version != "1" && version != "2")
+    if (version != "1" && version != "2" && version != "3")
         return;
-    const auto count =
-        version == "1" ? darkvoice::legacyParameterCount : darkvoice::parameterSchema.size();
+    const auto count = darkvoice::parameterCountForVersion(version.getIntValue());
     const auto state = juce::ValueTree::fromXml(*xml);
     if (!state.isValid() || state.getNumChildren() != static_cast<int>(count))
         return;
@@ -191,7 +193,7 @@ void DarkVoiceProcessor::setStateInformation(const void *data, int bytes) {
     }
     // Build canonical complete state only after the entire snapshot validates.
     juce::ValueTree migrated("DarkVoiceState");
-    migrated.setProperty("schemaVersion", 2, nullptr);
+    migrated.setProperty("schemaVersion", darkvoice::currentSchemaVersion, nullptr);
     for (std::size_t i = 0; i < values.size(); ++i) {
         juce::ValueTree child("PARAM");
         child.setProperty("id", darkvoice::parameterSchema[i].id, nullptr);

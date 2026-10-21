@@ -73,17 +73,30 @@ void snapshotsAndSmoothing() {
     p.mix = 0;
     p.outputDb = 12;
     check(engine.setParameters(p) && reference.setParameters(p), "valid parameter snapshot");
-    const std::array<float darkvoice::EngineParameters::*, 20> fields{
-        &darkvoice::EngineParameters::inputDb,       &darkvoice::EngineParameters::outputDb,
-        &darkvoice::EngineParameters::highPassHz,    &darkvoice::EngineParameters::drive,
-        &darkvoice::EngineParameters::thresholdDb,   &darkvoice::EngineParameters::ratio,
-        &darkvoice::EngineParameters::mix,           &darkvoice::EngineParameters::eqLowHz,
-        &darkvoice::EngineParameters::eqLowGainDb,   &darkvoice::EngineParameters::eqMidHz,
-        &darkvoice::EngineParameters::eqMidGainDb,   &darkvoice::EngineParameters::eqMidQ,
-        &darkvoice::EngineParameters::eqHighHz,      &darkvoice::EngineParameters::eqHighGainDb,
-        &darkvoice::EngineParameters::delayMs,       &darkvoice::EngineParameters::delayFeedback,
-        &darkvoice::EngineParameters::delayMix,      &darkvoice::EngineParameters::reverbSize,
-        &darkvoice::EngineParameters::reverbDamping, &darkvoice::EngineParameters::reverbMix};
+    const std::array<float darkvoice::EngineParameters::*, 23> fields{
+        &darkvoice::EngineParameters::inputDb,
+        &darkvoice::EngineParameters::outputDb,
+        &darkvoice::EngineParameters::highPassHz,
+        &darkvoice::EngineParameters::drive,
+        &darkvoice::EngineParameters::thresholdDb,
+        &darkvoice::EngineParameters::ratio,
+        &darkvoice::EngineParameters::mix,
+        &darkvoice::EngineParameters::eqLowHz,
+        &darkvoice::EngineParameters::eqLowGainDb,
+        &darkvoice::EngineParameters::eqMidHz,
+        &darkvoice::EngineParameters::eqMidGainDb,
+        &darkvoice::EngineParameters::eqMidQ,
+        &darkvoice::EngineParameters::eqHighHz,
+        &darkvoice::EngineParameters::eqHighGainDb,
+        &darkvoice::EngineParameters::delayMs,
+        &darkvoice::EngineParameters::delayFeedback,
+        &darkvoice::EngineParameters::delayMix,
+        &darkvoice::EngineParameters::reverbSize,
+        &darkvoice::EngineParameters::reverbDamping,
+        &darkvoice::EngineParameters::reverbMix,
+        &darkvoice::EngineParameters::gateThresholdDb,
+        &darkvoice::EngineParameters::gateRatio,
+        &darkvoice::EngineParameters::gateReleaseMs};
     for (auto field : fields) {
         auto invalid = p;
         invalid.inputDb = 24;
@@ -184,6 +197,26 @@ void signalTests(double rate) {
               std::all_of(silence.begin(), silence.end(), [](float x) { return x == 0; }),
           "finite exact silence");
 }
+void integratedGate(double rate) {
+    darkvoice::AudioEngine gated, dry;
+    check(gated.prepare(rate, 1024, 1) && dry.prepare(rate, 1024, 1), "gate engine prepare");
+    darkvoice::EngineParameters p;
+    p.gateThresholdDb = -20;
+    p.gateRatio = 4;
+    p.gateReleaseMs = 10;
+    check(gated.setParameters(p), "gate engine controls");
+    gated.reset();
+    auto input = sine(rate, 1000, .005f);
+    auto reference = input;
+    check(run(gated, input, 257) && run(dry, reference, 257), "gate engine render");
+    double wetEnergy = 0, dryEnergy = 0;
+    for (std::size_t i = input.size() / 2; i < input.size(); ++i) {
+        wetEnergy += static_cast<double>(input[i]) * input[i];
+        dryEnergy += static_cast<double>(reference[i]) * reference[i];
+    }
+    check(wetEnergy < dryEnergy * .001, "gate controls reduce actual engine signal");
+}
+
 void isolationBypassAndSafety() {
     darkvoice::AudioEngine stereo;
     check(stereo.prepare(48000, 32, 2), "stereo setup");
@@ -397,6 +430,7 @@ int main() {
     for (double rate : {44100.0, 48000.0, 88200.0, 96000.0}) {
         signalTests(rate);
         integratedEffects(rate);
+        integratedGate(rate);
     }
     isolationBypassAndSafety();
     invalidBlocksAndAllocationFailure();

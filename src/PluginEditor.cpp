@@ -2,12 +2,14 @@
 #include <cmath>
 namespace {
 const juce::Colour background{0xff111418}, panel{0xff1c2229}, accent{0xffe54b52}, text{0xffecedf0};
-constexpr std::array<const char *, 20> ids{
-    "inputDb",       "highPassHz", "drive",      "thresholdDb",   "ratio",
-    "mix",           "outputDb",   "eqLowHz",    "eqLowGainDb",   "eqMidHz",
-    "eqMidGainDb",   "eqMidQ",     "eqHighHz",   "eqHighGainDb",  "delayMs",
-    "delayFeedback", "delayMix",   "reverbSize", "reverbDamping", "reverbMix"};
-constexpr std::array<const char *, 20> names{"INPUT GAIN",
+constexpr std::array<const char *, 23> ids{
+    "inputDb",         "highPassHz",   "drive",         "thresholdDb",
+    "ratio",           "mix",          "outputDb",      "eqLowHz",
+    "eqLowGainDb",     "eqMidHz",      "eqMidGainDb",   "eqMidQ",
+    "eqHighHz",        "eqHighGainDb", "delayMs",       "delayFeedback",
+    "delayMix",        "reverbSize",   "reverbDamping", "reverbMix",
+    "gateThresholdDb", "gateRatio",    "gateReleaseMs"};
+constexpr std::array<const char *, 23> names{"INPUT GAIN",
                                              "HIGH-PASS",
                                              "WARMTH DRIVE",
                                              "COMPRESSOR THRESHOLD",
@@ -26,10 +28,13 @@ constexpr std::array<const char *, 20> names{"INPUT GAIN",
                                              "DELAY MIX",
                                              "REVERB SIZE",
                                              "REVERB DAMPING",
-                                             "REVERB MIX"};
-constexpr std::array<const char *, 20> suffixes{" dB", " Hz", "",    " dB", ":1", "",    " dB",
-                                                " Hz", " dB", " Hz", " dB", "",   " Hz", " dB",
-                                                " ms", "",    "",    "",    "",   ""};
+                                             "REVERB MIX",
+                                             "GATE THRESHOLD",
+                                             "GATE RATIO (1 = OFF)",
+                                             "GATE RELEASE"};
+constexpr std::array<const char *, 23> suffixes{
+    " dB", " Hz", "",    " dB", ":1", "", " dB", " Hz", " dB", " Hz", " dB", "",
+    " Hz", " dB", " ms", "",    "",   "", "",    "",    " dB", ":1",  " ms"};
 juce::File presetDirectory(const juce::File &supplied) {
     if (supplied != juce::File{})
         return supplied;
@@ -62,6 +67,7 @@ DarkVoiceEditor::DarkVoiceEditor(DarkVoiceProcessor &p, juce::File root)
     tabs_.addTab("DYNAMICS / TONE", panel, &pages_[0], false);
     tabs_.addTab("PARAMETRIC EQ", panel, &pages_[1], false);
     tabs_.addTab("DELAY / REVERB", panel, &pages_[2], false);
+    tabs_.addTab("GATE / EXPANDER", panel, &pages_[3], false);
     addAndMakeVisible(tabs_);
     for (std::size_t i = 0; i < sliders_.size(); ++i) {
         auto &slider = sliders_[i];
@@ -70,8 +76,10 @@ DarkVoiceEditor::DarkVoiceEditor(DarkVoiceProcessor &p, juce::File root)
         slider.setTextValueSuffix(suffixes[i]);
         slider.setName(names[i]);
         slider.setTitle(names[i]);
-        slider.setTooltip("Automatable " + juce::String(names[i]).toLowerCase());
-        const auto page = i < 7 ? 0U : i < 14 ? 1U : 2U;
+        slider.setTooltip(i >= 20 ? "Linked downward expander; ratio 1 disables attenuation. "
+                                    "Detector follows the compressed wet signal."
+                                  : "Automatable " + juce::String(names[i]).toLowerCase());
+        const auto page = i < 7 ? 0U : i < 14 ? 1U : i < 20 ? 2U : 3U;
         pages_[page].addAndMakeVisible(slider);
         labels_[i].setText(names[i], juce::dontSendNotification);
         labels_[i].setColour(juce::Label::textColourId, juce::Colour(0xffb5bdc7));
@@ -268,8 +276,8 @@ void DarkVoiceEditor::resized() {
     status_.setBounds(24, 178, width, 28);
     tabs_.setBounds(24, 214, width, getHeight() - 316);
     for (std::size_t i = 0; i < sliders_.size(); ++i) {
-        const auto page = i < 7 ? 0U : i < 14 ? 1U : 2U;
-        const auto row = i < 7 ? i : i < 14 ? i - 7 : i - 14;
+        const auto page = i < 7 ? 0U : i < 14 ? 1U : i < 20 ? 2U : 3U;
+        const auto row = i < 7 ? i : i < 14 ? i - 7 : i < 20 ? i - 14 : i - 20;
         const int rowHeight = (tabs_.getHeight() - 48) / 7;
         const int y = 14 + static_cast<int>(row) * rowHeight;
         labels_[i].setBounds(16, y, 205, 24);

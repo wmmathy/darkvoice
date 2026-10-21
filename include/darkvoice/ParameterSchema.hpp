@@ -9,7 +9,8 @@ struct ParameterSpec {
     bool boolean;
 };
 inline constexpr std::size_t legacyParameterCount = 8;
-inline constexpr std::array<ParameterSpec, 21> parameterSchema{{
+inline constexpr std::size_t effectsParameterCount = 21;
+inline constexpr std::array<ParameterSpec, 24> parameterSchema{{
     {"inputDb", "Input", -24.0f, 24.0f, 0.0f, 0.1f, 1.0f, false},
     {"outputDb", "Output", -24.0f, 24.0f, 0.0f, 0.1f, 1.0f, false},
     {"highPassHz", "High-pass", 20.0f, 400.0f, 20.0f, 1.0f, 0.5f, false},
@@ -31,5 +32,18 @@ inline constexpr std::array<ParameterSpec, 21> parameterSchema{{
     {"reverbSize", "Reverb size", 0.0f, 1.0f, 0.5f, 0.001f, 1.0f, false},
     {"reverbDamping", "Reverb damping", 0.0f, 1.0f, 0.5f, 0.001f, 1.0f, false},
     {"reverbMix", "Reverb mix", 0.0f, 0.5f, 0.0f, 0.001f, 1.0f, false},
+    {"gateThresholdDb", "Gate threshold", -80.0f, 0.0f, -50.0f, 0.1f, 1.0f, false},
+    {"gateRatio", "Gate ratio (1 = off)", 1.0f, 20.0f, 1.0f, 0.1f, 1.0f, false},
+    {"gateReleaseMs", "Gate release", 10.0f, 1000.0f, 120.0f, 1.0f, 0.5f, false},
 }};
+inline constexpr int currentSchemaVersion = 3;
+constexpr std::size_t parameterCountForVersion(int version) noexcept {
+    return version == 1   ? legacyParameterCount
+           : version == 2 ? effectsParameterCount
+           : version == 3 ? parameterSchema.size()
+                          : 0;
+}
+constexpr int parameterVersion(std::size_t index) noexcept {
+    return index < legacyParameterCount ? 1 : index < effectsParameterCount ? 2 : 3;
+}
 } // namespace darkvoice

@@ -122,3 +122,18 @@ core, Linux sanitizers, and both product jobs. Both unsigned development AU
 validations and the Linux GUI smoke pass. PR #11 is ready for review; no merge
 or completed review is claimed. Subsequent documentation commits rerun CI.
 No M2/M3 completion or actual DAW/listening qualification is claimed.
+
+## Linked gate/expander increment
+
+PR #11 is confirmed merged at 5c41191; issue #10 is closed. New branch
+feature/dynamics/gate-expander tracks issue #12 and partial M2 (#3) progress.
+The lead established Dynamics contract v3 and implements this increment directly.
+No additional agents were launched for this package; prior worktrees are preserved.
+
+Add a linked downward expander before EQ/delay/reverb, with threshold/ratio/release
+and a fourth editor tab (23 sound controls total). Ratio 1 is neutral. Append-only
+AU hints preserve old identities; state/preset v3 migrate v1/v2 with gate disabled.
+No new dependencies. Release and ASan/UBSan core suites pass 9/9 locally; final
+products pass 12/12, and the 23-control GUI/gate-tab/standalone checks pass.
+Native CI remains pending. Full sculptor, correction/harmony,
+AI/discovery, sessions/mixing, mastering/export and host qualification remain open.

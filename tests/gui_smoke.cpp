@@ -66,7 +66,7 @@ int main(int argc, char **argv) {
                 button && button->getName() == "Load preset")
                 load = button;
         }
-        if (controls != 20 || !input || !bypass || !presetSelection || !load)
+        if (controls != 23 || !input || !bypass || !presetSelection || !load)
             return 2;
         input->setValue(6.0, juce::sendNotificationSync);
         if (std::abs(processor.parameters.getRawParameterValue("inputDb")->load() - 6.0f) > 0.01f)
@@ -74,7 +74,7 @@ int main(int argc, char **argv) {
         bypass->setToggleState(true, juce::sendNotificationSync);
         if (processor.parameters.getRawParameterValue("bypass")->load() != 1.0f)
             return 4;
-        constexpr std::array<const char *, 20> names{"INPUT GAIN",
+        constexpr std::array<const char *, 23> names{"INPUT GAIN",
                                                      "OUTPUT GAIN",
                                                      "HIGH-PASS",
                                                      "WARMTH DRIVE",
@@ -93,7 +93,10 @@ int main(int argc, char **argv) {
                                                      "DELAY MIX",
                                                      "REVERB SIZE",
                                                      "REVERB DAMPING",
-                                                     "REVERB MIX"};
+                                                     "REVERB MIX",
+                                                     "GATE THRESHOLD",
+                                                     "GATE RATIO (1 = OFF)",
+                                                     "GATE RELEASE"};
         std::size_t soundIndex = 0;
         for (const auto &spec : darkvoice::parameterSchema) {
             if (spec.boolean)
@@ -193,6 +196,16 @@ int main(int argc, char **argv) {
             std::cerr << "Dry pitch result did not reach editor timer\n";
             return 16;
         }
+        bool gateTab = false;
+        for (auto *component : components)
+            if (auto *tabs = dynamic_cast<juce::TabbedComponent *>(component)) {
+                if (tabs->getNumTabs() != 4)
+                    return 17;
+                tabs->setCurrentTabIndex(3);
+                gateTab = tabs->getCurrentTabName() == "GATE / EXPANDER";
+            }
+        if (!gateTab)
+            return 18;
         auto image = editor->createComponentSnapshot(editor->getLocalBounds());
         if (image.isNull())
             return 5;
@@ -203,7 +216,7 @@ int main(int argc, char **argv) {
             if (!stream || !juce::PNGImageFormat().writeImageToStream(image, *stream))
                 return 6;
         }
-        std::cout << "GUI smoke passed: 20 controls, all parameter attachments, bypass, actual "
+        std::cout << "GUI smoke passed: 23 controls, all parameter attachments, bypass, actual "
                      "factory preset audio, dry-pitch feedback, snapshot\n";
         return 0;
     }();
