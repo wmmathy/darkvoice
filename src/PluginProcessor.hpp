@@ -1,7 +1,9 @@
 #pragma once
+#include "PresetBank.hpp"
 #include <array>
 #include <atomic>
 #include <darkvoice/AudioEngine.hpp>
+#include <darkvoice/ParameterSchema.hpp>
 #include <juce_audio_processors/juce_audio_processors.h>
 
 class DarkVoiceProcessor final : public juce::AudioProcessor {
@@ -17,7 +19,7 @@ class DarkVoiceProcessor final : public juce::AudioProcessor {
         return true;
     }
     double getTailLengthSeconds() const override {
-        return 0.0;
+        return 40.0;
     }
     bool acceptsMidi() const override {
         return false;
@@ -50,13 +52,15 @@ class DarkVoiceProcessor final : public juce::AudioProcessor {
     float outputPeak() const noexcept {
         return outputPeak_.load(std::memory_order_relaxed);
     }
+    darkvoice::PresetValues snapshotPresetValues() const;
+    bool applyPreset(const darkvoice::PresetValues &);
     juce::AudioProcessorValueTreeState parameters;
 
   private:
     static juce::AudioProcessorValueTreeState::ParameterLayout createParameters();
     darkvoice::EngineParameters snapshot() const noexcept;
     darkvoice::AudioEngine engine_;
-    std::array<std::atomic<float> *, 8> raw_{};
+    std::array<std::atomic<float> *, darkvoice::parameterSchema.size()> raw_{};
     std::atomic<float> inputPeak_{0}, outputPeak_{0};
     std::size_t maximumFrames_ = 0;
     bool prepared_ = false;

@@ -51,6 +51,9 @@ void stateTests() {
     set(source, "drive", 0.6f);
     set(source, "ratio", 4.0f);
     set(source, "bypass", 1.0f);
+    set(source, "eqMidGainDb", 3.5f);
+    set(source, "delayMix", 0.2f);
+    set(source, "reverbMix", 0.1f);
     juce::MemoryBlock state;
     source.getStateInformation(state);
     require(state.getSize() > 0, "State serialization empty");
@@ -60,11 +63,21 @@ void stateTests() {
     require(std::abs(raw(restored, "drive") - 0.6f) < 0.001f, "Drive state not restored");
     require(std::abs(raw(restored, "ratio") - 4.0f) < 0.01f, "Ratio state not restored");
     require(raw(restored, "bypass") == 1.0f, "Bypass state not restored");
+    for (std::size_t i = 0; i < darkvoice::parameterSchema.size(); ++i) {
+        const auto &spec = darkvoice::parameterSchema[i];
+        require(source.parameters.getParameter(spec.id)->getVersionHint() ==
+                    (i < darkvoice::legacyParameterCount ? 1 : 2),
+                "AU version hint changed");
+        require(std::abs(raw(restored, spec.id) - raw(source, spec.id)) < 0.001f,
+                "Full v2 state roundtrip failed");
+    }
+    require(source.getTailLengthSeconds() == 40.0, "Spatial tail not reported");
+
     const char garbage[] = "invalid state";
     restored.setStateInformation(garbage, sizeof(garbage));
     require(raw(restored, "inputDb") == raw(source, "inputDb"),
             "Malformed state changed parameters");
-    for (const char *version : {"2", "1junk"}) {
+    for (const char *version : {"3", "1junk"}) {
         auto xml = source.parameters.copyState().createXml();
         xml->setAttribute("schemaVersion", version);
         juce::MemoryBlock invalid;
@@ -76,7 +89,7 @@ void stateTests() {
     }
     for (const char *value : {"NaN", "1.2.3", "100", "", ".", "--1", "1 2"}) {
         auto tree = source.parameters.copyState();
-        tree.setProperty("schemaVersion", 1, nullptr);
+        tree.setProperty("schemaVersion", 2, nullptr);
         tree.getChildWithProperty("id", "inputDb").setProperty("value", value, nullptr);
         juce::MemoryBlock invalid;
         juce::AudioProcessor::copyXmlToBinary(*tree.createXml(), invalid);
@@ -85,7 +98,7 @@ void stateTests() {
                 "Invalid parameter state accepted");
     }
     auto scientificTree = source.parameters.copyState();
-    scientificTree.setProperty("schemaVersion", 1, nullptr);
+    scientificTree.setProperty("schemaVersion", 2, nullptr);
     scientificTree.getChildWithProperty("id", "inputDb").setProperty("value", "1e1", nullptr);
     juce::MemoryBlock scientific;
     juce::AudioProcessor::copyXmlToBinary(*scientificTree.createXml(), scientific);
@@ -100,6 +113,62 @@ void stateTests() {
         require(std::abs(raw(restored, "inputDb") + 3.5f) < 0.01f,
                 "State parsing depended on global decimal locale");
     }
+    // A legacy project contains exactly the original eight IDs. New effects
+    // must reset to defaults even when restoring into a modified v2 instance.
+    auto legacy = source.parameters.copyState();
+    legacy.setProperty("schemaVersion", 1, nullptr);
+    for (int index = legacy.getNumChildren() - 1; index >= 0; --index) {
+        const auto id = legacy.getChild(index).getProperty("id").toString();
+        bool original = false;
+        for (std::size_t i = 0; i < darkvoice::legacyParameterCount; ++i)
+            original = original || id == darkvoice::parameterSchema[i].id;
+        if (!original)
+            legacy.removeChild(index, nullptr);
+    }
+    set(restored, "delayMix", 0.4f);
+    set(restored, "eqMidGainDb", 5.0f);
+    juce::MemoryBlock legacyData;
+    juce::AudioProcessor::copyXmlToBinary(*legacy.createXml(), legacyData);
+    restored.setStateInformation(legacyData.getData(), static_cast<int>(legacyData.getSize()));
+    require(std::abs(raw(restored, "inputDb") - raw(source, "inputDb")) < 0.01f,
+            "Legacy input not restored");
+    for (std::size_t i = darkvoice::legacyParameterCount; i < darkvoice::parameterSchema.size();
+         ++i) {
+        const auto &spec = darkvoice::parameterSchema[i];
+        require(std::abs(raw(restored, spec.id) - spec.defaultValue) < 0.001f,
+                "Legacy effect defaults not restored");
+    }
+    for (int fault = 0; fault < 3; ++fault) {
+        auto invalidTree = source.parameters.copyState();
+        invalidTree.setProperty("schemaVersion", 2, nullptr);
+        if (fault == 0)
+            invalidTree.removeChild(0, nullptr);
+        if (fault == 1)
+            invalidTree.getChild(1).setProperty("id", "inputDb", nullptr);
+        if (fault == 2)
+            invalidTree.getChild(1).setProperty("id", "unknown", nullptr);
+        juce::MemoryBlock invalid;
+        juce::AudioProcessor::copyXmlToBinary(*invalidTree.createXml(), invalid);
+        set(restored, "inputDb", -12.0f);
+        restored.setStateInformation(invalid.getData(), static_cast<int>(invalid.getSize()));
+        require(std::abs(raw(restored, "inputDb") + 12.0f) < 0.01f,
+                "Invalid ID set partially changed state");
+    }
+    auto values = source.snapshotPresetValues();
+    require(values.size() == 20 && values.count("bypass") == 0,
+            "Preset must contain only sound parameters");
+    values["inputDb"] = 10.0f;
+    values["delayMix"] = 0.2f;
+    set(restored, "bypass", 1.0f);
+    require(restored.applyPreset(values), "Valid preset not applied");
+    require(raw(restored, "bypass") == 1.0f, "Preset changed bypass");
+    require(std::abs(raw(restored, "delayMix") - 0.2f) < 0.001f,
+            "Effect preset parameter not applied");
+    values["delayMix"] = 10.0f;
+    values["inputDb"] = -20.0f;
+    require(!restored.applyPreset(values), "Invalid preset applied");
+    require(std::abs(raw(restored, "inputDb") - 10.0f) < 0.01f,
+            "Invalid preset partially changed state");
 }
 void renderingTests() {
     juce::MidiBuffer midi;
