@@ -29,7 +29,7 @@ jobs:
       - name: Build with warnings as errors
         run: cmake --build build --config ${{ matrix.configuration }} --parallel 2
       - name: Run core and DSP regression suites
-        run: ctest --test-dir build --build-config ${{ matrix.configuration }} --output-on-failure --no-tests=error
+        run: python3 tools/ci-build.py build/test-run.log ctest --test-dir build --build-config ${{ matrix.configuration }} --output-on-failure --no-tests=error
 
   sanitizers:
     name: Core / Linux / ASan and UBSan
@@ -45,7 +45,7 @@ jobs:
         env:
           ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
           UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
-        run: ctest --test-dir build --output-on-failure --no-tests=error
+        run: python3 tools/ci-build.py build/test-run.log ctest --test-dir build --output-on-failure --no-tests=error
 
   products:
     name: JUCE products / ${{ matrix.os }}
@@ -61,15 +61,58 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install --no-install-recommends libasound2-dev libx11-dev libxext-dev libxinerama-dev libxrandr-dev libxcursor-dev libfreetype6-dev libfontconfig1-dev libgl1-mesa-dev xvfb xauth
+          sudo apt-get install -y --no-install-recommends libasound2-dev libx11-dev libxext-dev libxinerama-dev libxrandr-dev libxcursor-dev libfreetype6-dev libfontconfig1-dev libgl1-mesa-dev xvfb xauth ccache
+      - name: Install macOS compiler cache
+        if: runner.os == 'macOS'
+        run: brew install ccache
+      # Only trusted push jobs restore/save compiled objects. PR jobs (including
+      # same-repository PRs) build without persistent caches or executable restores.
+      - name: Restore pinned dependency source and compiler cache on push
+        if: github.event_name == 'push'
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          path: |
+            .ci-deps/JUCE
+            .ccache
+          key: juce806-51a8a6d-cache-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('CMakeLists.txt', '.github/workflows/ci.yml') }}-${{ github.sha }}
+          restore-keys: |
+            juce806-51a8a6d-cache-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('CMakeLists.txt', '.github/workflows/ci.yml') }}-
+      - name: Prepare and verify immutable JUCE source
+        shell: bash
+        run: |
+          juce_commit=51a8a6d7aeae7326956d747737ccf1575e61e209
+          if [ ! -d .ci-deps/JUCE ]; then
+            mkdir -p .ci-deps/JUCE
+            git -C .ci-deps/JUCE init
+            git -C .ci-deps/JUCE remote add origin https://github.com/juce-framework/JUCE.git
+            git -C .ci-deps/JUCE fetch --depth 1 origin "$juce_commit"
+            git -C .ci-deps/JUCE -c core.hooksPath=/dev/null checkout --detach "$juce_commit"
+          fi
+          test "$(git -C .ci-deps/JUCE rev-parse HEAD)" = "$juce_commit"
+          git -C .ci-deps/JUCE diff --exit-code HEAD
+          test -z "$(git -C .ci-deps/JUCE status --porcelain --untracked-files=all --ignored)"
+      - name: Record build platform and configure compiler cache
+        shell: bash
+        run: |
+          uname -a
+          cmake --version
+          c++ --version
+          ccache --version
+          ccache --set-config=cache_dir="$GITHUB_WORKSPACE/.ccache"
+          ccache --set-config=base_dir="$GITHUB_WORKSPACE"
+          ccache --set-config=compiler_check=content
+          ccache --max-size=750M
+          ccache --zero-stats
       - name: Configure Vocal, Master and Studio
-        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON -DDARKVOICE_BUILD_PRODUCTS=ON
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON -DDARKVOICE_BUILD_PRODUCTS=ON -DDARKVOICE_JUCE_SOURCE_DIR="$GITHUB_WORKSPACE/.ci-deps/JUCE" -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
       - name: Build VST3 and standalone, plus AU on macOS
         run: python3 tools/ci-build.py build/product-build.log cmake --build build --config Release --parallel 2
-      - name: Run headless processor, state and DSP tests
-        run: ctest --test-dir build --build-config Release --output-on-failure --no-tests=error
+      # Build trees and CTest results are never restored from cache.
+      - name: Run headless processor, preset, state and DSP tests
+        run: python3 tools/ci-build.py build/test-run.log ctest --test-dir build --build-config Release --output-on-failure --no-tests=error
       - name: Exercise real editor controls on a virtual display
         if: runner.os == 'Linux'
+        shell: bash
         run: |
           xvfb-run -a build/darkvoice_gui_smoke /tmp/darkvoice-ui.png 2>&1 | tee build/gui-smoke.log
           if grep -Eq 'JUCE Assertion failure|Leaked objects detected' build/gui-smoke.log; then exit 1; fi
@@ -82,6 +125,9 @@ jobs:
           killall -9 AudioComponentRegistrar || true
           /usr/bin/auval -v aufx Dvvc Dkvc
           /usr/bin/auval -v aufx Dvms Dkvc
+      - name: Report compiler cache statistics
+        if: always()
+        run: ccache --show-stats
       - name: Retain current-run test evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -90,6 +136,8 @@ jobs:
           path: |
             build/Testing/Temporary/
             build/product-build.log
+            build/test-run.log
+            build/gui-smoke.log
           if-no-files-found: warn
           retention-days: 14
 

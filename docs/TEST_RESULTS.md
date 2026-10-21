@@ -86,3 +86,69 @@ produce outliers: the observed 96kHz maximum exceeds its 2.667ms buffer period.
 This is a throughput observation, not deadline qualification or a physical-device
 glitch test. Reproduce with retained /tmp/darkvoice-benchmark.cpp and binary in
 this instance; a portable hardware benchmark harness remains future work.
+
+
+## M2 continuation — local validation
+
+- Linux Debug Vocal/Master VST3 and Studio Standalone builds passed.
+- 10/10 CTest suites passed: legacy core5, engine339 checks, effects618 checks,
+  pitch168 checks, presets639 checks, plus processor/state integration.
+- Release core8/8 and ASan/UBSan core8/8 passed; no findings.
+- GUI smoke: all20 control attachments, real factory-preset rendering, bypass
+  preservation and XDG default storage passed; standalone window startup and
+  screenshot inspected. No physical audio device/listening/DAW test was run.
+- Full-token legacy/v2 project-state validation, stable old AU version hints1/new2,
+  locale-independent persistence and legacy parameter defaults are tested.
+- Presets: malformed/deep/duplicate/trailing/oversized/overflow JSON, finite/range/
+  name/identifier checks, symlink rejection, concurrent exclusive exports,
+  import UUID regeneration, favorites/rename/migration/preservation all pass.
+- Formatter19.1.7 and exhaustive cppcheck2.17.1 passed all8 scoped DSP/header files;
+  limited credential/dependency scans and planted-fixture self-test passed.
+
+New reverb is a damped Schroeder design, not separate plate/room/hall algorithms.
+Delay changes can alter pitch naturally. Channels remain independent. Preset file
+I/O is bounded and off the audio thread but synchronous on the message thread.
+No-overwrite commits use same-volume hard links and fail safely where unsupported.
+Path checks reject symlinks; this is not a sandbox against adversarial same-user
+parent-directory replacement races. Pitch analysis is bounded worker-only YIN,
+not live correction; octave errors/real-vocal accuracy remain unqualified.
+No callback allocation, hard deadline or listening certification follows from
+ordinary new/new[] probes and synthetic signals. New native CI/auval is pending.
+
+
+## Dry pitch telemetry continuation
+
+- Local products rebuild and 11/11 CTest suites pass. analysis.worker has14 checks
+  covering actual F0, untouched input, ring overrun recovery, rate/lifecycle changes,
+  stereo downmix and ordinary per-producer-thread allocation checks.
+- The processor test detects a quiet dry A2 even when input/output gains attenuate
+  rendered audio below the detector gate, proving the tap precedes DSP.
+- Real GUI timer feedback shows A2 from generated input; all20 controls and actual
+  preset audio still pass the display smoke. The harness pumps real timers because
+  it has no native event loop. Standalone startup/default writable storage pass.
+- Focused ThreadSanitizer harness compiled JUCE core/audio-basics, PitchDetector and
+  DryPitchAnalyzer with instrumentation, exercised concurrent producer/consumer and
+  shutdown, and exited0 with no findings. Harness/source/logs remain under
+  /tmp/darkvoice-thread-* in this instance. This is not full host qualification.
+- Native CI at0a4e2e5 passed Linux products and Linux core/sanitizers, but macOS
+  tests failed. Raw log host remains unavailable; test commands now emit
+  API-readable failure annotations while preserving actual exit status. Diagnosis
+  and final-revision native validation remain in progress.
+
+## Neutral EQ portability fix
+
+CI failure annotations at 98f1c8a isolated all four supported-rate failures to
+the exact neutral-effects identity assertion on macOS. Zero-gain RBJ bands now
+use identity coefficients directly, avoiding platform-dependent cancellation
+rounding without relaxing the test. Linux products rebuild and 11/11 CTest suites
+pass after this fix; native CI for the fix remains pending.
+
+
+Final implementation validation at 716c599: GitHub Actions run 39656700867
+passes all seven build/test jobs, including macOS Debug/Release core, Linux
+Debug/Release core and sanitizers, both native product jobs, Linux GUI smoke,
+and unsigned Vocal/Master auval. Source-quality run 39656701080 also passes.
+Local post-fix results: products 11/11, Release core 8/8, ASan/UBSan core 8/8,
+GUI/standalone display smoke pass. Documentation-only successors require their
+own CI; this evidence identifies the tested implementation commit explicitly.
+Actual GarageBand/other DAW sessions, microphone and listening remain unrun.

@@ -65,3 +65,60 @@ record/import/editing, Auto Mix, full stereo mastering, QC/export and complete U
 The Master shell is not functional full-song mastering. No true-peak/LUFS or AI
 capability is represented by the current controls. Signing/notarization, actual
 DAW/listening/CPU tests and release qualification remain unrun.
+
+## M2 active work packages
+
+User reaffirmed automatic commits/pushes and continued feature development. PR #2
+is confirmed merged into main at 2eb1f28 (externally); checkout is based on that
+unchanged source tree. Main default-branch setting remains separate.
+
+Shared v2 contracts/parameter schema established before assignment. Effects DSP
+owns ToneEffects.cpp and effects_tests.cpp. Engine integration owns AudioEngine.cpp
+and engine_tests.cpp (AudioEngine.hpp private details only, coordinate API changes).
+Preset persistence owns PresetBank.hpp/.cpp and preset_tests.cpp (public API fixed).
+Host/UI owns PluginProcessor/Editor and plugin_tests/gui_smoke. Build integration
+owns CMake/workflows and review of dependency/cache setup. QA is read-only across
+packages. Each uses an isolated feature branch/worktree. Lead owns contracts,
+integration and handoff docs. Acceptance: numerical EQ/delay/reverb signal tests,
+real controls, schema-v1 migration/v2 roundtrip, persistent preset operations,
+actual preset changes in rendered audio, all-rate/layout and sanitizer coverage.
+
+
+## M2 continuation — implemented and tested locally
+
+Foundation PR #2 is confirmed merged into main (2eb1f28), and issue #1 is closed.
+This branch adds three-band tone EQ, feedback delay/reverb, six actual factory
+sounds and persistent user presets, a grouped 20-control editor, stable legacy AU
+version hints, and state-v1 migration. Issue #10 tracks this subset of M2 (#3), not
+the entire milestone. A worker-only YIN dry pitch analyzer supports later M3 work;
+no live correction/reference synchronization or coach UI is represented by it.
+
+Lead integrated the isolated agent work, corrected JSON primitive-key parsing,
+version overflow/depth/trailing-input checks, bounded file reads and exclusive
+writes, corrected legacy fixtures and completed the GUI/runtime validation.
+All completed source changes are committed/pushed to feature/effects/presets-m2.
+Local products build; 11 CTest suites pass; Release/sanitized core suites pass8/8.
+GUI smoke exercises all20 controls, actual factory-preset audio and default storage;
+standalone startup/screenshot pass. Scoped cppcheck and formatter pass. Native CI
+for this revision is pending; previous milestone's evidence is not reused as a
+passing claim for these changes. No public release is authorized/published.
+
+
+Dry pitch telemetry now runs on a dedicated worker behind a bounded SPSC ring,
+with actual note/frequency/confidence display. It adds no audio-path correction
+or saved voice recordings. Local11/11 suites, GUI feedback and a focused
+ThreadSanitizer harness pass. MacOS new-test failures in the initial CI revision
+are under investigation; do not merge or reuse foundation AU evidence for this
+increment. The lead continues direct integration from the preserved work packages.
+
+
+## Current integration checkpoint
+
+The macOS identity failures were isolated to zero-gain EQ cancellation rounding.
+The fix uses identity coefficients for neutral bands and preserves the strict test.
+After the fix: local products 11/11, Release core 8/8 and ASan/UBSan core 8/8
+pass; the GUI/standalone display checks pass again. Native CI at 716c599 passes all seven jobs: Linux/macOS Debug and Release
+core, Linux sanitizers, and both product jobs. Both unsigned development AU
+validations and the Linux GUI smoke pass. PR #11 is ready for review; no merge
+or completed review is claimed. Subsequent documentation commits rerun CI.
+No M2/M3 completion or actual DAW/listening qualification is claimed.

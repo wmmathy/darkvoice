@@ -84,3 +84,96 @@ Preset/state parsing rejects oversized, malformed, unknown-version, duplicated,
 nonfinite and out-of-range parameter state before replacement. The GUI smoke target
 exercises actual slider/bypass attachments and renders the real editor; it requires
 a display session. Product names are taken from each JUCE target.
+
+# M2 contract v2 — EQ, spatial effects and presets
+
+Established before feature delegation. ParameterSchema.hpp is the single parameter
+ID/range/default/step/skew list: existing 8 IDs remain stable, followed by 13 new
+float IDs. AudioEngine.hpp and ToneEffects.hpp are the shared source interfaces.
+ToneEffects is a dependency-free module: low/high shelves (fixed Q), parametric
+mid peak, feedback delay (linear interpolated/smoothed time), and damped Schroeder
+reverb. Exact ranges/defaults are in the schema. Supported rates/layouts remain
+44.1/48/88.2/96 kHz, mono/stereo. maxFrames is now bounded to 65536.
+
+prepare may allocate bounded filter/ring/scratch storage off the audio thread and
+returns false/unprepares on invalid input or allocation failure. prepare resets
+default targets/history. reset clears histories, settles controls to current
+targets, and never allocates. setParameters rejects any invalid snapshot without
+changing targets. process/reset/setParameters never allocate/lock/I/O. Reject
+invalid blocks before writes/history changes. All controls smooth over about 10ms;
+zero EQ gain/delayMix/reverbMix must preserve neutral signal within FP tolerance.
+Tail processing must continue on zero-valued input; zero frames do not advance.
+Sanitize nonfinite active input and flush denormal history; bypass preserves input
+and freezes all engine/effect history. Preallocated wet buffers preserve original
+dry samples for the global mix. Peak meters include resulting wet/tail output.
+
+v2 chain: input gain -> HP -> saturation/compression -> EQ -> delay -> reverb ->
+global dry/wet -> output gain. This ordering is explicit, not a final vocal chain.
+No new algorithmic latency: musical delay/reverb are effects, not host compensation.
+Advertise a conservative 40-second maximum tail (delay <=1s, feedback <=0.8).
+Saturation remains non-oversampled and compression remains stereo-unlinked.
+
+JUCE state schema v2 contains all 21 parameters. Load v1 exact 8-ID snapshots with
+new IDs initialized to defaults; reject unknown versions, missing/duplicate/unknown
+IDs, malformed/nonfinite/out-of-range values without changing live parameters.
+Preserve locale-independent canonical save/validated numeric load behavior.
+
+PresetBank API will be shared through src/PresetBank.hpp. Presets contain exactly
+the 20 non-bypass sound parameters (future pitch/harmony are separate). Applying
+one validates the whole candidate first and preserves bypass/pitch/harmony state.
+Six initial factory sounds: Dark Synth Baritone, Industrial Bass, Heavy Rock
+Baritone, Clean Studio Baritone, Gothic Bass, Cinematic Bass. They operate on actual
+current DSP; the remaining required factory sounds await their real processors.
+Factories are read-only; save-as creates a user copy. User presets support search,
+favorites, rename, import/export, version-1 migration, explicit file-size/range/name
+validation and local UUID-based filenames. Never overwrite another user preset on
+import/save-as. Updates use atomic file replacement, outside the audio callback.
+No project media, profiles, credentials or network services are part of this bank.
+
+PresetBank JSON format v2: object with schemaVersion=2, name and parameters (all
+20 known non-bypass IDs, finite numbers only); stored user files also carry UUID
+id. v1 uses schemaVersion=1 and exactly the 7 original non-bypass IDs; migrate by
+adding v2 defaults. This is separate from APVTS state schema. Files <=1MiB, names
+trimmed/nonempty <=80 characters without controls, direct user files bounded to
+512. Import regenerates UUID regardless of external id. Export refuses existing
+destination. Favorites are separate local metadata, including factory IDs. refresh
+keeps valid entries/factories, reports malformed user files without deleting them.
+The shared PresetBank public API is in src/PresetBank.hpp; pointers from find are
+invalidated on mutations. Public API changes require lead coordination; private
+helpers are implementation-owned.
+
+# Pitch analysis contract v1 (worker/offline foundation, not correction)
+
+PitchDetector.hpp establishes a separate mono dry-signal analyzer. prepare accepts
+only the four supported rates, windows 1024..16384, minimumHz>=20,
+maximumHz<=4000 and minimum<maximum, with window>=2*ceil(rate/minimum)+2.
+Invalid prepare unprepares; allocations occur only during prepare and failures
+return false. analyze requires exactly the prepared window and finite input;
+invalid/unprepared, RMS-after-DC-removal <1e-5 or insufficient periodicity yields
+an unvoiced zero estimate. Valid output: finite frequency in configured range,
+fractional MIDI note and confidence [0,1]. No medical/register inference follows.
+
+Bounded time-domain YIN difference/normalized dip with parabolic refinement;
+minimum confidence 0.8. DC removal, synthetic/harmonic/noise/range tests required.
+No allocations during analyze. It is worker/offline-only, not an audio callback,
+live correction, key/chord reference synchronization or user-facing coach feature.
+No detection accuracy or voicing certainty is guaranteed for arbitrary recordings.
+
+# Dry pitch telemetry contract v1
+
+DryPitchAnalyzer.hpp: fixed-capacity SPSC ring (32768 available frames), copied
+mono average of the unprocessed input, one analysis worker, 8192-sample window and
+4096-sample hop. prepare/release run off the callback and stop/join the worker
+before resetting shared state. push is audio-thread-only, bounded by ring capacity,
+nonblocking, no allocation, and never changes input or audio processing results.
+Overrun drops the incoming block, flags discontinuity, and the worker discards
+queued/history data rather than estimating across a gap. Results are lock-free
+atomic float frequency/confidence, zero for unvoiced/unavailable data. Low-level
+nonfinite input is sanitized for analysis. It works independently of bypass.
+
+The processor taps dry input before any DSP. The editor displays measured note,
+frequency and confidence at UI refresh rate. This is analysis telemetry, not
+correction, target-note coaching or reference synchronization; window/worker
+latency does not contribute to the audio path's compensation. prepare/release must
+not race processBlock; usual JUCE host lifecycle serialization is required. No
+profile recording, file/network/model access or stored voice audio is added.

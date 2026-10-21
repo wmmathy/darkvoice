@@ -7,39 +7,23 @@
 #include <locale>
 #include <sstream>
 
-namespace {
-constexpr std::array<const char *, 8> ids{"inputDb",     "outputDb", "highPassHz", "drive",
-                                          "thresholdDb", "ratio",    "mix",        "bypass"};
-constexpr std::array<float, 8> minima{-24, -24, 20, 0, -60, 1, 0, 0};
-constexpr std::array<float, 8> maxima{24, 24, 400, 1, 0, 20, 1, 1};
-} // namespace
 static_assert(std::atomic<float>::is_always_lock_free,
               "Real-time parameter and meter transport requires lock-free float atomics");
 
 juce::AudioProcessorValueTreeState::ParameterLayout DarkVoiceProcessor::createParameters() {
     juce::AudioProcessorValueTreeState::ParameterLayout layout;
-    layout.add(std::make_unique<juce::AudioParameterFloat>(
-        juce::ParameterID{"inputDb", 1}, "Input", juce::NormalisableRange<float>{-24, 24, 0.1f},
-        0));
-    layout.add(std::make_unique<juce::AudioParameterFloat>(
-        juce::ParameterID{"outputDb", 1}, "Output", juce::NormalisableRange<float>{-24, 24, 0.1f},
-        0));
-    layout.add(std::make_unique<juce::AudioParameterFloat>(
-        juce::ParameterID{"highPassHz", 1}, "High-pass",
-        juce::NormalisableRange<float>{20, 400, 1, 0.5f}, 20));
-    layout.add(std::make_unique<juce::AudioParameterFloat>(
-        juce::ParameterID{"drive", 1}, "Warmth drive", juce::NormalisableRange<float>{0, 1, 0.001f},
-        0));
-    layout.add(std::make_unique<juce::AudioParameterFloat>(
-        juce::ParameterID{"thresholdDb", 1}, "Compressor threshold",
-        juce::NormalisableRange<float>{-60, 0, 0.1f}, -18));
-    layout.add(std::make_unique<juce::AudioParameterFloat>(
-        juce::ParameterID{"ratio", 1}, "Compressor ratio",
-        juce::NormalisableRange<float>{1, 20, 0.1f}, 1));
-    layout.add(std::make_unique<juce::AudioParameterFloat>(
-        juce::ParameterID{"mix", 1}, "Dry / wet", juce::NormalisableRange<float>{0, 1, 0.001f}, 1));
-    layout.add(std::make_unique<juce::AudioParameterBool>(juce::ParameterID{"bypass", 1}, "Bypass",
-                                                          false));
+    for (std::size_t i = 0; i < darkvoice::parameterSchema.size(); ++i) {
+        const auto &spec = darkvoice::parameterSchema[i];
+        const int version = i < darkvoice::legacyParameterCount ? 1 : 2;
+        if (spec.boolean)
+            layout.add(std::make_unique<juce::AudioParameterBool>(
+                juce::ParameterID{spec.id, version}, spec.name, spec.defaultValue != 0));
+        else
+            layout.add(std::make_unique<juce::AudioParameterFloat>(
+                juce::ParameterID{spec.id, version}, spec.name,
+                juce::NormalisableRange<float>{spec.minimum, spec.maximum, spec.step, spec.skew},
+                spec.defaultValue));
+    }
     return layout;
 }
 DarkVoiceProcessor::DarkVoiceProcessor(bool mastering)
@@ -47,8 +31,8 @@ DarkVoiceProcessor::DarkVoiceProcessor(bool mastering)
                          .withInput("Input", juce::AudioChannelSet::stereo(), true)
                          .withOutput("Output", juce::AudioChannelSet::stereo(), true)),
       parameters(*this, nullptr, "DarkVoiceState", createParameters()), mastering_(mastering) {
-    for (std::size_t i = 0; i < ids.size(); ++i)
-        raw_[i] = parameters.getRawParameterValue(ids[i]);
+    for (std::size_t i = 0; i < darkvoice::parameterSchema.size(); ++i)
+        raw_[i] = parameters.getRawParameterValue(darkvoice::parameterSchema[i].id);
     setLatencySamples(0);
 }
 const juce::String DarkVoiceProcessor::getName() const {
@@ -75,6 +59,19 @@ darkvoice::EngineParameters DarkVoiceProcessor::snapshot() const noexcept {
     p.ratio = raw_[5]->load(std::memory_order_relaxed);
     p.mix = raw_[6]->load(std::memory_order_relaxed);
     p.bypass = raw_[7]->load(std::memory_order_relaxed) >= 0.5f;
+    p.eqLowHz = raw_[8]->load(std::memory_order_relaxed);
+    p.eqLowGainDb = raw_[9]->load(std::memory_order_relaxed);
+    p.eqMidHz = raw_[10]->load(std::memory_order_relaxed);
+    p.eqMidGainDb = raw_[11]->load(std::memory_order_relaxed);
+    p.eqMidQ = raw_[12]->load(std::memory_order_relaxed);
+    p.eqHighHz = raw_[13]->load(std::memory_order_relaxed);
+    p.eqHighGainDb = raw_[14]->load(std::memory_order_relaxed);
+    p.delayMs = raw_[15]->load(std::memory_order_relaxed);
+    p.delayFeedback = raw_[16]->load(std::memory_order_relaxed);
+    p.delayMix = raw_[17]->load(std::memory_order_relaxed);
+    p.reverbSize = raw_[18]->load(std::memory_order_relaxed);
+    p.reverbDamping = raw_[19]->load(std::memory_order_relaxed);
+    p.reverbMix = raw_[20]->load(std::memory_order_relaxed);
     return p;
 }
 void DarkVoiceProcessor::prepareToPlay(double rate, int maxFrames) {
@@ -85,12 +82,17 @@ void DarkVoiceProcessor::prepareToPlay(double rate, int maxFrames) {
         (void)engine_.setParameters(snapshot());
         engine_.reset();
     }
+    if (prepared_)
+        (void)dryAnalysis_.prepare(rate);
+    else
+        dryAnalysis_.release();
     inputPeak_.store(0, std::memory_order_relaxed);
     outputPeak_.store(0, std::memory_order_relaxed);
     setLatencySamples(static_cast<int>(engine_.latencySamples()));
 }
 void DarkVoiceProcessor::releaseResources() {
     prepared_ = false;
+    dryAnalysis_.release();
     engine_.reset();
     inputPeak_.store(0, std::memory_order_relaxed);
     outputPeak_.store(0, std::memory_order_relaxed);
@@ -104,6 +106,7 @@ void DarkVoiceProcessor::processBlock(juce::AudioBuffer<float> &audio, juce::Mid
         outputPeak_.store(0, std::memory_order_relaxed);
         return;
     }
+    dryAnalysis_.push(audio);
     (void)engine_.setParameters(snapshot());
     float inPeak = 0, outPeak = 0;
     const auto frames = static_cast<std::size_t>(audio.getNumSamples());
@@ -133,7 +136,7 @@ juce::AudioProcessorEditor *DarkVoiceProcessor::createEditor() {
 }
 void DarkVoiceProcessor::getStateInformation(juce::MemoryBlock &destination) {
     auto state = parameters.copyState();
-    state.setProperty("schemaVersion", 1, nullptr);
+    state.setProperty("schemaVersion", 2, nullptr);
     // JUCE numeric var-to-String conversion follows the global C++ locale.
     // Serialize a canonical decimal representation without changing process locale.
     for (auto child : state) {
@@ -150,41 +153,75 @@ void DarkVoiceProcessor::setStateInformation(const void *data, int bytes) {
     if (data == nullptr || bytes <= 0 || bytes > 1024 * 1024)
         return;
     const auto xml = getXmlFromBinary(data, bytes);
-    if (!xml || !xml->hasTagName("DarkVoiceState") ||
-        xml->getStringAttribute("schemaVersion") != "1")
+    if (!xml || !xml->hasTagName("DarkVoiceState"))
         return;
+    const auto version = xml->getStringAttribute("schemaVersion");
+    if (version != "1" && version != "2")
+        return;
+    const auto count =
+        version == "1" ? darkvoice::legacyParameterCount : darkvoice::parameterSchema.size();
     const auto state = juce::ValueTree::fromXml(*xml);
-    if (!state.isValid() || state.getNumChildren() != static_cast<int>(ids.size()))
+    if (!state.isValid() || state.getNumChildren() != static_cast<int>(count))
         return;
-    std::array<bool, 8> seen{};
+    std::array<bool, darkvoice::parameterSchema.size()> seen{};
+    std::array<float, darkvoice::parameterSchema.size()> values{};
+    for (std::size_t i = 0; i < values.size(); ++i)
+        values[i] = darkvoice::parameterSchema[i].defaultValue;
     for (int childIndex = 0; childIndex < state.getNumChildren(); ++childIndex) {
-        auto child = state.getChild(childIndex);
+        const auto child = state.getChild(childIndex);
         if (!child.hasType("PARAM") || !child.hasProperty("id") || !child.hasProperty("value"))
             return;
         const auto id = child.getProperty("id").toString();
         std::size_t index = 0;
-        while (index < ids.size() && id != ids[index])
+        while (index < count && id != darkvoice::parameterSchema[index].id)
             ++index;
-        if (index == ids.size() || seen[index])
+        if (index == count || seen[index])
             return;
-        const auto token = child.getProperty("value").toString().trim();
-        // Floating-point from_chars is unavailable in some supported Apple libc++ versions.
-        // State restoration is non-real-time; classic locale and full consumption are explicit.
-        std::istringstream parser(token.toStdString());
+        const auto &spec = darkvoice::parameterSchema[index];
+        std::istringstream parser(child.getProperty("value").toString().trim().toStdString());
         parser.imbue(std::locale::classic());
         float value = 0;
         parser >> std::noskipws >> value;
         if (!parser || parser.peek() != std::char_traits<char>::eof() || !std::isfinite(value) ||
-            value < minima[index] || value > maxima[index])
+            value < spec.minimum || value > spec.maximum ||
+            (spec.boolean && value != 0 && value != 1))
             return;
-        if (index == 7 && value != 0 && value != 1)
-            return;
-        // Store numeric values so APVTS does not need locale-sensitive string conversion.
-        child.setProperty("value", value, nullptr);
         seen[index] = true;
+        values[index] = value;
     }
-    parameters.replaceState(state);
+    // Build canonical complete state only after the entire snapshot validates.
+    juce::ValueTree migrated("DarkVoiceState");
+    migrated.setProperty("schemaVersion", 2, nullptr);
+    for (std::size_t i = 0; i < values.size(); ++i) {
+        juce::ValueTree child("PARAM");
+        child.setProperty("id", darkvoice::parameterSchema[i].id, nullptr);
+        child.setProperty("value", values[i], nullptr);
+        migrated.addChild(child, -1, nullptr);
+    }
+    parameters.replaceState(migrated);
 }
+darkvoice::PresetValues DarkVoiceProcessor::snapshotPresetValues() const {
+    darkvoice::PresetValues values;
+    for (std::size_t i = 0; i < darkvoice::parameterSchema.size(); ++i)
+        if (!darkvoice::parameterSchema[i].boolean)
+            values.emplace(darkvoice::parameterSchema[i].id,
+                           raw_[i]->load(std::memory_order_relaxed));
+    return values;
+}
+bool DarkVoiceProcessor::applyPreset(const darkvoice::PresetValues &values) {
+    if (darkvoice::PresetBank::validate(values).failed())
+        return false;
+    for (const auto &spec : darkvoice::parameterSchema) {
+        if (spec.boolean)
+            continue;
+        auto *parameter = parameters.getParameter(spec.id);
+        parameter->beginChangeGesture();
+        parameter->setValueNotifyingHost(parameter->convertTo0to1(values.at(spec.id)));
+        parameter->endChangeGesture();
+    }
+    return true;
+}
+
 juce::AudioProcessor *JUCE_CALLTYPE createPluginFilter() {
 #if defined(DARKVOICE_MASTER) && DARKVOICE_MASTER
     return new DarkVoiceProcessor(true);

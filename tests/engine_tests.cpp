@@ -13,6 +13,7 @@
 
 namespace {
 std::atomic<std::size_t> allocations{0};
+std::atomic<bool> rejectAllocations{false};
 int failures = 0;
 int checks = 0;
 void check(bool condition, const char *message) {
@@ -51,6 +52,7 @@ void lifecycle() {
     for (double rate : {0.0, -1.0, 22050.0, std::numeric_limits<double>::infinity()})
         check(!engine.prepare(rate, 2, 2), "invalid rate rejection");
     check(!engine.prepare(48000, 0, 2), "zero maximum rejection");
+    check(!engine.prepare(48000, 65537, 2), "bounded preparation rejects excessive capacity");
     check(!engine.prepare(48000, 2, 3), "unsupported channel rejection");
     check(engine.prepare(48000, 2, 2), "valid stereo preparation");
     std::array<float *, 2> nullLast{left.data(), nullptr};
@@ -71,11 +73,17 @@ void snapshotsAndSmoothing() {
     p.mix = 0;
     p.outputDb = 12;
     check(engine.setParameters(p) && reference.setParameters(p), "valid parameter snapshot");
-    const std::array<float darkvoice::EngineParameters::*, 7> fields{
-        &darkvoice::EngineParameters::inputDb,     &darkvoice::EngineParameters::outputDb,
-        &darkvoice::EngineParameters::highPassHz,  &darkvoice::EngineParameters::drive,
-        &darkvoice::EngineParameters::thresholdDb, &darkvoice::EngineParameters::ratio,
-        &darkvoice::EngineParameters::mix};
+    const std::array<float darkvoice::EngineParameters::*, 20> fields{
+        &darkvoice::EngineParameters::inputDb,       &darkvoice::EngineParameters::outputDb,
+        &darkvoice::EngineParameters::highPassHz,    &darkvoice::EngineParameters::drive,
+        &darkvoice::EngineParameters::thresholdDb,   &darkvoice::EngineParameters::ratio,
+        &darkvoice::EngineParameters::mix,           &darkvoice::EngineParameters::eqLowHz,
+        &darkvoice::EngineParameters::eqLowGainDb,   &darkvoice::EngineParameters::eqMidHz,
+        &darkvoice::EngineParameters::eqMidGainDb,   &darkvoice::EngineParameters::eqMidQ,
+        &darkvoice::EngineParameters::eqHighHz,      &darkvoice::EngineParameters::eqHighGainDb,
+        &darkvoice::EngineParameters::delayMs,       &darkvoice::EngineParameters::delayFeedback,
+        &darkvoice::EngineParameters::delayMix,      &darkvoice::EngineParameters::reverbSize,
+        &darkvoice::EngineParameters::reverbDamping, &darkvoice::EngineParameters::reverbMix};
     for (auto field : fields) {
         auto invalid = p;
         invalid.inputDb = 24;
@@ -85,7 +93,7 @@ void snapshotsAndSmoothing() {
     }
     for (auto field : fields) {
         auto invalid = p;
-        invalid.*field = 1000;
+        invalid.*field = std::numeric_limits<float>::max();
         check(!engine.setParameters(invalid), "out of range snapshot rejected");
     }
     std::vector<float> first(48000, 0.1f), second = first;
@@ -118,6 +126,11 @@ void activePartitionAndBypass() {
     p.ratio = 4;
     p.thresholdDb = -24;
     p.mix = 0.7f;
+    p.eqMidGainDb = -6;
+    p.eqLowGainDb = 3;
+    p.delayMix = 0.25f;
+    p.delayFeedback = 0.45f;
+    p.reverbMix = 0.15f;
     check(first.setParameters(p) && second.setParameters(p), "active smoothed snapshot");
     auto a = sine(48000, 173), b = a;
     check(run(first, a, 48000) && run(second, b, 97), "active partition rendering");
@@ -206,14 +219,138 @@ void isolationBypassAndSafety() {
     right.fill(0);
     check(stereo.process(channels, 32) && left[0] == 0 && right[0] == 0,
           "bypass freezes filter history");
-    const auto before = allocations.load();
     const bool prepared = stereo.prepare(48000, 32, 2);
+    p.eqMidGainDb = 3;
+    p.delayMix = 0.3f;
+    p.reverbMix = 0.3f;
+    const auto before = allocations.load();
     const bool parameters = stereo.setParameters(p);
     stereo.reset();
     const bool processed = stereo.process(channels, 32);
     const auto after = allocations.load();
     check(prepared && parameters && processed && after == before,
-          "no dynamic allocations during lifecycle or audio processing");
+          "no dynamic allocations during set/reset/audio with active effects");
+}
+
+void integratedEffects(double rate) {
+    darkvoice::AudioEngine engine;
+    check(engine.prepare(rate, 256, 1), "integrated effects prepare at required rate");
+    auto baseline = sine(rate, 1000, 0.1), equalized = baseline;
+    check(run(engine, baseline, 113), "neutral integrated reference render");
+    darkvoice::EngineParameters p;
+    p.eqMidHz = 1000;
+    p.eqMidGainDb = 9;
+    p.eqMidQ = 1;
+    check(engine.setParameters(p), "integrated mid-EQ snapshot");
+    engine.reset();
+    check(run(engine, equalized, 127), "integrated mid-EQ render");
+    check(rms(equalized) > rms(baseline) * 2.5 && rms(equalized) < rms(baseline) * 3.0,
+          "mid EQ changes actual whole-chain frequency response");
+
+    p = {};
+    p.delayMs = 40;
+    p.delayFeedback = 0.5f;
+    p.delayMix = 0.5f;
+    check(engine.setParameters(p), "integrated delay snapshot");
+    engine.reset();
+    const auto delay = static_cast<std::size_t>(rate * 0.04);
+    std::vector<float> impulse(delay * 4, 0);
+    impulse[0] = 1;
+    check(run(engine, impulse, 71), "integrated feedback impulse render");
+    const auto peakAround = [&impulse](std::size_t position) {
+        float peak = 0;
+        for (auto i = position - 3; i <= position + 3; ++i)
+            peak = std::max(peak, std::abs(impulse[i]));
+        return peak;
+    };
+    check(peakAround(delay) > 0.4f && peakAround(delay * 2) > 0.15f,
+          "delay time and feedback repeats survive whole-chain processing");
+
+    engine.reset();
+    std::array<float, 256> block{};
+    std::array<float *, 1> channel{block.data()};
+    block[0] = 1;
+    check(engine.process(channel, block.size()), "tail seed render");
+    bool meteredTail = false;
+    for (std::size_t processed = block.size(); processed < delay * 3; processed += block.size()) {
+        block.fill(0);
+        check(engine.process(channel, block.size()), "tail zero-input render");
+        meteredTail |= engine.meters().inputPeak == 0 && engine.meters().outputPeak > 0.05f;
+    }
+    check(meteredTail, "output meters include delay tail without dry input");
+
+    p.eqMidGainDb = 8;
+    p.eqLowGainDb = -6;
+    p.drive = 0.6f;
+    p.ratio = 8;
+    p.thresholdDb = -30;
+    p.reverbMix = 0.4f;
+    p.mix = 0;
+    check(engine.setParameters(p), "fully active effects with original-dry mix");
+    engine.reset();
+    auto dry = sine(rate, 230, 0.2), original = dry;
+    check(run(engine, dry, 131) && dry == original,
+          "global zero wet mix preserves original dry despite all active effects");
+    p.mix = 1;
+    check(engine.setParameters(p), "integrated reverb snapshot");
+    engine.reset();
+    std::vector<float> reverb(static_cast<std::size_t>(rate * 0.4), 0);
+    reverb[0] = 0.5f;
+    check(run(engine, reverb, 193), "integrated reverb impulse render");
+    double energy = 0;
+    for (std::size_t i = static_cast<std::size_t>(rate * 0.07); i < reverb.size(); ++i)
+        energy += static_cast<double>(reverb[i]) * reverb[i];
+    check(energy > 1.0e-7 &&
+              std::all_of(reverb.begin(), reverb.end(), [](float v) { return std::isfinite(v); }),
+          "spatial whole-chain tail is real and finite");
+    engine.reset();
+    std::fill(reverb.begin(), reverb.end(), 0);
+    check(run(engine, reverb, 251) &&
+              std::all_of(reverb.begin(), reverb.end(), [](float v) { return v == 0; }),
+          "reset clears all filter and spatial histories");
+}
+
+void invalidBlocksAndAllocationFailure() {
+    darkvoice::AudioEngine first, reference;
+    check(first.prepare(48000, 256, 1) && reference.prepare(48000, 256, 1),
+          "invalid-history comparison setup");
+    darkvoice::EngineParameters p;
+    p.eqMidGainDb = 5;
+    p.delayMix = 0.4f;
+    p.reverbMix = 0.3f;
+    check(first.setParameters(p) && reference.setParameters(p), "invalid-history active effects");
+    std::array<float, 256> a{}, b{};
+    a[0] = b[0] = 1;
+    std::array<float *, 1> ca{a.data()}, cb{b.data()};
+    check(first.process(ca, a.size()) && reference.process(cb, b.size()),
+          "invalid-history seed render");
+    const auto preserved = a;
+    std::array<float *, 1> invalid{nullptr};
+    check(!first.process(ca, 257) && !first.process(invalid, 8) && a == preserved,
+          "rejected blocks do not alter caller samples");
+    check(first.process(ca, 0), "zero frame call valid with spatial history");
+    a.fill(0);
+    b.fill(0);
+    check(first.process(ca, a.size()) && reference.process(cb, b.size()) && a == b,
+          "rejected/empty blocks do not advance spatial or smoothing history");
+
+    darkvoice::AudioEngine allocationFailure;
+    rejectAllocations.store(true);
+    const bool failed = allocationFailure.prepare(48000, 256, 2);
+    rejectAllocations.store(false);
+    check(!failed && !allocationFailure.process(ca, 1),
+          "allocation failure returns false and leaves engine unprepared");
+    check(allocationFailure.prepare(48000, 256, 1) && allocationFailure.process(ca, 1),
+          "preparation recovers after allocation failure");
+    // Scratch capacity is now retained; the next forced failure exercises the
+    // dependent spatial module's allocation path rather than scratch growth.
+    rejectAllocations.store(true);
+    const bool dependencyFailed = allocationFailure.prepare(48000, 256, 1);
+    rejectAllocations.store(false);
+    check(!dependencyFailed && !allocationFailure.process(ca, 1),
+          "effect preparation failure also leaves engine unprepared");
+    check(allocationFailure.prepare(48000, 256, 1) && allocationFailure.process(ca, 1),
+          "preparation recovers after dependent module allocation failure");
 }
 } // namespace
 
@@ -229,6 +366,8 @@ void isolationBypassAndSafety() {
 
 DARKVOICE_TEST_NOINLINE void *operator new(std::size_t bytes) {
     allocations.fetch_add(1);
+    if (rejectAllocations.load())
+        throw std::bad_alloc();
     if (void *result = std::malloc(bytes == 0 ? 1 : bytes))
         return result;
     throw std::bad_alloc();
@@ -255,9 +394,12 @@ int main() {
     lifecycle();
     snapshotsAndSmoothing();
     activePartitionAndBypass();
-    for (double rate : {44100.0, 48000.0, 88200.0, 96000.0})
+    for (double rate : {44100.0, 48000.0, 88200.0, 96000.0}) {
         signalTests(rate);
+        integratedEffects(rate);
+    }
     isolationBypassAndSafety();
+    invalidBlocksAndAllocationFailure();
     std::printf("Engine checks: %d, failures: %d\n", checks, failures);
     return failures == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }

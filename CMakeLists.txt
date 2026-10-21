@@ -11,7 +11,7 @@ target_compile_features(darkvoice_core INTERFACE cxx_std_20)
 target_include_directories(darkvoice_core INTERFACE
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>")
 
-add_library(darkvoice_engine STATIC src/AudioEngine.cpp)
+add_library(darkvoice_engine STATIC src/AudioEngine.cpp src/ToneEffects.cpp src/PitchDetector.cpp)
 add_library(DarkVoice::Engine ALIAS darkvoice_engine)
 target_link_libraries(darkvoice_engine PUBLIC DarkVoice::Core)
 set_target_properties(darkvoice_engine PROPERTIES POSITION_INDEPENDENT_CODE ON CXX_EXTENSIONS OFF)
@@ -56,6 +56,20 @@ if(BUILD_TESTING)
     darkvoice_strict_warnings(darkvoice_engine_tests)
     add_test(NAME engine.regression COMMAND darkvoice_engine_tests)
     set_tests_properties(engine.regression PROPERTIES TIMEOUT 60)
+
+    add_executable(darkvoice_effects_tests tests/effects_tests.cpp)
+    target_link_libraries(darkvoice_effects_tests PRIVATE DarkVoice::Engine)
+    set_target_properties(darkvoice_effects_tests PROPERTIES CXX_EXTENSIONS OFF)
+    darkvoice_strict_warnings(darkvoice_effects_tests)
+    add_test(NAME effects.regression COMMAND darkvoice_effects_tests)
+    set_tests_properties(effects.regression PROPERTIES TIMEOUT 60)
+
+    add_executable(darkvoice_pitch_tests tests/pitch_tests.cpp)
+    target_link_libraries(darkvoice_pitch_tests PRIVATE DarkVoice::Engine)
+    set_target_properties(darkvoice_pitch_tests PROPERTIES CXX_EXTENSIONS OFF)
+    darkvoice_strict_warnings(darkvoice_pitch_tests)
+    add_test(NAME pitch.analysis COMMAND darkvoice_pitch_tests)
+    set_tests_properties(pitch.analysis PROPERTIES TIMEOUT 60)
 endif()
 
 if(DARKVOICE_BUILD_PRODUCTS)
@@ -105,7 +119,7 @@ if(DARKVOICE_BUILD_PRODUCTS)
             COPY_PLUGIN_AFTER_BUILD FALSE
             VST3_CATEGORIES Fx
             AU_MAIN_TYPE kAudioUnitType_Effect)
-        target_sources(${target} PRIVATE src/PluginProcessor.cpp src/PluginEditor.cpp)
+        target_sources(${target} PRIVATE src/PluginProcessor.cpp src/PluginEditor.cpp src/PresetBank.cpp src/DryPitchAnalyzer.cpp)
         target_include_directories(${target} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src")
         target_link_libraries(${target} PRIVATE DarkVoice::Engine juce::juce_audio_utils
             juce::juce_recommended_config_flags)
@@ -130,6 +144,24 @@ if(DARKVOICE_BUILD_PRODUCTS)
             "${darkvoice_juce_dir}/modules" "${CMAKE_CURRENT_SOURCE_DIR}/include")
         target_compile_features(darkvoice_plugin_tests PRIVATE cxx_std_20)
         target_compile_definitions(darkvoice_plugin_tests PRIVATE JUCE_GLOBAL_MODULE_SETTINGS_INCLUDED=1)
+        add_executable(darkvoice_preset_tests tests/preset_tests.cpp)
+        target_link_libraries(darkvoice_preset_tests PRIVATE DarkVoiceVocal)
+        target_include_directories(darkvoice_preset_tests PRIVATE
+            "${darkvoice_juce_dir}/modules" "${CMAKE_CURRENT_SOURCE_DIR}/include")
+        target_compile_features(darkvoice_preset_tests PRIVATE cxx_std_20)
+        target_compile_definitions(darkvoice_preset_tests PRIVATE JUCE_GLOBAL_MODULE_SETTINGS_INCLUDED=1)
+        add_executable(darkvoice_analysis_worker_tests tests/analysis_worker_tests.cpp)
+        target_link_libraries(darkvoice_analysis_worker_tests PRIVATE DarkVoiceVocal)
+        target_include_directories(darkvoice_analysis_worker_tests PRIVATE
+            "${darkvoice_juce_dir}/modules" "${CMAKE_CURRENT_SOURCE_DIR}/include")
+        target_compile_features(darkvoice_analysis_worker_tests PRIVATE cxx_std_20)
+        target_compile_definitions(darkvoice_analysis_worker_tests PRIVATE JUCE_GLOBAL_MODULE_SETTINGS_INCLUDED=1)
+        add_test(NAME analysis.worker COMMAND darkvoice_analysis_worker_tests)
+        set_tests_properties(analysis.worker PROPERTIES TIMEOUT 30
+            FAIL_REGULAR_EXPRESSION "JUCE Assertion failure;Leaked objects detected")
+        add_test(NAME presets.persistence COMMAND darkvoice_preset_tests)
+        set_tests_properties(presets.persistence PROPERTIES TIMEOUT 60
+            FAIL_REGULAR_EXPRESSION "JUCE Assertion failure;Leaked objects detected")
         # Explicit display-backed smoke target, run under Xvfb or a desktop.
         # Not registered in headless CTest; it requires a window-system session.
         add_executable(darkvoice_gui_smoke tests/gui_smoke.cpp)
