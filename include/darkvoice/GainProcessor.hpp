@@ -13,11 +13,11 @@ struct ProcessSpec {
 };
 
 class GainProcessor {
-public:
-    [[nodiscard]] bool prepare(ProcessSpec spec) noexcept {
+  public:
+    [[nodiscard]] bool prepare(const ProcessSpec &spec) noexcept {
         prepared_ = false;
-        if (!std::isfinite(spec.sampleRate) || spec.sampleRate <= 0.0 ||
-            spec.maxBlockSize == 0 || (spec.channels != 1 && spec.channels != 2)) {
+        if (!std::isfinite(spec.sampleRate) || spec.sampleRate <= 0.0 || spec.maxBlockSize == 0 ||
+            (spec.channels != 1 && spec.channels != 2)) {
             return false;
         }
         spec_ = spec;
@@ -34,7 +34,7 @@ public:
         return true;
     }
 
-    [[nodiscard]] bool process(std::span<float*> channels, std::size_t frames) noexcept {
+    [[nodiscard]] bool process(std::span<float *> channels, std::size_t frames) noexcept {
         if (!prepared_ || channels.size() != spec_.channels || frames > spec_.maxBlockSize) {
             return false;
         }
@@ -49,7 +49,7 @@ public:
                 }
             }
         }
-        for (float* channel : channels) {
+        for (float *channel : channels) {
             for (std::size_t frame = 0; frame < frames; ++frame) {
                 channel[frame] *= gain_;
             }
@@ -57,11 +57,15 @@ public:
         return true;
     }
 
-    void reset() noexcept { gain_ = 1.0F; }
+    void reset() noexcept {
+        gain_ = 1.0F;
+    }
 
-    [[nodiscard]] std::size_t latencySamples() const noexcept { return 0; }
+    [[nodiscard]] std::size_t latencySamples() const noexcept {
+        return 0;
+    }
 
-private:
+  private:
     ProcessSpec spec_{};
     float gain_{1.0F};
     bool prepared_{false};

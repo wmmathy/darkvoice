@@ -5,23 +5,32 @@
 #include <stdexcept>
 
 namespace {
-void require(bool condition, const char* message) { if (!condition) throw std::runtime_error(message); }
-void set(DarkVoiceProcessor& p, const char* id, float actual) {
-    auto* parameter = p.parameters.getParameter(id);
+void require(bool condition, const char *message) {
+    if (!condition)
+        throw std::runtime_error(message);
+}
+void set(DarkVoiceProcessor &p, const char *id, float actual) {
+    auto *parameter = p.parameters.getParameter(id);
     require(parameter != nullptr, "Missing stable parameter ID");
     parameter->setValueNotifyingHost(parameter->convertTo0to1(actual));
 }
-float raw(DarkVoiceProcessor& p, const char* id) { return p.parameters.getRawParameterValue(id)->load(); }
-void layout(DarkVoiceProcessor& p, int channels) {
+float raw(DarkVoiceProcessor &p, const char *id) {
+    return p.parameters.getRawParameterValue(id)->load();
+}
+void layout(DarkVoiceProcessor &p, int channels) {
     auto buses = p.getBusesLayout();
-    buses.inputBuses.set(0, channels == 1 ? juce::AudioChannelSet::mono() : juce::AudioChannelSet::stereo());
+    buses.inputBuses.set(0, channels == 1 ? juce::AudioChannelSet::mono()
+                                          : juce::AudioChannelSet::stereo());
     buses.outputBuses.set(0, buses.inputBuses[0]);
     require(p.setBusesLayout(buses), "Supported layout rejected");
 }
-void sine(juce::AudioBuffer<float>& buffer, double rate, int start = 0) {
+void sine(juce::AudioBuffer<float> &buffer, double rate, int start = 0) {
     for (int c = 0; c < buffer.getNumChannels(); ++c)
         for (int i = 0; i < buffer.getNumSamples(); ++i)
-            buffer.setSample(c, i, 0.1f * std::sin(static_cast<float>(2.0 * juce::MathConstants<double>::pi * 1000.0 * (start + i) / rate)));
+            buffer.setSample(c, i,
+                             0.1f *
+                                 std::sin(static_cast<float>(2.0 * juce::MathConstants<double>::pi *
+                                                             1000.0 * (start + i) / rate)));
 }
 void stateTests() {
     DarkVoiceProcessor source;
@@ -40,24 +49,27 @@ void stateTests() {
     require(raw(restored, "bypass") == 1.0f, "Bypass state not restored");
     const char garbage[] = "invalid state";
     restored.setStateInformation(garbage, sizeof(garbage));
-    require(raw(restored, "inputDb") == raw(source, "inputDb"), "Malformed state changed parameters");
-    for (const char* version : {"2", "1junk"}) {
+    require(raw(restored, "inputDb") == raw(source, "inputDb"),
+            "Malformed state changed parameters");
+    for (const char *version : {"2", "1junk"}) {
         auto xml = source.parameters.copyState().createXml();
         xml->setAttribute("schemaVersion", version);
         juce::MemoryBlock invalid;
         juce::AudioProcessor::copyXmlToBinary(*xml, invalid);
         set(restored, "inputDb", -5.0f);
         restored.setStateInformation(invalid.getData(), static_cast<int>(invalid.getSize()));
-        require(std::abs(raw(restored, "inputDb") + 5.0f) < 0.01f, "Invalid schema changed parameters");
+        require(std::abs(raw(restored, "inputDb") + 5.0f) < 0.01f,
+                "Invalid schema changed parameters");
     }
-    for (const char* value : {"NaN", "1.2.3", "100", "", ".", "--1", "1 2"}) {
+    for (const char *value : {"NaN", "1.2.3", "100", "", ".", "--1", "1 2"}) {
         auto tree = source.parameters.copyState();
         tree.setProperty("schemaVersion", 1, nullptr);
         tree.getChildWithProperty("id", "inputDb").setProperty("value", value, nullptr);
         juce::MemoryBlock invalid;
         juce::AudioProcessor::copyXmlToBinary(*tree.createXml(), invalid);
         restored.setStateInformation(invalid.getData(), static_cast<int>(invalid.getSize()));
-        require(std::abs(raw(restored, "inputDb") + 5.0f) < 0.01f, "Invalid parameter state accepted");
+        require(std::abs(raw(restored, "inputDb") + 5.0f) < 0.01f,
+                "Invalid parameter state accepted");
     }
     auto scientificTree = source.parameters.copyState();
     scientificTree.setProperty("schemaVersion", 1, nullptr);
@@ -66,7 +78,6 @@ void stateTests() {
     juce::AudioProcessor::copyXmlToBinary(*scientificTree.createXml(), scientific);
     restored.setStateInformation(scientific.getData(), static_cast<int>(scientific.getSize()));
     require(std::abs(raw(restored, "inputDb") - 10.0f) < 0.01f, "Valid scientific value rejected");
-
 }
 void renderingTests() {
     juce::MidiBuffer midi;
@@ -84,11 +95,13 @@ void renderingTests() {
             const float original = buffer.getSample(0, 20);
             p.processBlock(buffer, midi);
             const auto expected = original * juce::Decibels::decibelsToGain(-6.0f);
-            require(std::abs(buffer.getSample(0, 20) - expected) < 1.0e-5f, "Output gain not applied to actual audio");
+            require(std::abs(buffer.getSample(0, 20) - expected) < 1.0e-5f,
+                    "Output gain not applied to actual audio");
             for (int c = 0; c < channels; ++c)
                 for (int i = 0; i < buffer.getNumSamples(); ++i)
                     require(std::isfinite(buffer.getSample(c, i)), "Nonfinite render");
-            require(p.inputPeak() > 0.09f && p.outputPeak() > 0.045f && p.outputPeak() < 0.055f, "Block meters incorrect");
+            require(p.inputPeak() > 0.09f && p.outputPeak() > 0.045f && p.outputPeak() < 0.055f,
+                    "Block meters incorrect");
             set(p, "bypass", 1.0f);
             sine(buffer, rate);
             const float bypassSample = buffer.getSample(0, 20);
@@ -99,7 +112,8 @@ void renderingTests() {
             p.releaseResources();
             sine(buffer, rate);
             p.processBlock(buffer, midi);
-            require(buffer.getMagnitude(0, buffer.getNumSamples()) == 0, "Unprepared processing should silence");
+            require(buffer.getMagnitude(0, buffer.getNumSamples()) == 0,
+                    "Unprepared processing should silence");
         }
     }
     DarkVoiceProcessor master(true);
@@ -116,14 +130,15 @@ void renderingTests() {
     vocal.processBlock(rejected, midi);
     require(rejected.getMagnitude(0, 64) == 0, "Unsupported sample rate not silenced");
 }
-}
+} // namespace
 int main() {
     try {
         stateTests();
         renderingTests();
-        std::cout << "PASS plugin state, automation/render, rates/layouts, lifecycle and identity\n";
+        std::cout
+            << "PASS plugin state, automation/render, rates/layouts, lifecycle and identity\n";
         return 0;
-    } catch (const std::exception& error) {
+    } catch (const std::exception &error) {
         std::cerr << "FAIL " << error.what() << '\n';
         return 1;
     }

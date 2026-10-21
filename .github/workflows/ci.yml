@@ -5,6 +5,10 @@ on:
   push:
     branches: [main, 'feature/**', 'fix/**', 'refactor/**', 'docs/**']
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -57,13 +61,16 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install --no-install-recommends libasound2-dev libx11-dev libxext-dev libxinerama-dev libxrandr-dev libxcursor-dev libfreetype6-dev libfontconfig1-dev libgl1-mesa-dev
+          sudo apt-get install --no-install-recommends libasound2-dev libx11-dev libxext-dev libxinerama-dev libxrandr-dev libxcursor-dev libfreetype6-dev libfontconfig1-dev libgl1-mesa-dev xvfb xauth
       - name: Configure Vocal, Master and Studio
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON -DDARKVOICE_BUILD_PRODUCTS=ON
       - name: Build VST3 and standalone, plus AU on macOS
-        run: cmake --build build --config Release --parallel 2
+        run: python3 tools/ci-build.py build/product-build.log cmake --build build --config Release --parallel 2
       - name: Run headless processor, state and DSP tests
         run: ctest --test-dir build --build-config Release --output-on-failure --no-tests=error
+      - name: Exercise real editor controls on a virtual display
+        if: runner.os == 'Linux'
+        run: xvfb-run -a build/darkvoice_gui_smoke /tmp/darkvoice-ui.png
       - name: Validate unsigned development Audio Units
         if: runner.os == 'macOS'
         run: |
@@ -78,7 +85,9 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: product-test-logs-${{ matrix.os }}
-          path: build/Testing/Temporary/
+          path: |
+            build/Testing/Temporary/
+            build/product-build.log
           if-no-files-found: warn
           retention-days: 14
 

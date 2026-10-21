@@ -74,3 +74,13 @@ Vocal and Master share starter chain but remain distinct products, visibly marke
 as development builds. Studio Standalone initially hosts the vocal chain; complete
 record/import/mix/master journey remains outstanding. Live/Studio/Offline modes
 are future contracts; no nonfunctional mode controls are exposed.
+
+## Starter-chain limitations verified during integration
+
+Compression envelopes are independent per channel; linked stereo/M/S behavior is
+not established for mastering. Saturation is not oversampled. These targets are
+development shells and must not be presented as the finished Master product.
+Preset/state parsing rejects oversized, malformed, unknown-version, duplicated,
+nonfinite and out-of-range parameter state before replacement. The GUI smoke target
+exercises actual slider/bypass attachments and renders the real editor; it requires
+a display session. Product names are taken from each JUCE target.

@@ -130,6 +130,14 @@ if(DARKVOICE_BUILD_PRODUCTS)
             "${darkvoice_juce_dir}/modules" "${CMAKE_CURRENT_SOURCE_DIR}/include")
         target_compile_features(darkvoice_plugin_tests PRIVATE cxx_std_20)
         target_compile_definitions(darkvoice_plugin_tests PRIVATE JUCE_GLOBAL_MODULE_SETTINGS_INCLUDED=1)
+        # Explicit display-backed smoke target, run under Xvfb or a desktop.
+        # Not registered in headless CTest; it requires a window-system session.
+        add_executable(darkvoice_gui_smoke tests/gui_smoke.cpp)
+        target_link_libraries(darkvoice_gui_smoke PRIVATE DarkVoiceVocal)
+        target_include_directories(darkvoice_gui_smoke PRIVATE
+            "${darkvoice_juce_dir}/modules" "${CMAKE_CURRENT_SOURCE_DIR}/include")
+        target_compile_features(darkvoice_gui_smoke PRIVATE cxx_std_20)
+        target_compile_definitions(darkvoice_gui_smoke PRIVATE JUCE_GLOBAL_MODULE_SETTINGS_INCLUDED=1)
         add_test(NAME plugin.state_and_audio COMMAND darkvoice_plugin_tests)
         set_tests_properties(plugin.state_and_audio PROPERTIES TIMEOUT 60)
     endif()
