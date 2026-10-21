@@ -16,13 +16,29 @@ float bounded(double value) noexcept {
 bool inRange(float value, float minimum, float maximum) noexcept {
     return std::isfinite(value) && value >= minimum && value <= maximum;
 }
+ToneEffectsParameters toneParameters(const EngineParameters &p) noexcept {
+    return {p.eqLowHz,    p.eqLowGainDb,   p.eqMidHz,  p.eqMidGainDb,   p.eqMidQ,
+            p.eqHighHz,   p.eqHighGainDb,  p.delayMs,  p.delayFeedback, p.delayMix,
+            p.reverbSize, p.reverbDamping, p.reverbMix};
+}
 } // namespace
 
 bool AudioEngine::prepare(double sampleRate, std::size_t maxFrames, std::size_t channels) noexcept {
     rate_ = 0.0;
+    maxFrames_ = channels_ = 0;
     if ((sampleRate != 44100.0 && sampleRate != 48000.0 && sampleRate != 88200.0 &&
          sampleRate != 96000.0) ||
-        maxFrames == 0 || (channels != 1 && channels != 2))
+        maxFrames == 0 || maxFrames > 65536 || (channels != 1 && channels != 2))
+        return false;
+    // Preparation is explicitly non-real-time. All storage required by process
+    // is allocated here; failed allocation leaves the engine unprepared.
+    try {
+        for (std::size_t c = 0; c < channels; ++c)
+            wet_[c].resize(maxFrames);
+    } catch (...) {
+        return false;
+    }
+    if (!effects_.prepare(sampleRate, maxFrames, channels))
         return false;
     rate_ = sampleRate;
     maxFrames_ = maxFrames;
@@ -36,7 +52,10 @@ bool AudioEngine::setParameters(const EngineParameters &p) noexcept {
     if (!inRange(p.inputDb, -24.0f, 24.0f) || !inRange(p.outputDb, -24.0f, 24.0f) ||
         !inRange(p.highPassHz, 20.0f, 400.0f) || !inRange(p.drive, 0.0f, 1.0f) ||
         !inRange(p.thresholdDb, -60.0f, 0.0f) || !inRange(p.ratio, 1.0f, 20.0f) ||
-        !inRange(p.mix, 0.0f, 1.0f))
+        !inRange(p.mix, 0.0f, 1.0f) || !ToneEffects::valid(toneParameters(p)))
+        return false;
+    // Both snapshots are fully validated before either target is replaced.
+    if (!effects_.setParameters(toneParameters(p)))
         return false;
     target_ = p;
     return true;
@@ -48,6 +67,7 @@ void AudioEngine::reset() noexcept {
     envelope_.fill(0.0f);
     meters_ = {};
     current_ = target_;
+    effects_.reset();
 }
 
 bool AudioEngine::process(std::span<float *> channels, std::size_t frames) noexcept {
@@ -77,14 +97,11 @@ bool AudioEngine::process(std::span<float *> channels, std::size_t frames) noexc
     };
     for (std::size_t i = 0; i < frames; ++i) {
         smooth(current_.inputDb, target_.inputDb);
-        smooth(current_.outputDb, target_.outputDb);
         smooth(current_.highPassHz, target_.highPassHz);
         smooth(current_.drive, target_.drive);
         smooth(current_.thresholdDb, target_.thresholdDb);
         smooth(current_.ratio, target_.ratio);
-        smooth(current_.mix, target_.mix);
         const double inputGain = std::pow(10.0, current_.inputDb / 20.0);
-        const double outputGain = std::pow(10.0, current_.outputDb / 20.0);
         const double hp = std::exp(-2.0 * std::numbers::pi * current_.highPassHz / rate_);
         const double threshold = std::pow(10.0, current_.thresholdDb / 20.0);
         const double drive = 10.0 * current_.drive;
@@ -103,8 +120,20 @@ bool AudioEngine::process(std::span<float *> channels, std::size_t frames) noexc
             envelope_[c] = bounded(coefficient * envelope_[c] + (1.0 - coefficient) * magnitude);
             if (envelope_[c] > threshold)
                 wet = bounded(wet * std::pow(envelope_[c] / threshold, 1.0 / current_.ratio - 1.0));
+            wet_[c][i] = wet;
+        }
+    }
+    std::array<float *, 2> wetChannels{wet_[0].data(), wet_[1].data()};
+    if (!effects_.process(std::span<float *>(wetChannels.data(), channels_), frames))
+        return false; // Prepared capacities/layout have already been validated.
+    for (std::size_t i = 0; i < frames; ++i) {
+        smooth(current_.outputDb, target_.outputDb);
+        smooth(current_.mix, target_.mix);
+        const double outputGain = std::pow(10.0, current_.outputDb / 20.0);
+        for (std::size_t c = 0; c < channels.size(); ++c) {
+            const float dry = std::isfinite(channels[c][i]) ? channels[c][i] : 0.0f;
             const float output = bounded((static_cast<double>(dry) * (1.0 - current_.mix) +
-                                          static_cast<double>(wet) * current_.mix) *
+                                          static_cast<double>(wet_[c][i]) * current_.mix) *
                                          outputGain);
             channels[c][i] = output;
             meters_.outputPeak = std::max(meters_.outputPeak, std::abs(output));
