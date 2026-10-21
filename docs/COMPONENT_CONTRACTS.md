@@ -208,3 +208,34 @@ A separate gate/expander tab exposes all three real automatable controls.
 Acceptance: all rates/layouts, identity/attenuation/opening/release/stereo-link,
 partition invariance, invalid snapshots/blocks, allocation probe, finite behavior,
 engine/preset/state integration and GUI attachment tests. No new dependencies.
+
+# Dynamics contract v4 — split-band de-esser
+
+Established before implementation. DeEsser.hpp: DeEsserParameters
+{frequencyHz=6000 [2000,12000], thresholdDb=-24 [-60,0], maxReductionDb=0 [0,18]}.
+prepare/setParameters/reset/process follow NoiseGate's rates/layout/capacity,
+invalid-input and single-owner rules. No allocation, lock or I/O, no lookahead
+or added sample delay. prepare resets defaults; reset settles targets/history.
+
+Per-channel one-pole low-pass L=(1-a)*input+a*L, a=exp(-2*pi*frequency/rate).
+High band H=input-L; linked max-absolute high-band detector uses 0.3ms attack,
+50ms release. Desired reduction = min(maxReductionDb, max(0, level-threshold)),
+smoothed with 1ms attenuation attack/50ms recovery. Output=input+(gain-1)*H.
+Controls smooth 10ms and settle to exact targets. Max reduction 0 disables
+attenuation, preserving normal finite samples exactly. Nonfinite active inputs
+are sanitized and tiny history flushed. No sibilance classification, brick-wall
+split, linear-phase or transparent transient guarantee. Stereo gain is shared;
+maximum reduction describes high-band gain, not whole-output attenuation.
+
+Engine order: existing compressor -> gate -> de-esser -> EQ/delay/reverb, then
+global dry/wet/output. Reverb tails remain outside dynamics. Append deEssHz,
+deEssThresholdDb, deEssReductionDb after the existing 24 IDs, AU hint 4. State v4
+has 27 IDs; preset JSON v4 has 26 non-bypass values. v1/v2/v3 migrate strictly
+using neutral new defaults. Existing IDs/hints/counts remain stable. Expose three
+real controls on a dedicated fifth tab; no new dependencies.
+
+Acceptance: four rates, mono/stereo, neutral and disabled automation, measured
+high-frequency reduction and low-frequency preservation, stereo linking,
+partition invariance, no callback allocations, finite/invalid-input behavior,
+engine/host audio, v1/v2/v3 migration, GUI attachments and local sanitizer builds.
+Native CI/AU checks remain unrun while Actions is paused by user instruction.
