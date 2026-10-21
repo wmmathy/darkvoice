@@ -141,3 +141,20 @@ keeps valid entries/factories, reports malformed user files without deleting the
 The shared PresetBank public API is in src/PresetBank.hpp; pointers from find are
 invalidated on mutations. Public API changes require lead coordination; private
 helpers are implementation-owned.
+
+# Pitch analysis contract v1 (worker/offline foundation, not correction)
+
+PitchDetector.hpp establishes a separate mono dry-signal analyzer. prepare accepts
+only the four supported rates, windows 1024..16384, minimumHz>=20,
+maximumHz<=4000 and minimum<maximum, with window>=2*ceil(rate/minimum)+2.
+Invalid prepare unprepares; allocations occur only during prepare and failures
+return false. analyze requires exactly the prepared window and finite input;
+invalid/unprepared, RMS-after-DC-removal <1e-5 or insufficient periodicity yields
+an unvoiced zero estimate. Valid output: finite frequency in configured range,
+fractional MIDI note and confidence [0,1]. No medical/register inference follows.
+
+Bounded time-domain YIN difference/normalized dip with parabolic refinement;
+minimum confidence 0.8. DC removal, synthetic/harmonic/noise/range tests required.
+No allocations during analyze. It is worker/offline-only, not an audio callback,
+live correction, key/chord reference synchronization or user-facing coach feature.
+No detection accuracy or voicing certainty is guaranteed for arbitrary recordings.
