@@ -158,3 +158,22 @@ minimum confidence 0.8. DC removal, synthetic/harmonic/noise/range tests require
 No allocations during analyze. It is worker/offline-only, not an audio callback,
 live correction, key/chord reference synchronization or user-facing coach feature.
 No detection accuracy or voicing certainty is guaranteed for arbitrary recordings.
+
+# Dry pitch telemetry contract v1
+
+DryPitchAnalyzer.hpp: fixed-capacity SPSC ring (32768 available frames), copied
+mono average of the unprocessed input, one analysis worker, 8192-sample window and
+4096-sample hop. prepare/release run off the callback and stop/join the worker
+before resetting shared state. push is audio-thread-only, bounded by ring capacity,
+nonblocking, no allocation, and never changes input or audio processing results.
+Overrun drops the incoming block, flags discontinuity, and the worker discards
+queued/history data rather than estimating across a gap. Results are lock-free
+atomic float frequency/confidence, zero for unvoiced/unavailable data. Low-level
+nonfinite input is sanitized for analysis. It works independently of bypass.
+
+The processor taps dry input before any DSP. The editor displays measured note,
+frequency and confidence at UI refresh rate. This is analysis telemetry, not
+correction, target-note coaching or reference synchronization; window/worker
+latency does not contribute to the audio path's compensation. prepare/release must
+not race processBlock; usual JUCE host lifecycle serialization is required. No
+profile recording, file/network/model access or stored voice audio is added.
