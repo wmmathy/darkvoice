@@ -1,4 +1,4 @@
-name: Prepare foundation source artifact
+name: Prepare unsigned development artifacts
 
 # Manual artifact preparation only. This workflow never publishes a release.
 on:
@@ -8,32 +8,44 @@ permissions:
   contents: read
 
 jobs:
-  source-artifact:
-    runs-on: ubuntu-24.04
-    timeout-minutes: 15
+  development-artifacts:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-14]
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-      - name: Configure release core tests
-        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON
+      - name: Install Linux development dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends libasound2-dev libx11-dev libxext-dev libxinerama-dev libxrandr-dev libxcursor-dev libfreetype6-dev libfontconfig1-dev libgl1-mesa-dev
+      - name: Configure unsigned development products
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON -DDARKVOICE_BUILD_PRODUCTS=ON
       - name: Build and test
         run: |
           cmake --build build --parallel 2
           ctest --test-dir build --output-on-failure --no-tests=error
-      - name: Package committed source with provenance
+      - name: Package products, source, license and provenance
+        shell: bash
         run: |
           mkdir -p build/artifacts
-          git archive --format=tar.gz --prefix=darkvoice-foundation/ HEAD -o build/artifacts/darkvoice-foundation-source.tar.gz
+          tar -czf build/artifacts/darkvoice-unsigned-products.tar.gz -C build DarkVoiceVocal_artefacts DarkVoiceMaster_artefacts DarkVoiceStudio_artefacts
+          git archive --format=tar.gz --prefix=darkvoice-source/ HEAD -o build/artifacts/darkvoice-source.tar.gz
           git rev-parse HEAD > build/artifacts/COMMIT.txt
-          cp CHANGELOG.md build/artifacts/CHANGELOG.md
+          cp CHANGELOG.md LICENSE build/artifacts/
+          printf '%s\n' 'Unsigned development builds. No public release, code signing, notarization or DAW compatibility certification.' > build/artifacts/BUILD_STATUS.txt
           cd build/artifacts
-          sha256sum darkvoice-foundation-source.tar.gz > SHA256SUMS.txt
-      - name: Retain foundation source artifact
+          shasum -a 256 darkvoice-unsigned-products.tar.gz darkvoice-source.tar.gz > SHA256SUMS.txt
+      - name: Retain unsigned development artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: darkvoice-foundation-source-${{ github.sha }}
+          name: darkvoice-unsigned-${{ matrix.os }}-${{ github.sha }}
           path: build/artifacts/
           if-no-files-found: error
           retention-days: 14
 
-# No application/plugin binary exists yet. Publication needs explicit approval
-# and a separate protected workflow once release acceptance criteria are defined.
+# Public publication, signing and notarization require separate authorization,
+# credentials and release acceptance. No release-upload API is invoked here.
