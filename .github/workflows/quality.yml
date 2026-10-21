@@ -30,7 +30,7 @@ jobs:
       - name: Analyze independent DSP core
         run: |
           cppcheck --version
-          cppcheck --std=c++20 --language=c++ --enable=warning,performance,portability --error-exitcode=1 -I include src/AudioEngine.cpp include/darkvoice/AudioEngine.hpp include/darkvoice/GainProcessor.hpp
+          cppcheck --check-level=exhaustive --std=c++20 --language=c++ --enable=warning,performance,portability --error-exitcode=1 -I include src/AudioEngine.cpp include/darkvoice/AudioEngine.hpp include/darkvoice/GainProcessor.hpp
       - name: Test offline checkers and scan tracked files
         run: |
           python3 tools/check-secrets.py --self-test
