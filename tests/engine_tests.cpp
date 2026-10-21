@@ -187,16 +187,28 @@ void isolationBypassAndSafety() {
 }
 }
 
-void* operator new(std::size_t bytes) {
+// Prevent allocator replacement inlining from confusing GCC's allocation pairing
+// analysis at -O3; keep the compiler's mismatch diagnostics enabled.
+#if defined(__GNUC__) || defined(__clang__)
+#define DARKVOICE_TEST_NOINLINE __attribute__((noinline))
+#elif defined(_MSC_VER)
+#define DARKVOICE_TEST_NOINLINE __declspec(noinline)
+#else
+#define DARKVOICE_TEST_NOINLINE
+#endif
+
+DARKVOICE_TEST_NOINLINE void* operator new(std::size_t bytes) {
     allocations.fetch_add(1);
     if (void* result = std::malloc(bytes == 0 ? 1 : bytes)) return result;
     throw std::bad_alloc();
 }
-void* operator new[](std::size_t bytes) { return ::operator new(bytes); }
-[[gnu::noinline]] void operator delete(void* pointer) noexcept { std::free(pointer); }
-[[gnu::noinline]] void operator delete[](void* pointer) noexcept { std::free(pointer); }
-[[gnu::noinline]] void operator delete(void* pointer, std::size_t) noexcept { std::free(pointer); }
-[[gnu::noinline]] void operator delete[](void* pointer, std::size_t) noexcept { std::free(pointer); }
+DARKVOICE_TEST_NOINLINE void* operator new[](std::size_t bytes) { return ::operator new(bytes); }
+DARKVOICE_TEST_NOINLINE void operator delete(void* pointer) noexcept { std::free(pointer); }
+DARKVOICE_TEST_NOINLINE void operator delete[](void* pointer) noexcept { std::free(pointer); }
+DARKVOICE_TEST_NOINLINE void operator delete(void* pointer, std::size_t) noexcept { std::free(pointer); }
+DARKVOICE_TEST_NOINLINE void operator delete[](void* pointer, std::size_t) noexcept { std::free(pointer); }
+
+#undef DARKVOICE_TEST_NOINLINE
 
 int main() {
     lifecycle();
