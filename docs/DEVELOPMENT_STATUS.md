@@ -133,7 +133,11 @@ No additional agents were launched for this package; prior worktrees are preserv
 Add a linked downward expander before EQ/delay/reverb, with threshold/ratio/release
 and a fourth editor tab (23 sound controls total). Ratio 1 is neutral. Append-only
 AU hints preserve old identities; state/preset v3 migrate v1/v2 with gate disabled.
-No new dependencies. Release and ASan/UBSan core suites pass 9/9 locally; final
+No new dependencies. Release and ASan/UBSan core suites pass 9/9 locally;
 products pass 12/12, and the 23-control GUI/gate-tab/standalone checks pass.
-Native CI remains pending. Full sculptor, correction/harmony,
+At implementation b1a7196, native run 39661596101 passes all seven jobs, including
+both product jobs, the Linux GUI smoke and both unsigned macOS AU validations.
+Source-quality run 39661596167 passes. PR #13 is ready for review; documentation
+updates trigger fresh CI, and no completed review or merge is claimed.
+Full sculptor, correction/harmony,
 AI/discovery, sessions/mixing, mastering/export and host qualification remain open.

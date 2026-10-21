@@ -177,3 +177,11 @@ Actual GarageBand/other DAW sessions, microphone and listening remain unrun.
   do not establish new native validation. No physical device/DAW/listening or hard
   real-time deadline qualification was performed. Expander has no lookahead or
   hysteresis and may attenuate initial transients; maximum attenuation is 80 dB.
+
+
+Native gate validation at b1a7196: [Actions run 39661596101](https://github.com/wmmathy/darkvoice/actions/runs/39661596101)
+passes all seven jobs: macOS and Linux Debug/Release core, Linux sanitizers,
+and both full product builds/tests. Linux editor smoke and unsigned Vocal/Master
+AU validations pass. Source-quality run 39661596167 also passes. Documentation
+successors rerun CI; these results identify the tested implementation explicitly.
+No DAW/microphone/listening, signing, notarization or public release was performed.
