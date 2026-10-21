@@ -20,8 +20,11 @@ that shared review. No product, plugin, AI capability or release is complete.
 - Architecture/DSP agent: provisional isolated gain header on
   feature/dsp/gain-core, pushed at 226a306 before the clarification. External
   compiler smoke check passed; not integrated into the lead branch.
-- QA agent: isolated feature/qa/core-tests; asked to preserve work and stop.
-- Integration agent: isolated feature/integration/ci; asked to preserve work and stop.
+- QA agent: tests preserved locally at c62b785 on feature/qa/core-tests;
+  not pushed, compiled or run. Whitespace check passed; agent paused.
+- Integration agent: CMake/CI preserved locally at cdae5ef on
+  feature/integration/ci; not pushed. Preset/JSON parsing and whitespace
+  checks passed; project build/tests unrun. Agent paused.
 - Other product roles have no implementation assignments pending specification.
 
 ## External state
