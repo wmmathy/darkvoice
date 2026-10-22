@@ -330,3 +330,13 @@ failed/cancelled before acquiring hosted runners, with ARM capacity annotations.
 Failed-jobs retry requested (attempt2), no DSP/check waiver. Host lexical Boolean
 follow-up now rejects decimal underflow/highprecision fractions before conversion;
 independent4425case exact oracle approved; targeted product suites2/2 pass.
+## Current ARM runner fallback — 2026-10-22
+
+Core39837615535 first attempt failed/cancelled macOS jobs before acquiring hosted
+runners; annotations explicitly report ARM capacity constraints. Failed-job retry
+attempt2 was requested and queued. GitHub actions/runner-images official README
+now lists macos-26 ARM as standard macos-latest, with macos-15 also supported.
+Move explicit CI/manual-artifact labels to macos-26 to try the current supported
+ARM image; keep all build/test/auval gates and timeouts. This supersedes the queued
+retry on source push, not a passing macOS15 result. No manual artifact workflow or
+release is dispatched. Native outcome on the new image remains pending.
