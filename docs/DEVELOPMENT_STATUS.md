@@ -274,3 +274,8 @@ calls returned401 and Git authentication failed; final native result and merge
 could not be verified. PR remains unmerged; no gate waived. Restore environment
 GitHub authentication, inspect the final product/auval checks at expected head,
 then perform the previously authorized normal merge if eligible.
+
+Access retry succeeded after user requested another attempt. Exact source head
+929926d has successful native run39835022228 (all7jobs including both product
+jobs) and source-quality39835021918. Historical401 observations remain accurate;
+no repository change was needed. Docs-only follow-up adds no product differences.
