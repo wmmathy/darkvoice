@@ -105,6 +105,9 @@ darkvoice::EngineParameters DarkVoiceProcessor::snapshot() const noexcept {
     p.flangerDepthMs = raw_[32]->load(std::memory_order_relaxed);
     p.flangerFeedback = raw_[33]->load(std::memory_order_relaxed);
     p.flangerMix = raw_[34]->load(std::memory_order_relaxed);
+    p.limiterEnabled = raw_[35]->load(std::memory_order_relaxed) >= 0.5f;
+    p.limiterCeilingDb = raw_[36]->load(std::memory_order_relaxed);
+    p.limiterReleaseMs = raw_[37]->load(std::memory_order_relaxed);
     return p;
 }
 void DarkVoiceProcessor::prepareToPlay(double rate, int maxFrames) {
@@ -190,7 +193,7 @@ void DarkVoiceProcessor::setStateInformation(const void *data, int bytes) {
         return;
     const auto version = xml->getStringAttribute("schemaVersion");
     if (version != "1" && version != "2" && version != "3" && version != "4" && version != "5" &&
-        version != "6")
+        version != "6" && version != "7")
         return;
     const auto count = darkvoice::parameterCountForVersion(version.getIntValue());
     const auto state = juce::ValueTree::fromXml(*xml);
@@ -236,7 +239,7 @@ void DarkVoiceProcessor::setStateInformation(const void *data, int bytes) {
 darkvoice::PresetValues DarkVoiceProcessor::snapshotPresetValues() const {
     darkvoice::PresetValues values;
     for (std::size_t i = 0; i < darkvoice::parameterSchema.size(); ++i)
-        if (!darkvoice::parameterSchema[i].boolean)
+        if (juce::String(darkvoice::parameterSchema[i].id) != "bypass")
             values.emplace(darkvoice::parameterSchema[i].id,
                            raw_[i]->load(std::memory_order_relaxed));
     return values;
@@ -245,7 +248,7 @@ bool DarkVoiceProcessor::applyPreset(const darkvoice::PresetValues &values) {
     if (darkvoice::PresetBank::validate(values).failed())
         return false;
     for (const auto &spec : darkvoice::parameterSchema) {
-        if (spec.boolean)
+        if (juce::String(spec.id) == "bypass")
             continue;
         auto *parameter = parameters.getParameter(spec.id);
         parameter->beginChangeGesture();

@@ -299,3 +299,18 @@ no repository change was needed. Docs-only follow-up adds no product differences
 Authentication retry worked without a repository change. Preset PR23 native checks
 passed and it was normally merged. Limiter core can now proceed through push/CI
 and normal review gates; earlier401 block is historical evidence only.
+
+## Limiter host integration v7
+
+Following independent core QA, lead established final-output/default-off routing
+and schema7 contract. Host agent assigned exclusive engine/schema/processor/editor/
+preset and corresponding tests in isolated feature/effects/limiter-host worktree;
+lead integrates owned files in feature/effects/limiter-integration and owns docs,
+builds and normal GitHub gates. No persistent service is configured.
+
+Host agent delivered frozen owned files without commits; lead copied only assigned
+paths into integration branch. Local Debug products16/16, ASan core13/13 and GUI
+37controls/eighttabs passed;5783 engine assertions. Limiter is default off, applies
+after dry/wet/output gain and before output meters, with exact global bypass.
+New enabled Boolean is stored in presets; only bypass is excluded. Legacy v1..6
+restore limiting off; v7 has38state/37preset fields. Native/review gates pending.

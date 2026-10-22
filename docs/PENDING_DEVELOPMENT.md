@@ -27,7 +27,7 @@ Source-quality run39740257019 passed. This is not a passing overall build result
 | Priority / tracking | Pending implementation | Dependency / acceptance |
 | --- | --- | --- |
 | P1 Sculptor, #3/#18 | Qualified independent pitch/formant shifting and formant preservation; depth/body/warmth/presence/resonance/breathiness/character controls; real quality modes | Resolve combined-periodicity failures, broader F0/transient/unvoiced material, listening/CPU; integrate delayed dry/mix/bypass and host latency only after qualification |
-| P1 Effects, #3 | Doubler, plate/hall/room choices, slapback/tempo-sync/stereo delay variants, tape/tube saturation and parallel distortion, vocal limiter | Versioned real controls, routing, DSP evidence, safe automation, state/preset migration, GUI and native validation; existing starter effects are partial coverage |
+| P1 Effects, #3 | Doubler, plate/hall/room choices, slapback/tempo-sync/stereo delay variants, tape/tube saturation and parallel distortion | Versioned real controls, routing, DSP evidence, safe automation, state/preset migration, GUI and native validation; existing starter effects are partial coverage |
 | P1 Integration, #14/#16/#18 | Review/integrate eventual qualified Sculptor and remaining effects; de-esser/chorus/flanger now merged | Required repository checks/review; no automatic bypass or release; preserve stacked bases until dependencies integrate |
 | P2 Presets, #3 | Complete all20 required vocal factory sounds, audition/tune them and preserve correction/harmony independence | Underlying DSP must exist; fourteen sounds now use existing DSP; six correction/choir/octave/double-track sounds remain pending; do not add presets implying unavailable correction/choir features |
 | P2 Track-aware correction, #4 | Reference WAV/AIFF/FLAC/MP3 import where available/licensed, key/scale/BPM/chord timeline/confidence and manual edits; manual/chromatic/custom correction, musical transitions/humanization/vibrato/drift; graphical tracking | Qualified shift backend and real-time pitch tracker; versioned analysis/timeline/transport contracts, preanalysis, offsets and GarageBand manual/standalone fallbacks |
@@ -58,9 +58,8 @@ Automatic commits/normal merges are explicitly authorized. No unattended schedul
 or perpetual development agent is configured; GitHub CI and active session work
 are distinct. Actual DAW/microphone/listening and release qualification remain open.
 
-Limiter continuation: a stereo-linked zero-latency sample-peak core is under local
-development outside product routing. Product enable/ceiling/release controls,
-versioned state/preset migration and final-output routing remain pending until
-core validation/review. This does not cover the oversampled mastering true-peak
-limiter. GitHub authentication subsequently failed with HTTP401; remote validation
-and integration require restored credentials, not waived gates.
+Limiter continuation: a linked zero-latency sample-peak core and default-off
+final-output host integration now pass local product/sanitizer/GUI validation.
+Core PR24 and host integration still need native checks and normal merge gates.
+This does not cover the oversampled mastering true-peak limiter. Historical401
+authentication failure resolved on retry without a repository change.

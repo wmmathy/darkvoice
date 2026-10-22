@@ -12,7 +12,7 @@ inline constexpr std::size_t legacyParameterCount = 8;
 inline constexpr std::size_t effectsParameterCount = 21;
 inline constexpr std::size_t gateParameterCount = 24;
 inline constexpr std::size_t deEsserParameterCount = 27;
-inline constexpr std::array<ParameterSpec, 35> parameterSchema{{
+inline constexpr std::array<ParameterSpec, 38> parameterSchema{{
     {"inputDb", "Input", -24.0f, 24.0f, 0.0f, 0.1f, 1.0f, false},
     {"outputDb", "Output", -24.0f, 24.0f, 0.0f, 0.1f, 1.0f, false},
     {"highPassHz", "High-pass", 20.0f, 400.0f, 20.0f, 1.0f, 0.5f, false},
@@ -48,15 +48,19 @@ inline constexpr std::array<ParameterSpec, 35> parameterSchema{{
     {"flangerDepthMs", "Flanger depth", 0.0f, 4.0f, 2.0f, .1f, 1.0f, false},
     {"flangerFeedback", "Flanger feedback", -.85f, .85f, 0.0f, .001f, 1.0f, false},
     {"flangerMix", "Flanger mix", 0.0f, 1.0f, 0.0f, .001f, 1.0f, false},
+    {"limiterEnabled", "Limiter enabled (0 = off, 1 = on)", 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, true},
+    {"limiterCeilingDb", "Limiter ceiling", -24.0f, 0.0f, -1.0f, .1f, 1.0f, false},
+    {"limiterReleaseMs", "Limiter release", 5.0f, 1000.0f, 100.0f, 1.0f, .5f, false},
 }};
-inline constexpr int currentSchemaVersion = 6;
+inline constexpr int currentSchemaVersion = 7;
 constexpr std::size_t parameterCountForVersion(int version) noexcept {
     return version == 1   ? legacyParameterCount
            : version == 2 ? effectsParameterCount
            : version == 3 ? gateParameterCount
            : version == 4 ? deEsserParameterCount
            : version == 5 ? 31
-           : version == 6 ? parameterSchema.size()
+           : version == 6 ? 35
+           : version == 7 ? parameterSchema.size()
                           : 0;
 }
 constexpr int parameterVersion(std::size_t index) noexcept {
@@ -65,6 +69,7 @@ constexpr int parameterVersion(std::size_t index) noexcept {
            : index < gateParameterCount    ? 3
            : index < deEsserParameterCount ? 4
            : index < 31                    ? 5
-                                           : 6;
+           : index < 35                    ? 6
+                                           : 7;
 }
 } // namespace darkvoice

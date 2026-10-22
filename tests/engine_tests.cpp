@@ -73,7 +73,7 @@ void snapshotsAndSmoothing() {
     p.mix = 0;
     p.outputDb = 12;
     check(engine.setParameters(p) && reference.setParameters(p), "valid parameter snapshot");
-    const std::array<float darkvoice::EngineParameters::*, 34> fields{
+    const std::array<float darkvoice::EngineParameters::*, 36> fields{
         &darkvoice::EngineParameters::inputDb,
         &darkvoice::EngineParameters::outputDb,
         &darkvoice::EngineParameters::highPassHz,
@@ -107,7 +107,9 @@ void snapshotsAndSmoothing() {
         &darkvoice::EngineParameters::flangerRateHz,
         &darkvoice::EngineParameters::flangerDepthMs,
         &darkvoice::EngineParameters::flangerFeedback,
-        &darkvoice::EngineParameters::flangerMix};
+        &darkvoice::EngineParameters::flangerMix,
+        &darkvoice::EngineParameters::limiterCeilingDb,
+        &darkvoice::EngineParameters::limiterReleaseMs};
     for (auto field : fields) {
         auto invalid = p;
         invalid.inputDb = 24;
@@ -429,6 +431,104 @@ void integratedFlanger(double rate) {
           "global dry mix preserves unprocessed flanger input");
 }
 
+void integratedLimiter(double rate) {
+    for (std::size_t count : {1U, 2U}) {
+        darkvoice::AudioEngine engine;
+        check(engine.prepare(rate, 257, count), "limiter engine preparation");
+        darkvoice::EngineParameters p;
+        check(!p.limiterEnabled, "limiter default remains disabled");
+        p.mix = 0;
+        p.outputDb = 12;
+        check(engine.setParameters(p), "limiter disabled snapshot");
+        engine.reset();
+        std::array<float, 257> left{}, right{};
+        left.fill(.8f);
+        right.fill(.4f);
+        std::array<float *, 2> pointers{left.data(), right.data()};
+        auto channels = std::span<float *>(pointers.data(), count);
+        check(engine.process(channels, 1) && left[0] > 3.f,
+              "disabled limiter preserves amplified dry output");
+        p.limiterEnabled = true;
+        p.limiterCeilingDb = -6;
+        p.limiterReleaseMs = 1000;
+        check(engine.setParameters(p), "limiter active snapshot");
+        engine.reset();
+        left.fill(.8f);
+        right.fill(.4f);
+        const double ceiling = std::pow(10., -6. / 20.);
+        check(engine.process(channels, 257), "limiter final dry-output render");
+        for (std::size_t i = 0; i < left.size(); ++i) {
+            check(std::abs(left[i]) <= ceiling,
+                  "final gain and dry mix cannot exceed limiter ceiling");
+            if (count == 2)
+                check(std::abs(right[i] - .5f * left[i]) < 1e-7f, "limiter stereo gain linked");
+        }
+        check(engine.meters().outputPeak <= ceiling && engine.meters().outputPeak > .49f,
+              "output meters report post-limiter signal");
+        p.limiterCeilingDb = -18;
+        check(engine.setParameters(p), "ceiling update snapshot");
+        left.fill(.8f);
+        right.fill(.4f);
+        check(engine.process(channels, 1) && left[0] <= std::pow(10., -18. / 20.),
+              "ceiling reduction protects next sample");
+        auto invalid = p;
+        invalid.limiterCeilingDb = -25;
+        invalid.limiterEnabled = false;
+        check(!engine.setParameters(invalid), "invalid limiter snapshot rejected atomically");
+        left.fill(.8f);
+        right.fill(.4f);
+        check(engine.process(channels, 1) && left[0] <= std::pow(10., -18. / 20.),
+              "invalid snapshot cannot disable final limiter");
+        left.fill(.001f);
+        right.fill(.0005f);
+        check(engine.process(channels, 257), "limiter release render");
+        check(left.back() > left.front() && left.back() < .001f * std::pow(10., 12. / 20.),
+              "limiter gain recovers continuously during release");
+        p.limiterEnabled = false;
+        check(engine.setParameters(p), "disable limiter transition");
+        p.limiterEnabled = true;
+        check(engine.setParameters(p), "reenable limiter transition");
+        left.fill(.001f);
+        right.fill(.0005f);
+        check(engine.process(channels, 1) &&
+                  std::abs(left[0] - .001f * std::pow(10., 12. / 20.)) < 1e-8,
+              "enable transition clears stale gain reduction");
+        p.bypass = true;
+        check(engine.setParameters(p), "limiter global bypass snapshot");
+        left.fill(2.5f);
+        right.fill(-1.5f);
+        check(engine.process(channels, 257) && left[0] == 2.5f && right[0] == -1.5f,
+              "global bypass bypasses limiter exactly");
+        p.bypass = false;
+        p.mix = 1;
+        check(engine.setParameters(p), "wet final-output limiter snapshot");
+        engine.reset();
+        left.fill(.8f);
+        right.fill(.4f);
+        check(engine.process(channels, 257), "wet limiter render");
+        for (std::size_t i = 0; i < left.size(); ++i)
+            check(std::abs(left[i]) <= std::pow(10., -18. / 20.),
+                  "wet chain output also protected");
+        const auto before = allocations.load();
+        rejectAllocations.store(true);
+        const bool callback = engine.setParameters(p) && engine.process(channels, 17);
+        engine.reset();
+        rejectAllocations.store(false);
+        check(callback && allocations.load() == before,
+              "enabled limiter callback/reset never allocate");
+    }
+    darkvoice::AudioEngine a, b;
+    check(a.prepare(rate, 1024, 1) && b.prepare(rate, 1024, 1), "limiter partition preparation");
+    darkvoice::EngineParameters p;
+    p.mix = 0;
+    p.limiterEnabled = true;
+    p.limiterCeilingDb = -12;
+    check(a.setParameters(p) && b.setParameters(p), "limiter partition snapshot");
+    auto first = sine(rate, 170, .95), second = first;
+    check(run(a, first, 137) && run(b, second, 1024) && first == second,
+          "enabled limiter variable buffer partition invariance");
+}
+
 void invalidBlocksAndAllocationFailure() {
     darkvoice::AudioEngine first, reference;
     check(first.prepare(48000, 256, 1) && reference.prepare(48000, 256, 1),
@@ -437,6 +537,8 @@ void invalidBlocksAndAllocationFailure() {
     p.eqMidGainDb = 5;
     p.delayMix = 0.4f;
     p.reverbMix = 0.3f;
+    p.limiterEnabled = true;
+    p.limiterCeilingDb = -18;
     check(first.setParameters(p) && reference.setParameters(p), "invalid-history active effects");
     std::array<float, 256> a{}, b{};
     a[0] = b[0] = 1;
@@ -520,6 +622,7 @@ int main() {
         integratedDeEsser(rate);
         integratedModulation(rate);
         integratedFlanger(rate);
+        integratedLimiter(rate);
     }
     isolationBypassAndSafety();
     invalidBlocksAndAllocationFailure();

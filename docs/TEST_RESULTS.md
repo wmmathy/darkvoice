@@ -366,3 +366,18 @@ Factory catalogue native follow-up: run39835022228 passed all7jobs on exact
 source929926d, including macOS15/Linux products and Linux sanitizers; source
 quality39835021918 passed. Credentials worked again on retry. Actual DAW/listening
 qualification remains unrun.
+
+Limiter core product follow-up: Linux Debug products built and all16 CTest suites
+passed on the core-only revision, including factory catalogue rendering. This does
+not validate the subsequently implemented host routing/schema7 controls.
+
+## Limiter host integration v7 — 2026-10-22
+
+Linux Debug product build and16/16 suites passed, including v1..6 preset/state
+migration, v7 nondefault limiter roundtrips, invalid Boolean rejection, all14
+factory renders and final-output limiter actual audio. Engine regression5783checks
+passed; Debug ASan/UBSan core13/13 passed. GUI smoke passed37controls/eighttabs,
+all attachments/bypass/factory audio and dry-pitch feedback. Lead inspected the
+900x780 screenshot: all8tabs and Limiter enable/ceiling/release visible. clang-format
+and cppcheck of changed independent engine/schema/limiter passed. Native CI and
+independent host QA pending. No actual DAW or listening qualification claimed.
