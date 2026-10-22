@@ -290,8 +290,9 @@ Separate PitchFormantProcessor module/library, not yet connected to AudioEngine,
 plugin controls or saved presets. Existing products retain their latency/bypass
 behavior. Header owns a PImpl; prepare/reset/setParameters/process single-owner.
 Prepare accepts four rates, mono/stereo, maxFrames1..65536 and quality enum
-Live/Studio/Offline. These are candidate DSP profiles, not listening-qualified host
-modes: FFT blocks1024/2048/4096 at44.1/48k, doubled at88.2/96k, hop=block/8,
+Live/Studio/Offline. This optional module defaults OFF while qualification fails.
+These are candidate DSP profiles, not listening-qualified host
+modes: FFT blocks1024/4096/8192 at44.1/48k, doubled at88.2/96k, hop=block/8,
 split computation. Query measured backend input+output latency; do not promise
 low-latency monitoring. Quality changes require off-callback preparation.
 
@@ -329,3 +330,9 @@ partitions/reset/drain, finite inputs/automation, ordinary callback allocation
 probes, Release/ASan/UBSan, existing product regression. Tolerances qualify only
 these fixtures, not arbitrary voices/transients/naturalness. Listening/native CI
 remain unrun while Actions is paused. Every commit uses [skip ci].
+
+Qualification is a separate retained, currently failing experimental CTest suite;
+it is not marked expected-failure or skipped when the experimental core is enabled.
+Streaming-safety passes do not establish passing formant or listening quality.
+Stereo equality is numerical (relative RMS error<1e-4), not bit identity, because
+backend channel phase-lock arithmetic differs by floating-point rounding.

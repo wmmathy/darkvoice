@@ -1,5 +1,16 @@
 # Changelog
 
+## Experimental pitch/formant core
+
+- Add an opt-in isolated streaming wrapper with fixed neutral alignment, bounded
+  scratch/control grid, allocation checks and a retained failing quality gate.
+- Pin audited MIT Stretch/Linear, retain notices, verify source fingerprints and
+  guard a private-copy fix for near-silence timing. No upstream source is modified.
+- Raise Studio FFT size after real pitch errors; synthetic sine fixtures pass,
+  but independent formant-envelope fixtures still fail. Core remains OFF by default
+  and is not linked to products; no pitch/formant UI or latency change is exposed.
+- Keep Actions paused, commits [skip ci] and native validation unrun.
+
 ## Chorus/stereo-width continuation
 
 - Add interpolated stereo chorus (rate/depth/mix) and mid/side width, neutral by

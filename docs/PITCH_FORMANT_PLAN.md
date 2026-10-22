@@ -1,5 +1,9 @@
 # Pitch/formant development handoff
 
+An experimental isolated core now implements the first wrapper/qualification step;
+see PITCH_FORMANT_CORE.md. Formant quality still fails, and the host integration
+plan below remains blocked. No public pitch/formant controls are exposed.
+
 Read-only architecture-agent proposal for the next Voice Sculptor package.
 This is an implementation plan, not an established API or a completed feature.
 Authority remains PRODUCT_SPECIFICATION.md. Lead must finalize a versioned contract

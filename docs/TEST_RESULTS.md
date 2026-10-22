@@ -254,3 +254,44 @@ Chorus has no feedback and its delay is musical rather than host compensation.
 A separate read-only agent pinned/inspected MIT Stretch/Linear and ran scoped
 latency/allocation probes, recorded in PITCH_BACKEND_AUDIT.md. That backend remains
 unintegrated and its quality/near-silence/aligned-bypass gates remain outstanding.
+
+
+## Experimental pitch/formant core — 2026-10-22, issue #18
+
+This target defaults OFF and is not linked to products. Existing Linux product
+regression build/tests pass14/14. Experimental opt-in Release run passes12/13
+suites: the retained sculptor.qualification suite fails, so the overall run exits8.
+No failed numerical assertions are marked expected-failure or removed.
+
+- sculptor.streaming:209checks pass in Release and ASan/UBSan across all four
+  rates, mono/stereo and three candidate configurations. Exact delayed-neutral
+  impulse/tiny-normal output, reported latency/drain bounds, resets, allocation
+  failure and callback probes, fixed-grid partitions, numerical stereo equality,
+  warmed invalid-operation history and hostile inputs are covered. Active impulse
+  drain fits8704samples at48k Studio, with remaining signal0 after that bound.
+- The fingerprint-guarded private patch changes near-silence impulse peak offset
+  from0 to1152samples in Live48k while leaving upstream checkouts pristine.
+  Active tiny amplitude is still attenuated by spectral floors; only neutral
+  delayed dry has exact transparency.
+- Studio4096/hop512 (doubled above48k) sine fixtures at110Hz shifted-12/-7/+7/+12
+  pass all16 cases within20cents; worst observed about14.9cents. Smaller original
+  windows failed up to74.7cents, independently confirmed spectrally by an agent.
+- Qualification:76checks,3failures in both Release and ASan/UBSan, with no reported
+  memory/undefined-behavior findings. At48k/F0100Hz, formant+7 moves a600Hz
+  isolated envelope peak to700 instead of899;1200Hz with-7 gives1000 instead of801;
+ 1200Hz with+7 gives2200 instead of1798. These fail the20% gate. No silent base-F0
+  retuning or relaxed tolerance was used. Full reproductions are in sculptor_tests.
+- Initial fixed multi-formant search windows excluded a downshifted target and
+  overlapped resonances. QA requested geometric inter-resonance boundaries; those
+  corrected fixtures pass, while the broad isolated-envelope fixtures still fail.
+  Stereo bit equality was replaced with justified relative RMS tolerance1e-4;
+  independent measurements found rounding-level differences1e-6..1e-5.
+- Tampered dependency header was rejected at configuration before compilation.
+  Required header and MIT license hashes, exact pins, private patched hash and
+  source cleanliness were checked. Formatting and limited dependency/credential
+  scans apply; they are not comprehensive security/legal audits.
+
+No new GUI/state parameters, host latency/bypass changes, live correction, real
+voice/listening/CPU deadline, native macOS/AU, signing or release is validated.
+Actions was not dispatched/rerun. See PITCH_FORMANT_CORE.md for opt-in commands;
+its full CTest command intentionally continues to report the unresolved failures.

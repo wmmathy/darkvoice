@@ -183,3 +183,32 @@ host fixture used an out-of-bounds magnitude-query overload; correction retains
 JUCE assertions and the full suite now passes. The MIT candidate
 audit found material latency/near-silence integration gates; see
 PITCH_BACKEND_AUDIT.md. No pitch/formant processor has been integrated.
+
+
+## 2026-10-22 — experimental pitch/formant streaming core
+
+Branch feature/sculptor/pitch-formant-core is stacked on unmerged chorus/width
+PR #17. Issue #18 blocks host integration. The lead owns mutations; dedicated
+read-only agents reproduced backend pitch/formant failures and reviewed wrapper,
+source-integrity guards and qualification fixtures. Actions remains paused and
+all commits use [skip ci]. No merge/release or new native qualification is claimed.
+
+Implemented an isolated PImpl wrapper with fixed delayed neutral output, bounded
+64-sample scratch/control grid, deterministic seeded backend, parameter smoothing
+and crossfade. Pin MIT Stretch/Linear, retain notices and fingerprint required
+headers/licenses. A private-copy patch removes the immediate near-silence shortcut
+without changing numerical floors or upstream checkouts. Default products do not
+link this target; DARKVOICE_BUILD_SCULPTOR_CORE defaults OFF.
+
+Existing products pass14/14. Experimental Release matrix is12/13 suites: streaming
+209checks passes; qualification76checks has3 real formant-envelope failures.
+ASan/UBSan streaming passes; qualification reproduces the same3 numerical failures
+with no reported sanitizer findings. Studio sine pitch fixtures pass all16 tested
+rate/shift combinations within20cents after increasing its FFT size. Original
+small-window errors were real, not an estimator artifact. Geometric search ranges
+correct an initial multi-formant test defect; isolated cases still fail.
+
+Do not expose pitch/formant controls or mark the quality milestone complete.
+Resolve/replace the backend envelope algorithm, then qualify further material,
+CPU/listening and aligned host dry/mix/bypass. Reproduce with
+PITCH_FORMANT_CORE.md; failing qualification is not skipped or WILL_FAIL.
