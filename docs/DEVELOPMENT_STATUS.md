@@ -237,3 +237,20 @@ reproduced possible fused-rounding residual and centered only the new feedback
 range/conversion/snap at zero. Existing migration thresholds/assertions retained;
 new exact-neutral/symmetry regressions and local15/15 product suites pass. Native
 retry on the corrected source is pending, so PR #21 stays unmerged for now.
+
+## Automatic integration complete and next backend evidence — 2026-10-22
+
+Flanger corrected source d1ba798 passes all7 jobs in39818430357, including macOS15
+headless suites and both unsigned auval validations; source-quality39818430358
+also passes. PR #21 merged normally at938aa83 with expected head verified, after
+independent source/FMA review. Issue #20 closed; source branches/worktrees retained.
+Together with de-esser/chorus PR15/17, eligible effects are now integrated in main.
+No failing gate bypass, admin override, actual DAW/listening or release claim.
+
+A lead-run pinned Rubber Band v4 pure-built-in probe passes target-period
+correlation on six configurations of the three previously problematic inputs,
+but independent FFT finds a preserved-envelope miss of24.17% on octave-down70Hz.
+It is an unqualified candidate, not an integrated dependency. Source, license/API
+notes, reported variable startup delays and reproducible developer probe are in
+RUBBERBAND_AUDIT.md. PR #19 remains draft/blocked. Product/runtime source is
+unchanged by this documentation/probe increment.

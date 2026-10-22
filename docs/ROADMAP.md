@@ -38,3 +38,7 @@ scheduler is configured.
 Current detailed backlog: [PENDING_DEVELOPMENT.md](PENDING_DEVELOPMENT.md).
 Flanger is locally implemented/validated on an independent branch based on chorus/width; no dependency
 on the blocked experimental Sculptor core.
+
+Integration update2026-10-22: de-esser PR15, chorus/width PR17 and flanger PR21
+merged into main after QA/validation. Sculptor PR19 remains draft/quality-blocked.
+RUBBERBAND_AUDIT.md records an unqualified alternative, with one envelope failure.

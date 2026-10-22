@@ -313,3 +313,30 @@ Independent reviewer reproduced the old1.65309757e-08 residual under -O3/-mfma/
 -ffp-contract=fast and checked all1701 legal signed-feedback grid values against
 the custom conversion/snap: exact zero, odd symmetry, bounded roundtrip error0.
 No blocking fix issue found. Native full product behavior still requires rerun.
+
+## Automatic integration complete and next backend evidence — 2026-10-22
+
+Flanger corrected source d1ba798 passes all7 jobs in39818430357, including macOS15
+headless suites and both unsigned auval validations; source-quality39818430358
+also passes. PR #21 merged normally at938aa83 with expected head verified, after
+independent source/FMA review. Issue #20 closed; source branches/worktrees retained.
+Together with de-esser/chorus PR15/17, eligible effects are now integrated in main.
+No failing gate bypass, admin override, actual DAW/listening or release claim.
+
+A lead-run pinned Rubber Band v4 pure-built-in probe passes target-period
+correlation on six configurations of the three previously problematic inputs,
+but independent FFT finds a preserved-envelope miss of24.17% on octave-down70Hz.
+It is an unqualified candidate, not an integrated dependency. Source, license/API
+notes, reported variable startup delays and reproducible developer probe are in
+RUBBERBAND_AUDIT.md. PR #19 remains draft/blocked. Product/runtime source is
+unchanged by this documentation/probe increment.
+
+The repository developer probe was compiled independently with GCC14/O2 and
+-Wall/-Wextra/-Wpedantic/-Werror, then linked to the pinned pure-built-in library
+and executed across six cases. Independent read-only QA reproduced full-buffer
+finiteness, periodicity and FFT peaks, verified pin/fingerprints and found no
+blocking documentation/probe issue. The exact FFT reproduction command is also
+retained in RUBBERBAND_AUDIT.md. This follow-up changes no production source,
+headers, tests, CMake or workflows; redundant native CI is skipped for this
+reviewed docs/probe commit. Product validation remains at source d1ba798, not a
+claim that the alternative backend is qualified. Normal functional CI stays enabled.
