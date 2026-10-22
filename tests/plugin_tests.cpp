@@ -321,7 +321,7 @@ void stateTests() {
         require(restored.snapshotPresetValues() == before,
                 "Invalid de-esser state changed live parameters");
     }
-    for (const auto *invalidEnable : {"0.5", "-1", "2", "NaN"}) {
+    for (const auto *invalidEnable : {"0.5", "-1", "2", "NaN", "1.00000001", "0.99999999"}) {
         auto bad = source.parameters.copyState();
         bad.setProperty("schemaVersion", darkvoice::currentSchemaVersion, nullptr);
         bad.getChildWithProperty("id", "limiterEnabled")

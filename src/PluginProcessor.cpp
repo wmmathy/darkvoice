@@ -216,6 +216,16 @@ void DarkVoiceProcessor::setStateInformation(const void *data, int bytes) {
         const auto &spec = darkvoice::parameterSchema[index];
         std::istringstream parser(child.getProperty("value").toString().trim().toStdString());
         parser.imbue(std::locale::classic());
+        // Validate Boolean values before float rounding can turn a fraction into 0/1.
+        if (spec.boolean) {
+            double exact = 0;
+            parser >> std::noskipws >> exact;
+            if (!parser || parser.peek() != std::char_traits<char>::eof() ||
+                (exact != 0.0 && exact != 1.0))
+                return;
+            parser.clear();
+            parser.seekg(0);
+        }
         float value = 0;
         parser >> std::noskipws >> value;
         if (!parser || parser.peek() != std::char_traits<char>::eof() || !std::isfinite(value) ||

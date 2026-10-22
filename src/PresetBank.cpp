@@ -202,7 +202,8 @@ juce::Result decode(const juce::File &file, Preset &preset, bool local) {
             return fail("Preset parameter is not numeric");
         const auto number = static_cast<double>(value);
         constexpr double floatLimit = std::numeric_limits<float>::max();
-        if (!std::isfinite(number) || number < -floatLimit || number > floatLimit)
+        if (!std::isfinite(number) || number < -floatLimit || number > floatLimit ||
+            (spec.boolean && number != 0.0 && number != 1.0))
             return fail("Preset parameter outside range");
         // Controls use float values: decimal 0.1 must be accepted at a 0.1f bound.
         const float represented = static_cast<float>(number);

@@ -381,3 +381,10 @@ all attachments/bypass/factory audio and dry-pitch feedback. Lead inspected the
 900x780 screenshot: all8tabs and Limiter enable/ceiling/release visible. clang-format
 and cppcheck of changed independent engine/schema/limiter passed. Native CI and
 independent host QA pending. No actual DAW or listening qualification claimed.
+
+Lead follow-up found Boolean input could round from fractional double to0/1 before
+validation. JSON now checks the numeric Boolean domain before float conversion;
+XML validates a double Boolean before existing float parsing. Added raw JSON
+1e-50/1.00000001/0.99999999 and XML near-one regressions. Initial writer-based tiny
+fixture serialized to valid0, so corrected fixtures emit raw literals. Targeted
+preset/plugin suites2/2 now pass. Core/GUI unchanged; native updated source pending.

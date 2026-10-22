@@ -350,6 +350,20 @@ void malformedAndMigration() {
                     "Invalid JSON limiter boolean rejected atomically");
         }
     }
+    // Emit raw literals: JUCE's JSON writer can round very small doubles to zero.
+    for (const auto *invalid : {"1e-50", "1.00000001", "0.99999999"}) {
+        auto parsed = juce::JSON::parse(jsonFor(darkvoice::PresetBank::defaults()));
+        parsed.getDynamicObject()
+            ->getProperty("parameters")
+            .getDynamicObject()
+            ->setProperty("limiterEnabled", "invalid-boolean-token");
+        write(external,
+              juce::JSON::toString(parsed, true).replace("\"invalid-boolean-token\"", invalid));
+        juce::String created;
+        const auto count = bank.presets().size();
+        require(bank.importFile(external, created).failed() && bank.presets().size() == count,
+                "Fractional JSON booleans rejected before float rounding");
+    }
     const auto broken = temp.file.getChildFile("bank").getChildFile("broken.json");
     write(broken, "broken");
     require(bank.refresh().failed(), "Refresh reports malformed local file");

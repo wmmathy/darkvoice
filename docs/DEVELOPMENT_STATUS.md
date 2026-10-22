@@ -314,3 +314,13 @@ paths into integration branch. Local Debug products16/16, ASan core13/13 and GUI
 after dry/wet/output gain and before output meters, with exact global bypass.
 New enabled Boolean is stored in presets; only bypass is excluded. Legacy v1..6
 restore limiting off; v7 has38state/37preset fields. Native/review gates pending.
+
+Independent read-only host QA approved and rebuilt5783checks/0failures. Host
+integration committed651ed11 and pushed as draft PR25 atop core PR24. Native CI
+pending; core Linux checks pass but macOS runners still queue. No gate waived.
+
+While native runners queue, lead assigned pitch_quality a finite isolated
+fix/sculptor/combined-periodicity worktree investigation based on experimental
+bfc9b54. Preserve all existing quality assertions and module contracts; no host or
+dependency integration. Task permits only principled DSP/test/core-doc changes,
+with broader regression evidence; otherwise retain issue18/PR19 blockers honestly.
