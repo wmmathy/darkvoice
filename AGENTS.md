@@ -75,9 +75,12 @@ compatibility and redistribution notices before integrating any library/model/co
 Apple platform build tools and host validation are external platform requirements,
 not a claim that Apple's tools or DAWs are open source.
 
-## Temporary GitHub Actions pause
+## GitHub Actions retry authorized — 2026-10-22
 
-User reports exhausted Actions credits; do not dispatch or rerun Actions until
-further notice. Continue local builds/tests and authorized feature commits/pushes.
-Include [skip ci] in every commit message to suppress push/pull_request workflows.
-Keep new PRs draft with native CI explicitly unrun; do not bypass merge checks.
+User authorized trying GitHub Actions again, lifting the temporary pause and
+mandatory [skip ci] convention. Run a bounded validation attempt on the current
+feature branch; inspect actual outcomes before claiming credits or native checks
+are available. If billing still blocks execution, record the failure and avoid
+repeated retries. Preserve draft PRs and merge/review gates; no releases or
+protection bypass is authorized. Historical pause records remain valid for their
+original revisions.

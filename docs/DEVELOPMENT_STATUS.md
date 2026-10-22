@@ -222,3 +222,12 @@ automation, opposite extremes and return to exact neutral. Streaming now passes
 269checks in Release and ASan/UBSan. Full experimental Release remains12/13 suites
 with the same3 formant qualification failures. Issue #18 remains open and host
 integration remains blocked. Actions stays paused.
+
+## Actions retry authorized — 2026-10-22
+
+User authorized trying GitHub Actions again. The lead lifted the agent pause rule
+and triggers existing build/test and source-quality workflows on this branch.
+Results are pending; no available credits or new native success is assumed.
+Experimental Sculptor remains OFF in existing CI; its three local formant failures
+continue to block integration even if default product CI passes. Draft PRs and
+merge/review gates remain in force.
