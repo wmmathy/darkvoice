@@ -86,3 +86,9 @@
   CI jobs. The core remains experimental, OFF by default and outside products.
 - Resume normal CI triggering after the user made the repository public and set
   default branch main; actual remote outcomes remain separate validation evidence.
+
+### Retained combined-shift blocker
+
+- Add three independently reviewed intended-F0 periodicity regressions. Expanded
+  qualification149checks retains3failures although all original140checks pass.
+  Core remains experimental and unlinked to products; issue #18 stays open.

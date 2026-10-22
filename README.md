@@ -72,7 +72,8 @@ states/presets with chorus off and neutral width.
 
 An opt-in experimental pitch/formant core is now available for development only;
 it is OFF by default and not connected to product controls. Streaming-safety tests
-and synthetic pitch/formant qualification tests pass locally after an experimental
-envelope-estimator correction. Listening and host integration remain outstanding. See
+pass and an experimental envelope-estimator correction fixes the original formant
+fixtures. Expanded combined pitch/formant periodicity qualification still fails,
+so the full experimental gate remains blocked. See
 [the core qualification guide](docs/PITCH_FORMANT_CORE.md) for reproduction and
 evidence and remaining gates. This is not live correction or a completed pitch/formant feature.

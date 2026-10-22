@@ -270,3 +270,24 @@ Current correction validation also passes full ASan/UBSan13/13 (no reported
 findings) and the unchanged Linux product regression14/14. Formatter19.1.7 and
 scoped cppcheck2.17.1 on wrapper/benchmark pass; limited credential/dependency
 scans pass. No new GUI, actual DAW or listening qualification is claimed.
+
+## Retained combined-periodicity regression — 2026-10-22
+
+Independent spectral review found that some exploratory envelope-peak failures
+were exact-harmonic-grid estimator artifacts, while poor intended-F0 periodicity
+is real. Three representative cases are now retained in sculptor.qualification,
+using the existing vowel correlation threshold>0.8 without altered targets:
+100/600Hz,pitch+12/formant0 gives-0.357724;70/600Hz,pitch-12/formant0 gives0.181850;
+180/1200Hz,pitch+12/formant+7 gives-0.011096. All use48k Offline and declared baseF0.
+
+Release qualification149checks has3failures. The original140checks still pass,
+so the envelope correction is retained; the complete quality gate remains blocked.
+Issue #18 remains open. The prior13/13 result describes the narrower140check
+revision8bb2186, not this expanded gate. No naturalness/combined-preservation or
+host-integration claim is made.
+
+ASan/UBSan qualification reproduces the same149checks/3 numerical failures, with
+no reported sanitizer findings. The test-only follow-up uses [skip ci] to preserve
+the in-progress8bb2186 native product validation rather than restart its builds;
+this is not a renewed Actions pause. CI success at that revision covers the
+narrower140check gate only. No complete current quality success is claimed.

@@ -261,6 +261,29 @@ void envelopeMatrix() {
                           "expanded formant shift preserves F0 periodicity");
                 }
 }
+void combinedPeriodicity() {
+    struct Case {
+        double f0, center;
+        float pitch, formant;
+    };
+    for (const auto &c : {Case{100, 600, 12, 0}, Case{70, 600, -12, 0}, Case{180, 1200, 12, 7}}) {
+        darkvoice::PitchFormantProcessor fx;
+        check(fx.prepare({48000, 1024, 1, darkvoice::PitchQuality::Offline}) &&
+                  fx.setParameters({c.pitch, c.formant, true, static_cast<float>(c.f0)}),
+              "combined periodicity setup");
+        fx.reset();
+        auto x = vowel(48000, c.center, c.f0);
+        check(render(fx, x, nullptr, 512), "combined periodicity render");
+        const double expected = c.f0 * std::pow(2., c.pitch / 12.);
+        const double measured = correlation(x, 48000, expected);
+        std::printf(
+            "combined F0 %.0f envelope %.0f pitch %.0f formant %.0f target %.2f periodicity %.6f\n",
+            c.f0, c.center, c.pitch, c.formant, expected, measured);
+        // Same periodicity threshold as existing vowel/formant fixtures. Independent
+        // FFT inspection confirms off-grid output; do not tune the expected pitch.
+        check(measured > .8, "combined shift retains intended F0 periodicity");
+    }
+}
 void safety() {
     darkvoice::PitchFormantProcessor one, split;
     check(one.prepare({48000, 1024, 2, darkvoice::PitchQuality::Live}) &&
@@ -455,6 +478,7 @@ int main(int argc, char **argv) {
         formants();
         isolatedFormants();
         envelopeMatrix();
+        combinedPeriodicity();
     } else
         return 2;
     std::printf("%d checks %d failures\n", checks, failures);

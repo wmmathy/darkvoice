@@ -46,7 +46,7 @@ compensated sums with periodic rebasing keep work linear in FFT bins. Upstream c
 This is an isolated optional core target (DARKVOICE_BUILD_SCULPTOR_CORE), not yet
 linked into Vocal/Master/Studio. No Accelerate/IPP/PFFFT/xsimd/CMSIS backend is
 selected. Product controls and latency/bypass behavior are unchanged. The module's
-streaming and synthetic formant qualification tests pass locally after the
-experimental estimator correction; the option remains OFF pending broader quality
-and host integration. No live-correction or listening qualification follows from
+streaming and original synthetic formant fixtures pass after the estimator
+correction, but expanded combined pitch/formant periodicity qualification fails.
+The option remains OFF pending broader quality and host integration. No live-correction or listening qualification follows from
 adding this dependency.

@@ -32,8 +32,9 @@ cmake --build build/sculptor --parallel 2
 ctest --test-dir build/sculptor --output-on-failure
 ```
 
-Both streaming and synthetic qualification now pass locally; the qualification
-gate remains a real test, never skipped or marked WILL_FAIL. Select
+Streaming and the original envelope fixtures pass, but the full qualification
+command exits nonzero on three combined-shift periodicity cases. The gate remains
+a real failing test, never skipped or marked WILL_FAIL. Select
 `-R '^sculptor.streaming$'` to inspect streaming behavior separately. Add
 `-DDARKVOICE_ENABLE_SANITIZERS=ON` in a separate build for ASan/UBSan.
 
@@ -70,7 +71,8 @@ with preallocated source scratch, compensated double accumulation and periodic
 rebasing for O(bands) processing. No F0 reinterpretation, center-specific tuning or
 tolerance relaxation is used. All original76checks pass. Sixteen additional cases
 at48/96k, F070/180Hz,600/1200Hz envelopes and+/-7semitones pass, bringing the
-qualification suite to140checks. These grids resolve the expected envelope target;
+passing synthetic subset to140checks. The full suite now has149checks, with
+three combined-periodicity failures retained below. These grids resolve the expected envelope target;
 a20% envelope gate cannot usefully qualify a target between very sparse harmonics.
 
 This remains experimental. Wider pitch/F0/material coverage, transient/unvoiced
@@ -120,3 +122,22 @@ or a proven diagnosis. Preserve issue #18 and investigate broader simultaneous
 pitch/formant behavior before exposing the core. The committed140check suite
 qualifies its stated synthetic subset only. No claim of arbitrary formant
 preservation or perceptual completion follows from correcting the original cases.
+
+## Retained combined-shift periodicity blocker
+
+The broad exploratory exact-grid amplitude estimator overstates some envelope
+errors. Independent Hann-windowed FFT analysis nevertheless confirms off-grid
+output in representative combined pitch/preservation cases. A committed regression
+uses the same >0.8 expected-period correlation criterion as the existing vowels.
+It does not infer one trustworthy F0 from these inharmonic outputs. At48k Offline:
+
+| Input F0 / envelope | Pitch / formant semitones | Target F0 | Measured target-period correlation |
+| --- | --- | ---: | ---: |
+| 100 / 600Hz | +12 / 0 | 200Hz | -0.358 |
+| 70 / 600Hz | -12 / 0 | 35Hz | 0.182 |
+| 180 / 1200Hz | +12 / +7 | 360Hz | -0.011 |
+
+`sculptor.qualification` now runs149checks with3failures: the original140checks
+pass, the three new setup/render pairs pass and all three periodicity gates fail.
+Keep issue #18 open and investigate pitch phase/frequency mapping or compare a
+compatible backend. The envelope correction improves a documented subset only.
