@@ -69,3 +69,16 @@ Chorus adds rate, depth and mix controls; stereo width ranges from mono fold-dow
 (0) through neutral (1) to doubled side (2). Width affects the wet stereo path and
 is a no-op in mono. Wider settings can increase peaks. New v5 files migrate older
 states/presets with chorus off and neutral width.
+
+An opt-in experimental pitch/formant core is now available for development only;
+it is OFF by default and not connected to product controls. Streaming-safety tests
+pass and an experimental envelope-estimator correction fixes the original formant
+fixtures. Expanded combined pitch/formant periodicity qualification still fails,
+so the full experimental gate remains blocked. See
+[the core qualification guide](docs/PITCH_FORMANT_CORE.md) for reproduction and
+evidence and remaining gates. This is not live correction or a completed pitch/formant feature.
+
+A shared `LatencyAlignedMix` utility now provides independently tested delayed dry/
+wet blending and smoothed bypass for future latent stages. It is not wired into
+the current products: existing plugin latency/bypass behavior is unchanged, and
+Voice Sculptor host integration remains blocked by its quality gate.

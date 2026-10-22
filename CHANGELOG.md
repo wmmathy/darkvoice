@@ -1,5 +1,16 @@
 # Changelog
 
+## Experimental pitch/formant core
+
+- Add an opt-in isolated streaming wrapper with fixed neutral alignment, bounded
+  scratch/control grid, allocation checks and a retained failing quality gate.
+- Pin audited MIT Stretch/Linear, retain notices, verify source fingerprints and
+  guard a private-copy fix for near-silence timing. No upstream source is modified.
+- Raise Studio FFT size after real pitch errors; synthetic sine fixtures pass,
+  but independent formant-envelope fixtures still fail. Core remains OFF by default
+  and is not linked to products; no pitch/formant UI or latency change is exposed.
+- Keep Actions paused, commits [skip ci] and native validation unrun.
+
 ## Chorus/stereo-width continuation
 
 - Add interpolated stereo chorus (rate/depth/mix) and mid/side width, neutral by
@@ -52,3 +63,42 @@
   tests; live track-aware correction and harmony remain future work.
 - Display measured dry input note/frequency/confidence using a bounded worker
   queue; verify dry-before-DSP input, overflow/lifecycle and concurrency behavior.
+
+### Experimental Sculptor automation regression
+
+- Exercise sample-positioned pitch/formant automation across four rates and three
+  profiles, including partition invariance, allocation rejection and exact neutral
+  settling. Streaming269checks pass locally; three formant quality failures still
+  block host integration. Core remains opt-in and excluded from products.
+
+### Experimental Sculptor performance tooling
+
+- Add a standalone developer benchmark for all candidate profiles/rates with
+  stereo automation/noise/transient workloads and JSON callback wall-time metrics.
+  It reports observed overruns without claiming hard real-time or host quality.
+
+### Experimental formant-envelope correction
+
+- Replace morphological envelope estimation with a preallocated, compensated
+  one-fundamental-spacing energy mean. Resolve all three retained synthetic
+  formant failures without changing original tolerance or F0 semantics.
+- Add16 independent F0/rate/center/shift cases and Linux/macOS opt-in qualification
+  CI jobs. The core remains experimental, OFF by default and outside products.
+- Resume normal CI triggering after the user made the repository public and set
+  default branch main; actual remote outcomes remain separate validation evidence.
+
+### Retained combined-shift blocker
+
+- Add three independently reviewed intended-F0 periodicity regressions. Expanded
+  qualification149checks retains3failures although all original140checks pass.
+  Core remains experimental and unlinked to products; issue #18 stays open.
+
+### Latency-aligned mix prerequisite
+
+- Add a preallocated shared dry/wet and smoothed-bypass utility with exact delayed
+  endpoints, warm dry history and atomic buffer/snapshot validation. No current
+  product routing or latency changes.
+- Add464 regression checks across four rates, mono/stereo, zero through65536sample
+  delay, automation/partitions, hostile inputs and callback allocation probes.
+- Narrow combined-shift failures to the compensation path for the tested fixtures;
+  reject an unsuccessful synthesis-gain staging experiment without weakening gates.

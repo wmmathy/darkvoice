@@ -11,6 +11,8 @@ No commercial JUCE license or proprietary AI service is assumed.
 | JUCE | 8.0.6, commit 51a8a6d7aeae7326956d747737ccf1575e61e209 | AGPLv3 option; audio/UI/host adapters |
 | Bundled VST3 SDK | JUCE pinned tree | GPLv3 option; VST3 wrapper |
 | Bundled AudioUnitSDK | JUCE pinned tree | Apache-2.0; Apple AU wrapper |
+| Signalsmith Stretch | a670068d9aeb64913331d5cc29337b19a457a7df (1.3.2) | MIT; isolated pitch/formant qualification core |
+| Signalsmith Linear | de55e6a50ffcf6f8f43f649692d94691c7025151 | MIT; pure C++ FFT/STFT for isolated sculptor core |
 | CMake | 3.31.6 in cloud tools | BSD-3-Clause; builds |
 | Ninja | 1.11.1.4 Python package | Apache-2.0; build runner |
 
@@ -30,3 +32,21 @@ review before their implementation. Do not claim unavailable formats work.
 macOS SDK/Xcode and GarageBand/Logic are platform/host validation prerequisites,
 not bundled open-source dependencies. No Apple signing credentials are configured;
 no signed, notarized or release-ready artifact is claimed.
+
+Signalsmith core sources and MIT licenses were inspected before integration. Both
+notices are retained in third_party/licenses. cmake/Signalsmith.cmake pins both
+revisions, checks exact required header/license fingerprints and skips upstream
+CMake entirely, avoiding mutable transitive tags and platform FFT defaults. It
+copies only Stretch and Linear FFT/STFT into a private build directory. Guarded private-copy
+changes disable the near-silence direct-copy shortcut and replace morphological
+formant-envelope smoothing with a bounded one-fundamental-spacing energy mean.
+Numerical noise floors remain unchanged. The new source scratch is preallocated;
+compensated sums with periodic rebasing keep work linear in FFT bins. Upstream checkouts remain untouched.
+
+This is an isolated optional core target (DARKVOICE_BUILD_SCULPTOR_CORE), not yet
+linked into Vocal/Master/Studio. No Accelerate/IPP/PFFFT/xsimd/CMSIS backend is
+selected. Product controls and latency/bypass behavior are unchanged. The module's
+streaming and original synthetic formant fixtures pass after the estimator
+correction, but expanded combined pitch/formant periodicity qualification fails.
+The option remains OFF pending broader quality and host integration. No live-correction or listening qualification follows from
+adding this dependency.

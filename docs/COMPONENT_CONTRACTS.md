@@ -283,3 +283,116 @@ Preset numeric validation is performed after checked conversion to the float
 parameter domain. Exact JSON decimal minima such as0.1/0.2 map to the advertised
 float bounds; finite/overflow/type checks and meaningful out-of-range rejection
 remain strict. This also corrects the existing mid-Q decimal boundary.
+
+# Sculptor core contract v1 — streaming pitch/formant qualification
+
+Separate PitchFormantProcessor module/library, not yet connected to AudioEngine,
+plugin controls or saved presets. Existing products retain their latency/bypass
+behavior. Header owns a PImpl; prepare/reset/setParameters/process single-owner.
+Prepare accepts four rates, mono/stereo, maxFrames1..65536 and quality enum
+Live/Studio/Offline. This optional module defaults OFF pending broader quality and host qualification.
+These are candidate DSP profiles, not listening-qualified host
+modes: FFT blocks1024/4096/8192 at44.1/48k, doubled at88.2/96k, hop=block/8,
+split computation. Query measured backend input+output latency; do not promise
+low-latency monitoring. Quality changes require off-callback preparation.
+
+Parameters: pitchSemitones[-12,12]=0, formantSemitones[-12,12]=0,
+preserveFormants=true, formantBaseHz=0 (auto) or40..1000. Reject any invalid
+snapshot without changing target. At fixed64-sample boundaries, smooth semitones
+and base over10ms; base auto/manual and preserve switches occur at boundaries.
+Process prevalidates all buffers/layout/capacity before samples/history. Nonfinite
+and true-subnormal input become0; FFT input clamps to +/-8 for numerical safety.
+Neutral delayed dry retains all normal finite values. Backend output sanitizes
+nonfinite values and bounds float range. Numerical safety is not a peak limiter.
+
+Use explicitly seeded Signalsmith Stretch/Linear, pure C++ FFT, both MIT and exact
+pinned sources/licenses. A fingerprint-guarded configure-time private-header copy
+disables the near-silence direct-copy condition; preserve noiseFloor elsewhere
+for spectral stability. The estimator revision below further replaces envelope
+smoothing while retaining the guarded source-copy strategy. Originals remain untouched. Quiet
+active audio may still be attenuated by the backend noise floor; no transparency
+claim follows. Neutral output uses an exact latency-aligned dry ring while the
+backend stays warm. Crossfade between dry and processed paths over20ms; settle
+controls/blend to exact endpoints. Invalid prepare unprepares; failure is caught.
+Prepare owns allocation; process/setParameters/reset must not allocate/lock/I/O.
+
+Reset retains targets, settles them and clears backend/rings/cursors. process may
+be called with zero input to drain; tailSamples reports latency+FFT-block as a
+conservative bounded drain length, not a musical sustain guarantee. No streaming
+worker, recording, inference or file access. Existing dry pitch telemetry remains
+independent. Host dry/wet and bypass alignment must be implemented/tested before
+future host integration; no inactive public controls will be added in this stage.
+
+Acceptance: profiles/rates/layouts, exact neutral impulse delay and tiny samples,
+near-silence timing with the patch, pitch accuracy within20cents on stable synthetic
+bass/baritone tones, independent F0/formant-envelope fixtures (initial synthetic
+formant peaks within20% for preserved pitch and within20% of intended shift),
+partitions/reset/drain, finite inputs/automation, ordinary callback allocation
+probes, Release/ASan/UBSan, existing product regression. Tolerances qualify only
+these fixtures, not arbitrary voices/transients/naturalness. Listening/native CI
+remain unrun while Actions is paused. Every commit uses [skip ci].
+
+Qualification is a separate retained, currently failing experimental CTest suite;
+it is not marked expected-failure or skipped when the experimental core is enabled.
+Streaming-safety passes do not establish passing formant or listening quality.
+Stereo equality is numerical (relative RMS error<1e-4), not bit identity, because
+backend channel phase-lock arithmetic differs by floating-point rounding.
+
+## Sculptor performance probe v1
+
+Developer-only `darkvoice_sculptor_bench`, built only with the experimental core.
+It does not link into products or register a timing-sensitive CTest gate. No new
+runtime dependency. A deterministic stereo signal alternates harmonic, noise and
+transient content and parameter targets. Preallocate signal/timing arrays and warm
+one second before timing three seconds of processing, including setters, across
+four rates, three candidate profiles and 64/512-frame host blocks. Signal creation,
+prepare, sorting and stdout reporting remain outside timed processing. Report JSON
+schema1 with compiler/build metadata, callback count, audio duration, algorithmic
+latency, total/median/p95/p99/max callback wall time, processing/audio ratio and
+observed callback-budget overruns. Percentiles use nearest rank. Count nonfinite
+output as an error; fail prepare/process/setter errors. Never interpret throughput
+or absence of observed overruns as a hard real-time, CPU utilization, listening or
+native host qualification. Shared-machine scheduler noise remains in wall time.
+
+### Sculptor envelope estimator revision1 (experimental)
+
+Replace backend morphological envelope dilation/erosion with a symmetric
+linear-energy mean across one fundamental spacing (radius ceil(F0-bins/2), clamped
+1..bands-1). F0 retains Hz/sampleRate semantics; no fixture-specific centers or
+retuning. Sum stereo energy before smoothing, then reuse the existing envelope
+ratio and frequency mapping. Preallocate source scratch at configure. Use a
+compensated double sliding sum, rebased once per window width to control drift;
+work stays O(bands), storage O(bands). Normalize edge windows by actual bin count.
+Keep the independent near-silence patch and source/final fingerprints. Preserve
+all original qualification gates; expand source/filter fixtures across F0/rates
+and shifts with harmonic-grid resolution recorded explicitly. Passing synthetic
+fixtures permits further experiments only; defaults/products remain unchanged
+pending listening, transients/unvoiced, CPU and aligned-host qualification.
+
+## Latency-aligned mix contract v1
+
+Independent `LatencyAlignedMix` DSP utility; no product routing or latency change
+until explicit host integration. Lead owns include/src/tests and CMake wiring.
+prepare(rate,maxFrames,channels,latencySamples) accepts the four standard rates,
+1/2channels,1..65536maxFrames and0..65536delay samples, allocates/clears dry rings.
+Latency changes require off-callback prepare. Invalid/failed prepare unprepares.
+setParameters({mix,bypass}) atomically rejects nonfinite/out-of-[0,1]mix; default
+mix1,bypassfalse. Smooth effective wet fraction (bypass ?0:mix) over10ms, snap
+within1e-6 to exact endpoints. reset retains/settles targets and clears dry history.
+
+process(originalDry,processedWet,frames) validates shape/capacity/null/direct
+cross-channel aliases before state/output. Inputs must have at least frames
+samples, with no partial overlap. Same-channel dry/wet alias is permitted; capture
+all channel inputs before writing outputs. Wet is replaced by mixed output;
+originalDry is not modified unless it aliases wet. Delay dry by exactly the
+configured samples, including during bypass/mix0. Caller must keep its backend
+warm and report the matching host latency. Utility neither runs nor compensates
+an incorrectly aligned wet backend. Backend tails remain caller-owned.
+
+Prepare allocates; setters/process/reset perform no allocation, locks or I/O.
+Sanitize nonfinite/subnormal audio to0, retain normal tiny dry values and clamp
+mixed overflow to float range. Exact wet/dry endpoints avoid cancellation and
+unnecessary rounding. Acceptance: impulse/neutral timing including zero delay,
+all rates/layouts, known dry/wet blend, settled bypass, history kept while bypassed,
+partition invariance, invalid warmed-state rejection, hostile audio, allocation
+failure and callback probes, Release/sanitizers. Host and listening remain separate.

@@ -26,7 +26,7 @@ suite claim or automatic release-quality guarantee is part of the implementation
 
 ## Current ownership
 
-Lead: shared contracts, integration, dependency setup, status and chorus/width integration.
+Lead: shared contracts, integration, dependency setup, status and experimental pitch/formant core qualification (issue #18).
 Architecture/DSP agent: AudioEngine.cpp and engine_tests.cpp, completed/reviewed.
 UI/host agent: processor/editor and plugin tests, completed/reviewed.
 Build agent: CMake/product/CI targets, completed/static reviewed.
@@ -34,3 +34,7 @@ QA agent: independent review, state parser defect correction request, quality ga
 Initial package work used isolated worktrees; the lead now maintains integration
 directly. Preserved worktrees retain preliminary copies. No persistent agent
 scheduler is configured.
+
+Pitch/formant core qualification is active but blocked by three isolated-envelope
+failures (issue #18). It is optional/OFF and not connected to product controls;
+passing streaming tests do not complete M2/M3. See PITCH_FORMANT_CORE.md.

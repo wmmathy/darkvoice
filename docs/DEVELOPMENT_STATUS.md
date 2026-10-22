@@ -183,3 +183,147 @@ host fixture used an out-of-bounds magnitude-query overload; correction retains
 JUCE assertions and the full suite now passes. The MIT candidate
 audit found material latency/near-silence integration gates; see
 PITCH_BACKEND_AUDIT.md. No pitch/formant processor has been integrated.
+
+
+## 2026-10-22 — experimental pitch/formant streaming core
+
+Branch feature/sculptor/pitch-formant-core is stacked on unmerged chorus/width
+PR #17. Issue #18 blocks host integration. The lead owns mutations; dedicated
+read-only agents reproduced backend pitch/formant failures and reviewed wrapper,
+source-integrity guards and qualification fixtures. Actions remains paused and
+all commits use [skip ci]. No merge/release or new native qualification is claimed.
+
+Implemented an isolated PImpl wrapper with fixed delayed neutral output, bounded
+64-sample scratch/control grid, deterministic seeded backend, parameter smoothing
+and crossfade. Pin MIT Stretch/Linear, retain notices and fingerprint required
+headers/licenses. A private-copy patch removes the immediate near-silence shortcut
+without changing numerical floors or upstream checkouts. Default products do not
+link this target; DARKVOICE_BUILD_SCULPTOR_CORE defaults OFF.
+
+Existing products pass14/14. Experimental Release matrix is12/13 suites: streaming
+209checks passes; qualification76checks has3 real formant-envelope failures.
+ASan/UBSan streaming passes; qualification reproduces the same3 numerical failures
+with no reported sanitizer findings. Studio sine pitch fixtures pass all16 tested
+rate/shift combinations within20cents after increasing its FFT size. Original
+small-window errors were real, not an estimator artifact. Geometric search ranges
+correct an initial multi-formant test defect; isolated cases still fail.
+
+Do not expose pitch/formant controls or mark the quality milestone complete.
+Resolve/replace the backend envelope algorithm, then qualify further material,
+CPU/listening and aligned host dry/mix/bypass. Reproduce with
+PITCH_FORMANT_CORE.md; failing qualification is not skipped or WILL_FAIL.
+
+## Voice Sculptor automation continuation — 2026-10-22
+
+Lead extended the isolated core regression coverage on the existing draft PR #19;
+no new agents or product controls were added in this increment. All12 rate/profile
+stereo combinations now exercise sample-positioned pitch/formant/preservation/base
+automation, opposite extremes and return to exact neutral. Streaming now passes
+269checks in Release and ASan/UBSan. Full experimental Release remains12/13 suites
+with the same3 formant qualification failures. Issue #18 remains open and host
+integration remains blocked. Actions stays paused.
+
+## Actions retry authorized — 2026-10-22
+
+User authorized trying GitHub Actions again. The lead lifted the agent pause rule
+and triggers existing build/test and source-quality workflows on this branch.
+Results are pending; no available credits or new native success is assumed.
+Experimental Sculptor remains OFF in existing CI; its three local formant failures
+continue to block integration even if default product CI passes. Draft PRs and
+merge/review gates remain in force.
+
+## Actions retry result — 2026-10-22
+
+At b663d94, GitHub accepted the push/PR triggers. Superseded push runs were
+cancelled by existing concurrency rules. PR build run39736030287 and source
+quality run39736030307 failed before executing jobs. GitHub annotations state:
+“The job was not started because recent account payments have failed or your
+spending limit needs to be increased. Please check the 'Billing & plans' section
+in your settings”. No new compiler, test, native AU or quality result exists.
+No repeated rerun is requested; [skip ci] resumes for further commits until
+billing/spending availability changes. Existing local results remain applicable
+only to their recorded scope.
+
+## Sculptor CPU probe continuation — 2026-10-22
+
+Lead added an opt-in developer CPU wall-time probe with reproducible synthetic
+workload, JSON output and24 rate/profile/block combinations; no product changes.
+The read-only formant_investigation agent independently investigates the remaining
+envelope failures in temporary copies only. Benchmark runs locally and reports
+actual observed callback-budget overruns rather than certifying real-time safety.
+Actions remains billing-blocked; all new commits use [skip ci].
+
+## Formant estimator correction and public-repository CI — 2026-10-22
+
+GitHub confirms public visibility and default branch main. User reauthorized Actions;
+normal CI triggering resumes. Historical billing failures remain historical only.
+Lead integrated a guarded private-header estimator correction proposed/tested by
+read-only formant_investigation agent. Preallocated scratch and compensated/rebased
+linear-energy sliding mean replace morphological dilation/erosion, retaining F0
+units and existing numerical floors. The three retained formant failures now pass
+without changed thresholds. Expanded qualification140checks and streaming269checks
+pass in the local13/13 Release run. New isolated Linux/macOS CI jobs exercise these
+gates; remote results are pending. Existing product links/defaults remain unchanged.
+Issue #18 stays open for broader material/listening and aligned host integration.
+
+Current correction validation also passes full ASan/UBSan13/13 (no reported
+findings) and the unchanged Linux product regression14/14. Formatter19.1.7 and
+scoped cppcheck2.17.1 on wrapper/benchmark pass; limited credential/dependency
+scans pass. No new GUI, actual DAW or listening qualification is claimed.
+
+## Retained combined-periodicity regression — 2026-10-22
+
+Independent spectral review found that some exploratory envelope-peak failures
+were exact-harmonic-grid estimator artifacts, while poor intended-F0 periodicity
+is real. Three representative cases are now retained in sculptor.qualification,
+using the existing vowel correlation threshold>0.8 without altered targets:
+100/600Hz,pitch+12/formant0 gives-0.357724;70/600Hz,pitch-12/formant0 gives0.181850;
+180/1200Hz,pitch+12/formant+7 gives-0.011096. All use48k Offline and declared baseF0.
+
+Release qualification149checks has3failures. The original140checks still pass,
+so the envelope correction is retained; the complete quality gate remains blocked.
+Issue #18 remains open. The prior13/13 result describes the narrower140check
+revision8bb2186, not this expanded gate. No naturalness/combined-preservation or
+host-integration claim is made.
+
+ASan/UBSan qualification reproduces the same149checks/3 numerical failures, with
+no reported sanitizer findings. The test-only follow-up uses [skip ci] to preserve
+the in-progress8bb2186 native product validation rather than restart its builds;
+this is not a renewed Actions pause. CI success at that revision covers the
+narrower140check gate only. No complete current quality success is claimed.
+
+## Public-repository Actions verification — 2026-10-22
+
+At source8bb2186, Build and tests run39737797996 completed SUCCESS for all9jobs:
+four Linux/macOS core configurations, Linux sanitizers, both isolated Sculptor
+jobs and both product jobs. Source quality run39737798002 also SUCCESS. The
+macOS product step passed both unsigned auval validations; Linux product build,
+headless tests and GUI smoke passed. These are runner checks, not actual DAW or
+listening qualification. Repository public visibility and default main are verified.
+
+The later test-only ecdfdcf revision retains three combined-periodicity failures
+in the149check quality gate. CI8bb2186 tested the narrower140check gate; do not
+reuse it as complete current quality success. Products remain independent of the
+experimental core. Issue #18 remains open; no merge or release occurred.
+
+Build: https://github.com/wmmathy/darkvoice/actions/runs/39737797996
+Quality: https://github.com/wmmathy/darkvoice/actions/runs/39737798002
+
+## Aligned mix prerequisite — 2026-10-22
+
+Lead established contract v1 and implemented shared LatencyAlignedMix with delayed
+original dry, smoothed effective wet fraction/bypass, exact endpoints and always
+advancing dry history. No product routing, parameters, state or host latency change.
+Read-only formant_investigation agent reviewed exact bounds/alias/lifecycle behavior
+and found no blocking issue; lead owns all mutations/tests/integration. No new
+dependency. Release464checks pass; full experimental Release passes13/14 suites,
+with only the retained149check/3failure Sculptor quality gate failing.
+
+The DSP follow-up shows preservation-disabled controls pass all three representative
+periodicity fixtures. A raw-phase-history/synthesis-only gain experiment did not
+resolve them and is not integrated. The compensation path remains blocked under
+issue #18; future host integration can use the independently tested mix utility.
+
+Final aligned-mix464checks pass Release and ASan/UBSan without reported findings;
+default Linux product suites pass15/15. Formatter, scoped static analysis and
+limited credential/dependency scans pass. Native CI for this increment is pending.

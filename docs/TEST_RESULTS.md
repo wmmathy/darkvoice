@@ -254,3 +254,180 @@ Chorus has no feedback and its delay is musical rather than host compensation.
 A separate read-only agent pinned/inspected MIT Stretch/Linear and ran scoped
 latency/allocation probes, recorded in PITCH_BACKEND_AUDIT.md. That backend remains
 unintegrated and its quality/near-silence/aligned-bypass gates remain outstanding.
+
+
+## Experimental pitch/formant core — 2026-10-22, issue #18
+
+This target defaults OFF and is not linked to products. Existing Linux product
+regression build/tests pass14/14. Experimental opt-in Release run passes12/13
+suites: the retained sculptor.qualification suite fails, so the overall run exits8.
+No failed numerical assertions are marked expected-failure or removed.
+
+- sculptor.streaming:209checks pass in Release and ASan/UBSan across all four
+  rates, mono/stereo and three candidate configurations. Exact delayed-neutral
+  impulse/tiny-normal output, reported latency/drain bounds, resets, allocation
+  failure and callback probes, fixed-grid partitions, numerical stereo equality,
+  warmed invalid-operation history and hostile inputs are covered. Active impulse
+  drain fits8704samples at48k Studio, with remaining signal0 after that bound.
+- The fingerprint-guarded private patch changes near-silence impulse peak offset
+  from0 to1152samples in Live48k while leaving upstream checkouts pristine.
+  Active tiny amplitude is still attenuated by spectral floors; only neutral
+  delayed dry has exact transparency.
+- Studio4096/hop512 (doubled above48k) sine fixtures at110Hz shifted-12/-7/+7/+12
+  pass all16 cases within20cents; worst observed about14.9cents. Smaller original
+  windows failed up to74.7cents, independently confirmed spectrally by an agent.
+- Qualification:76checks,3failures in both Release and ASan/UBSan, with no reported
+  memory/undefined-behavior findings. At48k/F0100Hz, formant+7 moves a600Hz
+  isolated envelope peak to700 instead of899;1200Hz with-7 gives1000 instead of801;
+ 1200Hz with+7 gives2200 instead of1798. These fail the20% gate. No silent base-F0
+  retuning or relaxed tolerance was used. Full reproductions are in sculptor_tests.
+- Initial fixed multi-formant search windows excluded a downshifted target and
+  overlapped resonances. QA requested geometric inter-resonance boundaries; those
+  corrected fixtures pass, while the broad isolated-envelope fixtures still fail.
+  Stereo bit equality was replaced with justified relative RMS tolerance1e-4;
+  independent measurements found rounding-level differences1e-6..1e-5.
+- Tampered dependency header was rejected at configuration before compilation.
+  Required header and MIT license hashes, exact pins, private patched hash and
+  source cleanliness were checked. Formatting and limited dependency/credential
+  scans apply; they are not comprehensive security/legal audits.
+
+No new GUI/state parameters, host latency/bypass changes, live correction, real
+voice/listening/CPU deadline, native macOS/AU, signing or release is validated.
+Actions was not dispatched/rerun. See PITCH_FORMANT_CORE.md for opt-in commands;
+its full CTest command intentionally continues to report the unresolved failures.
+
+## Voice Sculptor automation regression — 2026-10-22
+
+- Streaming269checks pass in Release and ASan/UBSan (60new assertions); no reported
+  sanitizer findings. Four rates times three profiles, stereo with different input
+  frequencies per channel, sample-positioned events at137/4093/8191/12289/17003
+  exercise extreme targets, preserve flag, auto/manual base and return to neutral.
+- Identical events rendered in37/1024sample partitions have maximum difference0
+  in every tested configuration. Both outputs remain finite, ordinary new/new[]
+  rejection reports no callback allocation, reported latency stays fixed and the
+  final half-second exactly matches delayed dry on both channels.
+- Full Release rerun remains12/13 suites: qualification76checks retains the same
+  3formant failures. No quality tolerance or production code changed. The earlier
+  14/14 product result belongs to the preceding core increment; no new GUI/native
+  host test or listening/CPU-deadline qualification was performed here.
+
+## Actions retry result — 2026-10-22
+
+At b663d94, GitHub accepted the push/PR triggers. Superseded push runs were
+cancelled by existing concurrency rules. PR build run39736030287 and source
+quality run39736030307 failed before executing jobs. GitHub annotations state:
+“The job was not started because recent account payments have failed or your
+spending limit needs to be increased. Please check the 'Billing & plans' section
+in your settings”. No new compiler, test, native AU or quality result exists.
+No repeated rerun is requested; [skip ci] resumes for further commits until
+billing/spending availability changes. Existing local results remain applicable
+only to their recorded scope.
+
+## Experimental Sculptor performance probe — 2026-10-22
+
+Built and executed new developer-only benchmark with GCC14.2 Release, Linux x86_64.
+Parsed stdout as JSON and checked24 unique rate/profile/block cases, finite outputs,
+nonempty callbacks, ordered nearest-rank percentiles and ratio arithmetic. All
+measurements completed. Observed processing/audio wall-time ratio0.0240–0.0659 and
+2callback-budget overruns; this does not pass a real-time deadline gate. Three
+seconds per case follow one-second warm-up; harmonic/noise/transient stereo input
+and changing parameters are included. No product, device, listening or native test
+is implied. Raw output is /tmp/darkvoice-sculptor-bench.json in this instance.
+
+## Corrected experimental envelope — 2026-10-22
+
+Local Release full CTest13/13 passes, including streaming269 and qualification140
+checks. The original76 qualification checks and their tolerances are preserved.
+Sixteen new fixtures span48/96k, F070/180Hz,600/1200Hz isolated envelopes and+/-7
+formant shifts; envelope peak and F0-periodicity assertions pass. The original
+600Hz/+7,1200Hz/-7 and1200Hz/+7 peaks now measure900/800/1800Hz against targets
+899/801/1798Hz. No F0 retuning or original tolerance relaxation was used.
+
+The private patched header is fingerprinted as
+7003842b8347ba10710f280c33dba494cd3466a54b240cef76cfbbe32a9a93b8;
+upstream source checkouts remain pristine. The new bounded sliding estimator uses
+compensated double sums with per-window rebasing and preallocated source storage.
+A repeated24case Release benchmark reports processing/audio wall-time ratios
+0.0232–0.0624 with1 observed callback-budget overrun (shared Linux cloud). This
+neither proves deadlines nor establishes target/native performance. Raw instance
+output: /tmp/darkvoice-sculptor-bench-envelope.json.
+
+CI YAML parses with isolated Linux/macOS Sculptor jobs. Actions is now reauthorized
+following verified public visibility/default main; native/remote outcomes are
+pending. Products remain unlinked to this experimental target, which defaults OFF.
+
+Current correction validation also passes full ASan/UBSan13/13 (no reported
+findings) and the unchanged Linux product regression14/14. Formatter19.1.7 and
+scoped cppcheck2.17.1 on wrapper/benchmark pass; limited credential/dependency
+scans pass. No new GUI, actual DAW or listening qualification is claimed.
+
+Independent review of the exact compensated/rebased stage found no blocking
+bounds, lifecycle, allocation or O(bands) issue. A temporary exploratory combined
+pitch/formant matrix reported38 envelope-peak failures in144cases. Its exact-grid
+amplitude estimator has not been independently verified against pitch errors, so
+these are unresolved exploratory results, not a passed preservation qualification
+or a proven diagnosis. Preserve issue #18 and investigate broader simultaneous
+pitch/formant behavior before exposing the core. The committed140check suite
+qualifies its stated synthetic subset only. No claim of arbitrary formant
+preservation or perceptual completion follows from correcting the original cases.
+
+## Retained combined-periodicity regression — 2026-10-22
+
+Independent spectral review found that some exploratory envelope-peak failures
+were exact-harmonic-grid estimator artifacts, while poor intended-F0 periodicity
+is real. Three representative cases are now retained in sculptor.qualification,
+using the existing vowel correlation threshold>0.8 without altered targets:
+100/600Hz,pitch+12/formant0 gives-0.357724;70/600Hz,pitch-12/formant0 gives0.181850;
+180/1200Hz,pitch+12/formant+7 gives-0.011096. All use48k Offline and declared baseF0.
+
+Release qualification149checks has3failures. The original140checks still pass,
+so the envelope correction is retained; the complete quality gate remains blocked.
+Issue #18 remains open. The prior13/13 result describes the narrower140check
+revision8bb2186, not this expanded gate. No naturalness/combined-preservation or
+host-integration claim is made.
+
+ASan/UBSan qualification reproduces the same149checks/3 numerical failures, with
+no reported sanitizer findings. The test-only follow-up uses [skip ci] to preserve
+the in-progress8bb2186 native product validation rather than restart its builds;
+this is not a renewed Actions pause. CI success at that revision covers the
+narrower140check gate only. No complete current quality success is claimed.
+
+## Public-repository Actions verification — 2026-10-22
+
+At source8bb2186, Build and tests run39737797996 completed SUCCESS for all9jobs:
+four Linux/macOS core configurations, Linux sanitizers, both isolated Sculptor
+jobs and both product jobs. Source quality run39737798002 also SUCCESS. The
+macOS product step passed both unsigned auval validations; Linux product build,
+headless tests and GUI smoke passed. These are runner checks, not actual DAW or
+listening qualification. Repository public visibility and default main are verified.
+
+The later test-only ecdfdcf revision retains three combined-periodicity failures
+in the149check quality gate. CI8bb2186 tested the narrower140check gate; do not
+reuse it as complete current quality success. Products remain independent of the
+experimental core. Issue #18 remains open; no merge or release occurred.
+
+Build: https://github.com/wmmathy/darkvoice/actions/runs/39737797996
+Quality: https://github.com/wmmathy/darkvoice/actions/runs/39737798002
+
+## Latency-aligned mix utility — 2026-10-22
+
+New latency.aligned_mix suite passes464checks in Release and ASan/UBSan, with no
+reported sanitizer findings. Covers all four rates, mono/stereo, delays0/1152/
+9216/18432/65536, measured impulse alignment, exact endpoints/tiny normals, half
+mix of a synthetic aligned wet backend, delayed bypass, sample-positioned buffer
+partition invariance, warm dry history, reset, invalid warmed-state rejection,
+allocation failure, ordinary callback allocation rejection, supported aliasing,
+nonfinite/subnormal/large samples and measured10ms bypass ramp/settling.
+
+Full experimental Release passes13/14 suites: only the known Sculptor
+qualification149checks/3failures fails. Its outcome remains a real failing gate;
+no tolerance or failing test was changed. Default Linux product suites pass15/15;
+the new utility is compiled/tested but not wired into product processing. No new
+GUI, host-alignment or listening test is implied. Formatter19.1.7, scoped exhaustive
+cppcheck2.17.1 and limited credential/dependency scans pass.
+
+A read-only review found no blocking utility bounds/lifecycle/aliasing issue.
+Separate DSP controls disabling preservation give target-period correlations
+0.999618/0.979937/0.994710 for the three source/filter fixtures. A private-copy
+synthesis-only formant-gain experiment still failed them and was rejected; no
+unqualified backend change was integrated. New native CI results remain pending.

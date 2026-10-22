@@ -1,5 +1,9 @@
 # Pitch/formant backend audit
 
+Update2026-10-22: an opt-in isolated qualification wrapper now exists. It is OFF
+by default and not connected to products; quality gate failures and reproduction
+are recorded in PITCH_FORMANT_CORE.md. The report below is the initial audit.
+
 Read-only dedicated-agent audit, 2026-10-21. Candidate qualification only: no
 backend is integrated or installed as a DarkVoice product dependency. Requirements
 remain in PRODUCT_SPECIFICATION.md; proposed integration in PITCH_FORMANT_PLAN.md.
