@@ -75,6 +75,9 @@ darkvoice::EngineParameters DarkVoiceProcessor::snapshot() const noexcept {
     p.gateThresholdDb = raw_[21]->load(std::memory_order_relaxed);
     p.gateRatio = raw_[22]->load(std::memory_order_relaxed);
     p.gateReleaseMs = raw_[23]->load(std::memory_order_relaxed);
+    p.deEssHz = raw_[24]->load(std::memory_order_relaxed);
+    p.deEssThresholdDb = raw_[25]->load(std::memory_order_relaxed);
+    p.deEssReductionDb = raw_[26]->load(std::memory_order_relaxed);
     return p;
 }
 void DarkVoiceProcessor::prepareToPlay(double rate, int maxFrames) {
@@ -159,7 +162,7 @@ void DarkVoiceProcessor::setStateInformation(const void *data, int bytes) {
     if (!xml || !xml->hasTagName("DarkVoiceState"))
         return;
     const auto version = xml->getStringAttribute("schemaVersion");
-    if (version != "1" && version != "2" && version != "3")
+    if (version != "1" && version != "2" && version != "3" && version != "4")
         return;
     const auto count = darkvoice::parameterCountForVersion(version.getIntValue());
     const auto state = juce::ValueTree::fromXml(*xml);

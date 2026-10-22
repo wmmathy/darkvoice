@@ -10,7 +10,8 @@ struct ParameterSpec {
 };
 inline constexpr std::size_t legacyParameterCount = 8;
 inline constexpr std::size_t effectsParameterCount = 21;
-inline constexpr std::array<ParameterSpec, 24> parameterSchema{{
+inline constexpr std::size_t gateParameterCount = 24;
+inline constexpr std::array<ParameterSpec, 27> parameterSchema{{
     {"inputDb", "Input", -24.0f, 24.0f, 0.0f, 0.1f, 1.0f, false},
     {"outputDb", "Output", -24.0f, 24.0f, 0.0f, 0.1f, 1.0f, false},
     {"highPassHz", "High-pass", 20.0f, 400.0f, 20.0f, 1.0f, 0.5f, false},
@@ -35,15 +36,22 @@ inline constexpr std::array<ParameterSpec, 24> parameterSchema{{
     {"gateThresholdDb", "Gate threshold", -80.0f, 0.0f, -50.0f, 0.1f, 1.0f, false},
     {"gateRatio", "Gate ratio (1 = off)", 1.0f, 20.0f, 1.0f, 0.1f, 1.0f, false},
     {"gateReleaseMs", "Gate release", 10.0f, 1000.0f, 120.0f, 1.0f, 0.5f, false},
+    {"deEssHz", "De-esser frequency", 2000.0f, 12000.0f, 6000.0f, 1.0f, 0.6f, false},
+    {"deEssThresholdDb", "De-esser threshold", -60.0f, 0.0f, -24.0f, 0.1f, 1.0f, false},
+    {"deEssReductionDb", "De-esser max reduction (0 = off)", 0.0f, 18.0f, 0.0f, 0.1f, 1.0f, false},
 }};
-inline constexpr int currentSchemaVersion = 3;
+inline constexpr int currentSchemaVersion = 4;
 constexpr std::size_t parameterCountForVersion(int version) noexcept {
     return version == 1   ? legacyParameterCount
            : version == 2 ? effectsParameterCount
-           : version == 3 ? parameterSchema.size()
+           : version == 3 ? gateParameterCount
+           : version == 4 ? parameterSchema.size()
                           : 0;
 }
 constexpr int parameterVersion(std::size_t index) noexcept {
-    return index < legacyParameterCount ? 1 : index < effectsParameterCount ? 2 : 3;
+    return index < legacyParameterCount    ? 1
+           : index < effectsParameterCount ? 2
+           : index < gateParameterCount    ? 3
+                                           : 4;
 }
 } // namespace darkvoice

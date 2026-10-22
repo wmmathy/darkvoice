@@ -57,6 +57,9 @@ void stateTests() {
     set(source, "gateThresholdDb", -45.0f);
     set(source, "gateRatio", 3.0f);
     set(source, "gateReleaseMs", 250.0f);
+    set(source, "deEssHz", 5000);
+    set(source, "deEssThresholdDb", -30);
+    set(source, "deEssReductionDb", 9);
     juce::MemoryBlock state;
     source.getStateInformation(state);
     require(state.getSize() > 0, "State serialization empty");
@@ -70,10 +73,11 @@ void stateTests() {
         const auto &spec = darkvoice::parameterSchema[i];
         require(source.parameters.getParameter(spec.id)->getVersionHint() == (i < 8    ? 1
                                                                               : i < 21 ? 2
-                                                                                       : 3),
+                                                                              : i < 24 ? 3
+                                                                                       : 4),
                 "AU version hint changed");
         require(std::abs(raw(restored, spec.id) - raw(source, spec.id)) < 0.001f,
-                "Full v3 state roundtrip failed");
+                "Full v4 state roundtrip failed");
     }
     require(source.getTailLengthSeconds() == 40.0, "Spatial tail not reported");
 
@@ -81,7 +85,7 @@ void stateTests() {
     restored.setStateInformation(garbage, sizeof(garbage));
     require(raw(restored, "inputDb") == raw(source, "inputDb"),
             "Malformed state changed parameters");
-    for (const char *version : {"4", "1junk"}) {
+    for (const char *version : {"5", "1junk"}) {
         auto xml = source.parameters.copyState().createXml();
         xml->setAttribute("schemaVersion", version);
         juce::MemoryBlock invalid;
@@ -144,23 +148,56 @@ void stateTests() {
     }
     auto v2 = source.parameters.copyState();
     v2.setProperty("schemaVersion", 2, nullptr);
-    for (const auto *id : {"gateThresholdDb", "gateRatio", "gateReleaseMs"})
+    for (const auto *id : {"gateThresholdDb", "gateRatio", "gateReleaseMs", "deEssHz",
+                           "deEssThresholdDb", "deEssReductionDb"})
         v2.removeChild(v2.getChildWithProperty("id", id), nullptr);
     set(restored, "gateRatio", 10);
+    set(restored, "deEssHz", 9000);
+    set(restored, "deEssThresholdDb", -50);
+    set(restored, "deEssReductionDb", 12);
     juce::MemoryBlock v2Data;
     juce::AudioProcessor::copyXmlToBinary(*v2.createXml(), v2Data);
     restored.setStateInformation(v2Data.getData(), static_cast<int>(v2Data.getSize()));
     require(raw(restored, "gateRatio") == 1 && raw(restored, "gateThresholdDb") == -50 &&
                 std::abs(raw(restored, "eqMidGainDb") - raw(source, "eqMidGainDb")) < .001f,
             "V2 state preserves effects and disables gate");
+    require(raw(restored, "deEssHz") == 6000 && raw(restored, "deEssThresholdDb") == -24 &&
+                raw(restored, "deEssReductionDb") == 0,
+            "V2 state did not reset active de-esser");
+    auto v3 = source.parameters.copyState();
+    v3.setProperty("schemaVersion", 3, nullptr);
+    for (const auto *id : {"deEssHz", "deEssThresholdDb", "deEssReductionDb"})
+        v3.removeChild(v3.getChildWithProperty("id", id), nullptr);
+    set(restored, "deEssHz", 9000);
+    set(restored, "deEssThresholdDb", -50);
+    set(restored, "deEssReductionDb", 12);
+    juce::MemoryBlock v3Data;
+    juce::AudioProcessor::copyXmlToBinary(*v3.createXml(), v3Data);
+    restored.setStateInformation(v3Data.getData(), static_cast<int>(v3Data.getSize()));
+    require(raw(restored, "deEssReductionDb") == 0 && raw(restored, "deEssHz") == 6000 &&
+                raw(restored, "deEssThresholdDb") == -24 && raw(restored, "gateRatio") == 3,
+            "V3 state preserves gate and disables de-esser");
+    set(restored, "gateRatio", 1);
     for (const char *badGate : {"NaN", "21", "0"}) {
         auto bad = source.parameters.copyState();
-        bad.setProperty("schemaVersion", 3, nullptr);
+        bad.setProperty("schemaVersion", darkvoice::currentSchemaVersion, nullptr);
         bad.getChildWithProperty("id", "gateRatio").setProperty("value", badGate, nullptr);
         juce::MemoryBlock data;
         juce::AudioProcessor::copyXmlToBinary(*bad.createXml(), data);
         restored.setStateInformation(data.getData(), static_cast<int>(data.getSize()));
         require(raw(restored, "gateRatio") == 1, "Invalid gate state changed live state");
+    }
+    for (const char *badReduction : {"NaN", "19", "-1"}) {
+        auto bad = source.parameters.copyState();
+        bad.setProperty("schemaVersion", darkvoice::currentSchemaVersion, nullptr);
+        bad.getChildWithProperty("id", "deEssReductionDb")
+            .setProperty("value", badReduction, nullptr);
+        juce::MemoryBlock data;
+        juce::AudioProcessor::copyXmlToBinary(*bad.createXml(), data);
+        const auto before = restored.snapshotPresetValues();
+        restored.setStateInformation(data.getData(), static_cast<int>(data.getSize()));
+        require(restored.snapshotPresetValues() == before,
+                "Invalid de-esser state changed live parameters");
     }
     for (int fault = 0; fault < 3; ++fault) {
         auto invalidTree = source.parameters.copyState();
@@ -179,7 +216,7 @@ void stateTests() {
                 "Invalid ID set partially changed state");
     }
     auto values = source.snapshotPresetValues();
-    require(values.size() == 23 && values.count("bypass") == 0,
+    require(values.size() == 26 && values.count("bypass") == 0,
             "Preset must contain only sound parameters");
     values["inputDb"] = 10.0f;
     values["delayMix"] = 0.2f;
@@ -213,6 +250,33 @@ void gateAudioTests() {
     const float before = buffer.getSample(0, 10);
     p.processBlock(buffer, midi);
     require(buffer.getSample(0, 10) == before, "Gate changed bypassed host audio");
+    p.releaseResources();
+}
+void deEsserAudioTests() {
+    DarkVoiceProcessor p;
+    layout(p, 2);
+    set(p, "deEssHz", 2000);
+    set(p, "deEssThresholdDb", -60);
+    set(p, "deEssReductionDb", 12);
+    p.prepareToPlay(48000, 512);
+    juce::AudioBuffer<float> buffer(2, 512);
+    juce::MidiBuffer midi;
+    for (int block = 0; block < 100; ++block) {
+        for (int c = 0; c < 2; ++c)
+            for (int i = 0; i < 512; ++i)
+                buffer.setSample(
+                    c, i,
+                    static_cast<float>(.1 * std::sin(2 * juce::MathConstants<double>::pi * 8000 *
+                                                     (block * 512 + i) / 48000)));
+        p.processBlock(buffer, midi);
+    }
+    require(buffer.getMagnitude(0, 512) < .065f,
+            "De-esser controls did not attenuate host high band");
+    set(p, "bypass", 1);
+    sine(buffer, 48000);
+    const float before = buffer.getSample(0, 10);
+    p.processBlock(buffer, midi);
+    require(buffer.getSample(0, 10) == before, "De-esser changed bypassed audio");
     p.releaseResources();
 }
 void renderingTests() {
@@ -273,6 +337,7 @@ int main() {
         stateTests();
         renderingTests();
         gateAudioTests();
+        deEsserAudioTests();
         std::cout
             << "PASS plugin state, automation/render, rates/layouts, lifecycle and identity\n";
         return 0;

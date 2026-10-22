@@ -74,3 +74,10 @@ as product dependencies. Prefer local open-source implementations; inspect licen
 compatibility and redistribution notices before integrating any library/model/codec.
 Apple platform build tools and host validation are external platform requirements,
 not a claim that Apple's tools or DAWs are open source.
+
+## Temporary GitHub Actions pause
+
+User reports exhausted Actions credits; do not dispatch or rerun Actions until
+further notice. Continue local builds/tests and authorized feature commits/pushes.
+Include [skip ci] in every commit message to suppress push/pull_request workflows.
+Keep new PRs draft with native CI explicitly unrun; do not bypass merge checks.

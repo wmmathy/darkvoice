@@ -141,3 +141,25 @@ Source-quality run 39661596167 passes. PR #13 is ready for review; documentation
 updates trigger fresh CI, and no completed review or merge is claimed.
 Full sculptor, correction/harmony,
 AI/discovery, sessions/mixing, mastering/export and host qualification remain open.
+
+
+## Actions pause and de-esser continuation
+
+User reports exhausted GitHub Actions credits until further notice. Do not dispatch
+or rerun workflows. New commits carry [skip ci]; local evidence does not establish
+new macOS/AU validation. Keep PRs draft and preserve merge gates.
+
+PR #13 is confirmed merged at b276d49. Lead owns implementation/integration on
+feature/dynamics/de-esser. Two actual dedicated read-only agents completed
+architecture and DSP review; neither edited files or ran Actions. The DSP review
+identified tiny-normal neutral preservation; lead corrected it and added a fixture.
+The next pitch/formant proposal is in PITCH_FORMANT_PLAN.md, not an implemented API.
+
+Issue #14 tracks this bounded M2 package. De-esser v4 contract precedes implementation: linked high-band attenuation before
+EQ/spatial effects, three real controls/fifth tab, appended AU IDs and strict
+v1/v2/v3-to-v4 state/preset migration with neutral defaults. Release core passes
+10/10; local products pass 13/13, ASan/UBSan core 10/10 and the de-esser-tab/
+26-control GUI/standalone smoke pass. Final host migration assertions and all 13 product suites pass after read-only
+QA strengthening. New native CI/AU validation is unrun. Full sculptor/pitch/
+formants, remaining effects, reference/harmony, AI, sessions/mixing/mastering/export
+and real-host/listening qualification remain outstanding. No new dependencies.
