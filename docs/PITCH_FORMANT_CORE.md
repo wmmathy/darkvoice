@@ -158,3 +158,67 @@ compatible backend; do not insert an arbitrary gain clamp to tune fixtures.
 and smoothed bypass with warm dry history. It is not connected to this backend
 or any product. Callers still own backend warming, actual matching delay and host
 latency reporting. Its contract and tests do not waive the existing quality gate.
+
+## Peak coherence and excitation-map investigation — 2026-10-22
+
+A separate isolated investigation reproduced the unchanged149check qualification
+suite with the same3failures, plus269passing streaming and464passing alignment
+checks. Temporary private-header experiments kept dependency pins and fixtures
+unchanged. Correlations below use the same final-one-second, rounded target-period
+lag test as the retained suite, not a new tolerance:
+
+| Temporary algorithm | 100/600, +12/0 | 70/600, -12/0 | 180/1200, +12/+7 |
+| --- | ---: | ---: | ---: |
+| Retained implementation | -0.357724 | 0.181850 | -0.011096 |
+| Peak-locked envelope gain in input-energy path | 0.995317 | 0.301105 | 0.999089 |
+| Above plus compensated-energy peak remapping | 0.995352 | 0.483413 | 0.998906 |
+| Peak-locked gain only at final synthesis | 0.995306 | -0.058471 | 0.996333 |
+| Whitened-excitation peak map plus peak-locked final synthesis gain | 0.999631 | 0.792134 | 0.997502 |
+
+Peak locking uses one envelope ratio per detected source peak's nearest-peak
+region, preserving the analysis-lobe gain within that region. Whitening here means
+using source energy divided by its estimated source envelope solely for peak-map
+detection; raw phase/energy history stays unchanged and envelope gain is applied
+when copying the final spectrum. This improves the observed subset but does not
+qualify the algorithm. Interframe-phase peak localization still left the low-F0
+case below0.8; accepting weaker phase data caused another retained case to fail.
+No experiment, arbitrary gain clamp or relaxed threshold was integrated.
+
+A broader180case Offline matrix compared retained code with the whitened-excitation
+prototype: rates48/96kHz; F0=70/100/180Hz; envelope=600/1200Hz; pitch=-12/-7/0/+7/+12;
+formant=-7/0/+7; preservation enabled and exact manual input F0 supplied. Retained
+code failed61 intended-periodicity cases; the prototype failed13. The same-grid
+amplitude search reported31 versus10 exploratory envelope-peak discrepancies among
+targets with a harmonic within20percent, and2 targets had no such harmonic. These
+envelope counts are **not** independently verified formant errors: an exact-grid
+amplitude search is unreliable for off-grid/inharmonic outputs. All180 periodicity
+checks remained active, including both sparsely resolved targets. The prototype
+passed269streaming checks but still failed the original qualification gate; it was
+rejected and the original generated header restored to SHA256
+`7003842b8347ba10710f280c33dba494cd3466a54b240cef76cfbbe32a9a93b8`.
+
+The optional diagnostic CLI reproduces the **retained implementation** matrix and
+prints rate/F0/envelope/pitch/formant, correlation, exploratory harmonic-grid peak,
+target and resolvability, followed by totals. Each two-second fixture is measured
+in its final second; the correlation starts one rounded target period into that
+window. Resolvability means the nearest intended output harmonic is within20percent
+of the target envelope; it does not skip the periodicity assertion. This CLI exits
+nonzero on periodicity failures and is outside the short CTest suites. Existing
+149qualification assertions and their thresholds remain unchanged:
+
+```sh
+cmake -S . -B build/sculptor -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON \
+  -DDARKVOICE_BUILD_SCULPTOR_CORE=ON
+cmake --build build/sculptor --parallel 2
+build/sculptor/darkvoice_sculptor_tests matrix > combined-matrix.log 2>&1
+# Current retained code: 540 checks, 61 failures (expected unresolved defects).
+```
+
+The evidence supports investigating excitation-aware mapping and stable source/
+filter reconstruction; it does not prove a complete root cause or establish any
+vocal/transient/perceptual qualification. PR #19 and issue #18 remain blocked.
+
+Lead integration independently rebuilt the unchanged-backend tree and reproduced
+269/269 streaming,464/464 alignment and149checks/3qualificationfailures after adding
+the diagnostic CLI. Independent read-only QA reviewed metric definitions/default
+suite separation; no180case independent rerun is claimed. No product integration.

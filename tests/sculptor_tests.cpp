@@ -261,6 +261,43 @@ void envelopeMatrix() {
                           "expanded formant shift preserves F0 periodicity");
                 }
 }
+// Optional diagnostic matrix: deliberately outside the short CTest suites.
+// Periodicity is a real assertion. Harmonic-grid envelope peaks are reported,
+// not treated as independent spectral evidence for off-grid/inharmonic output.
+void combinedMatrix() {
+    int cases = 0, periodicFailures = 0, envelopeFailures = 0, unresolvable = 0;
+    std::printf("rate,f0,envelope,pitch,formant,correlation,gridPeak,target,resolvable\n");
+    for (double rate : {48000., 96000.})
+        for (double f0 : {70., 100., 180.})
+            for (double center : {600., 1200.})
+                for (float pitch : {-12.f, -7.f, 0.f, 7.f, 12.f})
+                    for (float formant : {-7.f, 0.f, 7.f}) {
+                        darkvoice::PitchFormantProcessor fx;
+                        check(fx.prepare({rate, 512, 1, darkvoice::PitchQuality::Offline}) &&
+                                  fx.setParameters({pitch, formant, true, static_cast<float>(f0)}),
+                              "combined matrix setup");
+                        fx.reset();
+                        auto x = vowel(rate, center, f0);
+                        check(render(fx, x, nullptr, 512), "combined matrix render");
+                        const double expectedF0 = f0 * std::exp2(pitch / 12.0);
+                        const double target = center * std::exp2(formant / 12.0);
+                        const double measured = correlation(x, rate, expectedF0);
+                        const double found = peak(x, rate, expectedF0, target * .5, target * 1.5);
+                        const bool resolvable =
+                            std::abs(std::round(target / expectedF0) * expectedF0 - target) <=
+                            target * .2;
+                        ++cases;
+                        periodicFailures += !(measured > .8);
+                        envelopeFailures += resolvable && std::abs(found / target - 1) > .2;
+                        unresolvable += !resolvable;
+                        std::printf("%.0f,%.0f,%.0f,%.0f,%.0f,%.9f,%.3f,%.3f,%d\n", rate, f0,
+                                    center, pitch, formant, measured, found, target, resolvable);
+                        check(measured > .8, "combined matrix retains intended F0 periodicity");
+                    }
+    std::printf("matrix cases%d periodicFailures%d exploratoryEnvelopeFailures%d "
+                "unresolvableTargets%d\n",
+                cases, periodicFailures, envelopeFailures, unresolvable);
+}
 void combinedPeriodicity() {
     struct Case {
         double f0, center;
@@ -479,6 +516,8 @@ int main(int argc, char **argv) {
         isolatedFormants();
         envelopeMatrix();
         combinedPeriodicity();
+    } else if (suite == "matrix") {
+        combinedMatrix();
     } else
         return 2;
     std::printf("%d checks %d failures\n", checks, failures);
