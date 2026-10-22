@@ -1,4 +1,5 @@
 #include "PluginProcessor.hpp"
+#include "PresetBank.hpp"
 #include <array>
 #include <cmath>
 #include <iostream>
@@ -425,6 +426,47 @@ void modulationAudioTests() {
     chorus.releaseResources();
 }
 
+void factoryAudioTests() {
+    darkvoice::PresetBank bank(
+        juce::File::getSpecialLocation(juce::File::tempDirectory)
+            .getChildFile("darkvoice-factory-render-" + juce::Uuid().toString()));
+    require(bank.refresh().wasOk(), "Factory render library refresh");
+    for (double rate : {44100., 48000., 88200., 96000.}) {
+        for (int channels : {1, 2}) {
+            for (const auto &preset : bank.presets()) {
+                DarkVoiceProcessor processor;
+                layout(processor, channels);
+                require(processor.applyPreset(preset.values), "Factory application failed");
+                processor.prepareToPlay(rate, 257);
+                juce::MidiBuffer midi;
+                double energy = 0;
+                int position = 0;
+                for (int block = 0; block < 80; ++block) {
+                    juce::AudioBuffer<float> audio(channels, block % 2 ? 257 : 73);
+                    for (int c = 0; c < channels; ++c)
+                        for (int i = 0; i < audio.getNumSamples(); ++i) {
+                            const double t = (position + i) / rate;
+                            audio.setSample(
+                                c, i,
+                                static_cast<float>(
+                                    .08 * std::sin(2 * juce::MathConstants<double>::pi * 130 * t) +
+                                    .04 *
+                                        std::sin(2 * juce::MathConstants<double>::pi * 1900 * t)));
+                        }
+                    position += audio.getNumSamples();
+                    processor.processBlock(audio, midi);
+                    for (int c = 0; c < channels; ++c)
+                        for (int i = 0; i < audio.getNumSamples(); ++i) {
+                            const auto value = audio.getSample(c, i);
+                            require(std::isfinite(value), "Nonfinite factory render");
+                            energy += value * value;
+                        }
+                }
+                require(energy > .001, "Factory unexpectedly silenced vocal fixture");
+            }
+        }
+    }
+}
 void renderingTests() {
     juce::MidiBuffer midi;
     for (double rate : {44100.0, 48000.0, 88200.0, 96000.0}) {
@@ -482,6 +524,7 @@ int main() {
     try {
         stateTests();
         renderingTests();
+        factoryAudioTests();
         gateAudioTests();
         deEsserAudioTests();
         modulationAudioTests();

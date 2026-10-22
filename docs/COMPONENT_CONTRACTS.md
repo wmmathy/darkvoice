@@ -324,3 +324,14 @@ at0 (normalised0.5), and step snapping anchored at0 rather than the negative bou
 Retain interval metadata and [-.85,.85]bounds. This prevents fused-multiply-add
 roundoff from turning migrated neutral feedback into a nonzero value. Other
 parameter ranges/automation IDs and all legacy migrations are unchanged.
+
+### Factory catalogue increment (schema 6)
+
+Expand six existing factory sounds to fourteen using existing sound parameters.
+Preserve existing factory IDs and values, user files and favorites. New entries:
+Dark Wave, Deep Narrator, Industrial Whisper, Grunge Baritone, Acoustic Baritone,
+Dark Melodic, Industrial Power, Natural Dark Baritone. No schema, dependency,
+latency or callback changes. Six correction/choir/octave/double-track presets
+remain pending their actual DSP. Acceptance: unique validated full snapshots,
+persistence/migration regressions, and finite non-silent product rendering at all
+four supported rates in mono/stereo. Names describe styles, not qualified naturalness.

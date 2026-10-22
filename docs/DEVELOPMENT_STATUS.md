@@ -254,3 +254,28 @@ It is an unqualified candidate, not an integrated dependency. Source, license/AP
 notes, reported variable startup delays and reproducible developer probe are in
 RUBBERBAND_AUDIT.md. PR #19 remains draft/blocked. Product/runtime source is
 unchanged by this documentation/probe increment.
+
+## Factory catalogue continuation
+
+Fourteen factory presets now use implemented DSP; the original six retain their
+IDs and parameter snapshots. Eight additions cover Dark Wave, Deep Narrator,
+Industrial Whisper, Grunge/Acoustic Baritone, Dark Melodic, Industrial Power and
+Natural Dark Baritone. Six correction/choir/octave/double-track sounds remain
+blocked by missing DSP. No schema, dependency or latency changes. Numerical
+rendering does not establish listening qualification.
+
+## Factory catalogue validation and access interruption
+
+Factory expansion committed929926d and pushed as draft PR #23. Independent
+read-only QA approved; final local Debug product suite15/15 passed. Source-quality
+Actions39835021918 passed. Latest observed build39835022228 had all five core/
+sanitizer jobs passing and both product jobs still running. Subsequent GitHub API
+calls returned401 and Git authentication failed; final native result and merge
+could not be verified. PR remains unmerged; no gate waived. Restore environment
+GitHub authentication, inspect the final product/auval checks at expected head,
+then perform the previously authorized normal merge if eligible.
+
+Access retry succeeded after user requested another attempt. Exact source head
+929926d has successful native run39835022228 (all7jobs including both product
+jobs) and source-quality39835021918. Historical401 observations remain accurate;
+no repository change was needed. Docs-only follow-up adds no product differences.
