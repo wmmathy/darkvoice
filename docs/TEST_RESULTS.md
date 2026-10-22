@@ -340,3 +340,17 @@ retained in RUBBERBAND_AUDIT.md. This follow-up changes no production source,
 headers, tests, CMake or workflows; redundant native CI is skipped for this
 reviewed docs/probe commit. Product validation remains at source d1ba798, not a
 claim that the alternative backend is qualified. Normal functional CI stays enabled.
+
+## Vocal sample-peak limiter core — 2026-10-22
+
+Standalone strict GCC Release and ASan/UBSan each passed184 limiter checks.
+Full Release core CTest13/13 passed. clang-format19.1.7 and cppcheck2.17.1
+warning/performance/portability analysis of the new module passed. Checks include
+all supported rates/layouts, signed ceilings, linked ratios, analytic release,
+instant lower ceilings, partition/reset/invalid-state preservation, finite extreme
+inputs/tiny normals and prepare/set/process/reset allocation probes. This is a
+sample-peak module outside products, not true-peak, listening or DAW qualification.
+Native CI/push/PR/merge are blocked by expired/rejected GitHub authentication401;
+no remote validation is claimed.
+Full Debug ASan/UBSan core CTest13/13 subsequently passed with leak detection and
+halt-on-error enabled; no sanitizer diagnostic reported.

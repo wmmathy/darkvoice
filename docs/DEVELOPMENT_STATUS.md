@@ -254,3 +254,20 @@ It is an unqualified candidate, not an integrated dependency. Source, license/AP
 notes, reported variable startup delays and reproducible developer probe are in
 RUBBERBAND_AUDIT.md. PR #19 remains draft/blocked. Product/runtime source is
 unchanged by this documentation/probe increment.
+
+## Vocal limiter core continuation — 2026-10-22
+
+Lead established a bounded zero-latency, stereo-linked sample-peak contract before
+assigning DSP agent flanger_dsp to exclusive header/source/tests in isolated
+feature/effects/vocal-limiter worktree. Lead owns CMake and documentation.
+This module is initially outside product routing: no new product controls,
+state schema or factory sounds, and no mastering true-peak claim. Host integration
+requires a later explicit default-off enable and migration contract.
+
+Core completed locally: DSP agent184checks in strict Release and ASan/UBSan;
+lead full core Release13/13 and ASan/UBSan13/13. Independent read-only merge_review
+agent rebuilt184checks and approved numerical/real-time/lifecycle behavior.
+Formatting, new-module cppcheck and tracked secret/dependency scans pass.
+Commit is local only while GitHub authentication returns401. No native CI or
+merge is claimed. Next: restore access, push this branch, normal CI/review/merge,
+then default-off final-output host integration with versioned migration/UI tests.
