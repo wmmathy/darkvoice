@@ -66,7 +66,7 @@ int main(int argc, char **argv) {
                 button && button->getName() == "Load preset")
                 load = button;
         }
-        if (controls != 30 || !input || !bypass || !presetSelection || !load)
+        if (controls != 34 || !input || !bypass || !presetSelection || !load)
             return 2;
         input->setValue(6.0, juce::sendNotificationSync);
         if (std::abs(processor.parameters.getRawParameterValue("inputDb")->load() - 6.0f) > 0.01f)
@@ -74,7 +74,7 @@ int main(int argc, char **argv) {
         bypass->setToggleState(true, juce::sendNotificationSync);
         if (processor.parameters.getRawParameterValue("bypass")->load() != 1.0f)
             return 4;
-        constexpr std::array<const char *, 30> names{"INPUT GAIN",
+        constexpr std::array<const char *, 34> names{"INPUT GAIN",
                                                      "OUTPUT GAIN",
                                                      "HIGH-PASS",
                                                      "WARMTH DRIVE",
@@ -103,7 +103,11 @@ int main(int argc, char **argv) {
                                                      "CHORUS RATE",
                                                      "CHORUS DEPTH",
                                                      "CHORUS MIX",
-                                                     "STEREO WIDTH"};
+                                                     "STEREO WIDTH",
+                                                     "FLANGER RATE",
+                                                     "FLANGER DEPTH",
+                                                     "FLANGER FEEDBACK",
+                                                     "FLANGER MIX"};
         std::size_t soundIndex = 0;
         for (const auto &spec : darkvoice::parameterSchema) {
             if (spec.boolean)
@@ -206,10 +210,10 @@ int main(int argc, char **argv) {
         bool gateTab = false;
         for (auto *component : components)
             if (auto *tabs = dynamic_cast<juce::TabbedComponent *>(component)) {
-                if (tabs->getNumTabs() != 6)
+                if (tabs->getNumTabs() != 7)
                     return 17;
-                tabs->setCurrentTabIndex(5);
-                gateTab = tabs->getCurrentTabName() == "CHORUS / WIDTH";
+                tabs->setCurrentTabIndex(6);
+                gateTab = tabs->getCurrentTabName() == "FLANGER";
             }
         if (!gateTab)
             return 18;
@@ -223,7 +227,7 @@ int main(int argc, char **argv) {
             if (!stream || !juce::PNGImageFormat().writeImageToStream(image, *stream))
                 return 6;
         }
-        std::cout << "GUI smoke passed: 30 controls, all parameter attachments, bypass, actual "
+        std::cout << "GUI smoke passed: 34 controls, all parameter attachments, bypass, actual "
                      "factory preset audio, dry-pitch feedback, snapshot\n";
         return 0;
     }();

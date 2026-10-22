@@ -254,3 +254,25 @@ Chorus has no feedback and its delay is musical rather than host compensation.
 A separate read-only agent pinned/inspected MIT Stretch/Linear and ran scoped
 latency/allocation probes, recorded in PITCH_BACKEND_AUDIT.md. That backend remains
 unintegrated and its quality/near-silence/aligned-bypass gates remain outstanding.
+
+## Flanger integrated increment — 2026-10-22
+
+- Full Release core12/12 and ASan/UBSan core12/12 pass locally. New Flanger suite
+  has123checks: all four rates/layouts, exact neutral/tiny samples, measured4.5ms
+  impulse centroids, signed geometric feedback echoes, LFO excursion/rate, decay,
+  stereo equality, partitioned automation/reset, warmed rejection, hostile audio,
+  allocation failure and ordinary callback allocation probes. No sanitizer findings.
+- Linux Debug Vocal/Master VST3 and Studio Standalone build; product suites15/15
+  pass, including actual flanger impulse audio and all v1–v5 state defaults when
+  restoring over active flanger targets, v6 roundtrips and unchanged older AU hints.
+  Preset v5 migration retains chorus while adding neutral flanger; v6 bank roundtrip
+  and validation pass. Engine tests cover delayed wet and exact global dry mix.
+- Initial expanded legacy-state test incorrectly truncated APVTS children by order.
+  APVTS ordering is not a schema guarantee; ID-based filtering fixes the fixture
+  without changing parser checks or migration assertions. Full product rerun passes.
+- Display-backed smoke passes34 parameter attachments, seventh Flanger tab, actual
+  factory audio, bypass and dry-pitch display; screenshot inspected at
+  /tmp/darkvoice-flanger-ui.png. Xvfb uses local UNIX display with TCP disabled.
+- Scoped exhaustive cppcheck2.17.1, formatter19.1.7 and limited credential/dependency
+  scans apply. Native CI results pending; prior PR #19 native success is not reused
+  as this increment's success. No actual DAW/microphone/listening validation.

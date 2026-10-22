@@ -2,7 +2,7 @@
 #include <cmath>
 namespace {
 const juce::Colour background{0xff111418}, panel{0xff1c2229}, accent{0xffe54b52}, text{0xffecedf0};
-constexpr std::array<const char *, 30> ids{"inputDb",
+constexpr std::array<const char *, 34> ids{"inputDb",
                                            "highPassHz",
                                            "drive",
                                            "thresholdDb",
@@ -31,8 +31,12 @@ constexpr std::array<const char *, 30> ids{"inputDb",
                                            "chorusRateHz",
                                            "chorusDepthMs",
                                            "chorusMix",
-                                           "stereoWidth"};
-constexpr std::array<const char *, 30> names{"INPUT GAIN",
+                                           "stereoWidth",
+                                           "flangerRateHz",
+                                           "flangerDepthMs",
+                                           "flangerFeedback",
+                                           "flangerMix"};
+constexpr std::array<const char *, 34> names{"INPUT GAIN",
                                              "HIGH-PASS",
                                              "WARMTH DRIVE",
                                              "COMPRESSOR THRESHOLD",
@@ -61,11 +65,15 @@ constexpr std::array<const char *, 30> names{"INPUT GAIN",
                                              "CHORUS RATE",
                                              "CHORUS DEPTH",
                                              "CHORUS MIX",
-                                             "STEREO WIDTH"};
-constexpr std::array<const char *, 30> suffixes{
-    " dB", " Hz", "",    " dB", ":1",  "",    " dB", " Hz", " dB", " Hz",
-    " dB", "",    " Hz", " dB", " ms", "",    "",    "",    "",    "",
-    " dB", ":1",  " ms", " Hz", " dB", " dB", " Hz", " ms", "",    ""};
+                                             "STEREO WIDTH",
+                                             "FLANGER RATE",
+                                             "FLANGER DEPTH",
+                                             "FLANGER FEEDBACK",
+                                             "FLANGER MIX"};
+constexpr std::array<const char *, 34> suffixes{
+    " dB", " Hz", "",    " dB", ":1", "", " dB", " Hz", " dB", " Hz", " dB", "",
+    " Hz", " dB", " ms", "",    "",   "", "",    "",    " dB", ":1",  " ms", " Hz",
+    " dB", " dB", " Hz", " ms", "",   "", " Hz", " ms", "",    ""};
 juce::File presetDirectory(const juce::File &supplied) {
     if (supplied != juce::File{})
         return supplied;
@@ -101,6 +109,7 @@ DarkVoiceEditor::DarkVoiceEditor(DarkVoiceProcessor &p, juce::File root)
     tabs_.addTab("GATE / EXPANDER", panel, &pages_[3], false);
     tabs_.addTab("DE-ESSER", panel, &pages_[4], false);
     tabs_.addTab("CHORUS / WIDTH", panel, &pages_[5], false);
+    tabs_.addTab("FLANGER", panel, &pages_[6], false);
     addAndMakeVisible(tabs_);
     for (std::size_t i = 0; i < sliders_.size(); ++i) {
         auto &slider = sliders_[i];
@@ -109,15 +118,22 @@ DarkVoiceEditor::DarkVoiceEditor(DarkVoiceProcessor &p, juce::File root)
         slider.setTextValueSuffix(suffixes[i]);
         slider.setName(names[i]);
         slider.setTitle(names[i]);
-        slider.setTooltip(i >= 26
-                              ? "Chorus mix 0 is off. Width 1 is neutral; 0 folds stereo to mono. "
-                                "Wide settings can increase peaks; width is a no-op in mono."
-                          : i >= 23 ? "Split-band de-esser; max reduction 0 disables attenuation. "
-                                      "Stereo-linked high-band detector."
-                          : i >= 20 ? "Linked downward expander; ratio 1 disables attenuation. "
-                                      "Detector follows the compressed wet signal."
-                                    : "Automatable " + juce::String(names[i]).toLowerCase());
-        const auto page = i < 7 ? 0U : i < 14 ? 1U : i < 20 ? 2U : i < 23 ? 3U : i < 26 ? 4U : 5U;
+        slider.setTooltip(
+            i >= 30   ? "Flanger mix 0 is off. Signed feedback changes the comb character."
+            : i >= 26 ? "Chorus mix 0 is off. Width 1 is neutral; 0 folds stereo to mono. "
+                        "Wide settings can increase peaks; width is a no-op in mono."
+            : i >= 23 ? "Split-band de-esser; max reduction 0 disables attenuation. "
+                        "Stereo-linked high-band detector."
+            : i >= 20 ? "Linked downward expander; ratio 1 disables attenuation. "
+                        "Detector follows the compressed wet signal."
+                      : "Automatable " + juce::String(names[i]).toLowerCase());
+        const auto page = i < 7    ? 0U
+                          : i < 14 ? 1U
+                          : i < 20 ? 2U
+                          : i < 23 ? 3U
+                          : i < 26 ? 4U
+                          : i < 30 ? 5U
+                                   : 6U;
         pages_[page].addAndMakeVisible(slider);
         labels_[i].setText(names[i], juce::dontSendNotification);
         labels_[i].setColour(juce::Label::textColourId, juce::Colour(0xffb5bdc7));
@@ -314,13 +330,20 @@ void DarkVoiceEditor::resized() {
     status_.setBounds(24, 178, width, 28);
     tabs_.setBounds(24, 214, width, getHeight() - 316);
     for (std::size_t i = 0; i < sliders_.size(); ++i) {
-        const auto page = i < 7 ? 0U : i < 14 ? 1U : i < 20 ? 2U : i < 23 ? 3U : i < 26 ? 4U : 5U;
+        const auto page = i < 7    ? 0U
+                          : i < 14 ? 1U
+                          : i < 20 ? 2U
+                          : i < 23 ? 3U
+                          : i < 26 ? 4U
+                          : i < 30 ? 5U
+                                   : 6U;
         const auto row = i < 7    ? i
                          : i < 14 ? i - 7
                          : i < 20 ? i - 14
                          : i < 23 ? i - 20
                          : i < 26 ? i - 23
-                                  : i - 26;
+                         : i < 30 ? i - 26
+                                  : i - 30;
         const int rowHeight = (tabs_.getHeight() - 48) / 7;
         const int y = 14 + static_cast<int>(row) * rowHeight;
         labels_[i].setBounds(16, y, 205, 24);

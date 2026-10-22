@@ -69,3 +69,13 @@ Chorus adds rate, depth and mix controls; stereo width ranges from mono fold-dow
 (0) through neutral (1) to doubled side (2). Width affects the wet stereo path and
 is a no-op in mono. Wider settings can increase peaks. New v5 files migrate older
 states/presets with chorus off and neutral width.
+
+Flanger development adds a seventh processing tab with rate, depth, signed
+feedback and mix. Its0.5–8.5ms modulated delay creates the audible comb effect;
+this musical delay does not add host compensation latency. Mix0 disables the
+wet contribution while delay/feedback history stays warm. State/preset v6 migrates
+v1–v5 with flanger off. This branch is stacked on chorus/width PR #17 and does not
+include or depend on experimental pitch/formant shifting.
+
+See [pending development](docs/PENDING_DEVELOPMENT.md) for the current prioritized
+backlog, existing functionality, review queue and quality blockers.

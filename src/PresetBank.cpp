@@ -150,7 +150,7 @@ juce::String encode(const Preset &preset) {
     std::ostringstream stream;
     stream.imbue(std::locale::classic());
     stream << std::setprecision(std::numeric_limits<float>::max_digits10)
-           << "{\"schemaVersion\":5,\"id\":" << quote(preset.id)
+           << "{\"schemaVersion\":" << currentSchemaVersion << ",\"id\":" << quote(preset.id)
            << ",\"name\":" << quote(preset.name) << ",\"parameters\":{";
     bool first = true;
     for (const auto &[id, value] : preset.values) {

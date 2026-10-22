@@ -64,6 +64,10 @@ void stateTests() {
     set(source, "chorusDepthMs", 10);
     set(source, "chorusMix", .25f);
     set(source, "stereoWidth", 1.7f);
+    set(source, "flangerRateHz", 1.3f);
+    set(source, "flangerDepthMs", 3);
+    set(source, "flangerFeedback", -.4f);
+    set(source, "flangerMix", .6f);
     juce::MemoryBlock state;
     source.getStateInformation(state);
     require(state.getSize() > 0, "State serialization empty");
@@ -79,10 +83,11 @@ void stateTests() {
                                                                               : i < 21 ? 2
                                                                               : i < 24 ? 3
                                                                               : i < 27 ? 4
-                                                                                       : 5),
+                                                                              : i < 31 ? 5
+                                                                                       : 6),
                 "AU version hint changed");
         require(std::abs(raw(restored, spec.id) - raw(source, spec.id)) < 0.001f,
-                "Full v5 state roundtrip failed");
+                "Full v6 state roundtrip failed");
     }
     require(source.getTailLengthSeconds() == 40.0, "Spatial tail not reported");
 
@@ -90,7 +95,7 @@ void stateTests() {
     restored.setStateInformation(garbage, sizeof(garbage));
     require(raw(restored, "inputDb") == raw(source, "inputDb"),
             "Malformed state changed parameters");
-    for (const char *version : {"6", "1junk"}) {
+    for (const char *version : {"7", "1junk"}) {
         auto xml = source.parameters.copyState().createXml();
         xml->setAttribute("schemaVersion", version);
         juce::MemoryBlock invalid;
@@ -153,6 +158,8 @@ void stateTests() {
     }
     auto v2 = source.parameters.copyState();
     v2.setProperty("schemaVersion", 2, nullptr);
+    for (const auto *id : {"flangerRateHz", "flangerDepthMs", "flangerFeedback", "flangerMix"})
+        v2.removeChild(v2.getChildWithProperty("id", id), nullptr);
     for (const auto *id :
          {"gateThresholdDb", "gateRatio", "gateReleaseMs", "deEssHz", "deEssThresholdDb",
           "deEssReductionDb", "chorusRateHz", "chorusDepthMs", "chorusMix", "stereoWidth"})
@@ -180,6 +187,8 @@ void stateTests() {
             "V2 state resets modulation");
     auto v3 = source.parameters.copyState();
     v3.setProperty("schemaVersion", 3, nullptr);
+    for (const auto *id : {"flangerRateHz", "flangerDepthMs", "flangerFeedback", "flangerMix"})
+        v3.removeChild(v3.getChildWithProperty("id", id), nullptr);
     for (const auto *id : {"deEssHz", "deEssThresholdDb", "deEssReductionDb", "chorusRateHz",
                            "chorusDepthMs", "chorusMix", "stereoWidth"})
         v3.removeChild(v3.getChildWithProperty("id", id), nullptr);
@@ -202,6 +211,8 @@ void stateTests() {
             "V3 state resets modulation");
     auto v4 = source.parameters.copyState();
     v4.setProperty("schemaVersion", 4, nullptr);
+    for (const auto *id : {"flangerRateHz", "flangerDepthMs", "flangerFeedback", "flangerMix"})
+        v4.removeChild(v4.getChildWithProperty("id", id), nullptr);
     for (const auto *id : {"chorusRateHz", "chorusDepthMs", "chorusMix", "stereoWidth"})
         v4.removeChild(v4.getChildWithProperty("id", id), nullptr);
     set(restored, "chorusRateHz", 4);
@@ -215,6 +226,45 @@ void stateTests() {
                 raw(restored, "chorusDepthMs") == 6 && raw(restored, "chorusMix") == 0 &&
                 raw(restored, "stereoWidth") == 1 && raw(restored, "deEssReductionDb") == 9,
             "V4 state retains de-esser and resets modulation defaults");
+    auto v5 = source.parameters.copyState();
+    v5.setProperty("schemaVersion", 5, nullptr);
+    for (const auto *id : {"flangerRateHz", "flangerDepthMs", "flangerFeedback", "flangerMix"})
+        v5.removeChild(v5.getChildWithProperty("id", id), nullptr);
+    set(restored, "flangerRateHz", 4);
+    set(restored, "flangerDepthMs", 4);
+    set(restored, "flangerFeedback", .8f);
+    set(restored, "flangerMix", 1);
+    juce::MemoryBlock v5Data;
+    juce::AudioProcessor::copyXmlToBinary(*v5.createXml(), v5Data);
+    restored.setStateInformation(v5Data.getData(), static_cast<int>(v5Data.getSize()));
+    require(std::abs(raw(restored, "flangerRateHz") - .3f) < .001f &&
+                raw(restored, "flangerDepthMs") == 2 && raw(restored, "flangerFeedback") == 0 &&
+                raw(restored, "flangerMix") == 0 &&
+                std::abs(raw(restored, "chorusMix") - .25f) < .001f,
+            "V5 state preserves chorus and resets active flanger defaults");
+    for (int version = 1; version <= 5; ++version) {
+        auto old = source.parameters.copyState();
+        old.setProperty("schemaVersion", version, nullptr);
+        for (int child = old.getNumChildren() - 1; child >= 0; --child) {
+            const auto id = old.getChild(child).getProperty("id").toString();
+            bool keep = false;
+            for (std::size_t i = 0; i < darkvoice::parameterCountForVersion(version); ++i)
+                keep = keep || id == darkvoice::parameterSchema[i].id;
+            if (!keep)
+                old.removeChild(child, nullptr);
+        }
+        set(restored, "flangerRateHz", 5);
+        set(restored, "flangerDepthMs", 4);
+        set(restored, "flangerFeedback", -.8f);
+        set(restored, "flangerMix", 1);
+        juce::MemoryBlock bytes;
+        juce::AudioProcessor::copyXmlToBinary(*old.createXml(), bytes);
+        restored.setStateInformation(bytes.getData(), static_cast<int>(bytes.getSize()));
+        require(std::abs(raw(restored, "flangerRateHz") - .3f) < .001f &&
+                    raw(restored, "flangerDepthMs") == 2 && raw(restored, "flangerFeedback") == 0 &&
+                    raw(restored, "flangerMix") == 0,
+                "Every legacy state clears active flanger fields");
+    }
     set(restored, "gateRatio", 1);
     for (const char *badGate : {"NaN", "21", "0"}) {
         auto bad = source.parameters.copyState();
@@ -254,7 +304,7 @@ void stateTests() {
                 "Invalid ID set partially changed state");
     }
     auto values = source.snapshotPresetValues();
-    require(values.size() == 30 && values.count("bypass") == 0,
+    require(values.size() == 34 && values.count("bypass") == 0,
             "Preset must contain only sound parameters");
     values["inputDb"] = 10.0f;
     values["delayMix"] = 0.2f;
@@ -315,6 +365,21 @@ void deEsserAudioTests() {
     const float before = buffer.getSample(0, 10);
     p.processBlock(buffer, midi);
     require(buffer.getSample(0, 10) == before, "De-esser changed bypassed audio");
+    p.releaseResources();
+}
+void flangerAudioTests() {
+    DarkVoiceProcessor p;
+    layout(p, 1);
+    set(p, "flangerMix", 1);
+    set(p, "flangerDepthMs", 0);
+    p.prepareToPlay(48000, 512);
+    juce::AudioBuffer<float> impulse(1, 512);
+    impulse.clear();
+    impulse.setSample(0, 0, 1);
+    juce::MidiBuffer midi;
+    p.processBlock(impulse, midi);
+    require(impulse.getMagnitude(0, 0, 215) == 0 && impulse.getMagnitude(0, 215, 3) > .9f,
+            "Actual flanger controls move impulse to4.5ms");
     p.releaseResources();
 }
 void modulationAudioTests() {
@@ -409,6 +474,7 @@ int main() {
         gateAudioTests();
         deEsserAudioTests();
         modulationAudioTests();
+        flangerAudioTests();
         std::cout
             << "PASS plugin state, automation/render, rates/layouts, lifecycle and identity\n";
         return 0;

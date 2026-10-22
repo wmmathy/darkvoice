@@ -183,3 +183,27 @@ host fixture used an out-of-bounds magnitude-query overload; correction retains
 JUCE assertions and the full suite now passes. The MIT candidate
 audit found material latency/near-silence integration gates; see
 PITCH_BACKEND_AUDIT.md. No pitch/formant processor has been integrated.
+
+## Flanger continuation and current backlog — 2026-10-22
+
+Lead established effects contract v6 and feature/effects/flanger directly from
+chorus/width, independent of the experimental Sculptor branch. DSP agent wrote
+only Flanger header/source/tests in isolated feature/effects/flanger-dsp worktree
+and reported123 passing initial signal checks. Its final turn hit model capacity;
+lead preserved that worktree, copied only the three assigned files, reviewed and
+completed integration/formatting/Release/sanitizer tests directly. No agent commit
+or completed independent final review is claimed. Agent files/worktree preserved.
+
+Flanger uses a preallocated causal interpolated0.5–8.5ms sinusoidal delay, signed
+feedback and smoothed controls, after chorus/width. Four real controls/seventh tab,
+append-only AU hint6 and schema6 state/preset migration; factory sounds stay off.
+No new dependency or host latency. Full Release and ASan/UBSan core12/12 pass;
+Linux products15/15 and34-control GUI/tab/audio smoke pass. Initial legacy fixture
+trimmed by child order instead of parameter ID; corrected ID-based fixture keeps
+all assertions and migration checks. New native CI outcome remains pending.
+
+PENDING_DEVELOPMENT.md now records remaining specification scope and review queue.
+Preset search/favorites/import/export/rename/save-as already work; remaining preset
+scope is complete factory coverage and actual DSP-dependent sounds. Latest PR #19
+CI passed core/product jobs but retained its two experimental qualification failures;
+no Sculptor quality fix, integration, merge, actual DAW/listening or release is claimed.

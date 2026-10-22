@@ -34,3 +34,7 @@ QA agent: independent review, state parser defect correction request, quality ga
 Initial package work used isolated worktrees; the lead now maintains integration
 directly. Preserved worktrees retain preliminary copies. No persistent agent
 scheduler is configured.
+
+Current detailed backlog: [PENDING_DEVELOPMENT.md](PENDING_DEVELOPMENT.md).
+Flanger is locally implemented/validated on an independent branch based on chorus/width; no dependency
+on the blocked experimental Sculptor core.

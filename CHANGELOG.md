@@ -52,3 +52,13 @@
   tests; live track-aware correction and harmony remain future work.
 - Display measured dry input note/frequency/confidence using a bounded worker
   queue; verify dry-before-DSP input, overflow/lifecycle and concurrency behavior.
+
+## Flanger continuation
+
+- Add real short-delay flanging with rate, depth, signed feedback and mix controls
+  on a seventh editor tab. Default mix0 preserves existing sounds; no dependency.
+- Append AU hint6 and state/preset schema6 with strict v1–v5 neutral migration.
+- Add measured impulse/feedback/modulation/decay and realtime-safety regressions,
+  engine/host audio checks and a34-control GUI smoke test.
+- Publish a prioritized pending-development list, distinguishing existing preset
+  library operations from remaining factory sounds and unfinished product scope.
