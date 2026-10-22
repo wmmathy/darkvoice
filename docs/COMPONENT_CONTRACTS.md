@@ -336,3 +336,19 @@ it is not marked expected-failure or skipped when the experimental core is enabl
 Streaming-safety passes do not establish passing formant or listening quality.
 Stereo equality is numerical (relative RMS error<1e-4), not bit identity, because
 backend channel phase-lock arithmetic differs by floating-point rounding.
+
+## Sculptor performance probe v1
+
+Developer-only `darkvoice_sculptor_bench`, built only with the experimental core.
+It does not link into products or register a timing-sensitive CTest gate. No new
+runtime dependency. A deterministic stereo signal alternates harmonic, noise and
+transient content and parameter targets. Preallocate signal/timing arrays and warm
+one second before timing three seconds of processing, including setters, across
+four rates, three candidate profiles and 64/512-frame host blocks. Signal creation,
+prepare, sorting and stdout reporting remain outside timed processing. Report JSON
+schema1 with compiler/build metadata, callback count, audio duration, algorithmic
+latency, total/median/p95/p99/max callback wall time, processing/audio ratio and
+observed callback-budget overruns. Percentiles use nearest rank. Count nonfinite
+output as an error; fail prepare/process/setter errors. Never interpret throughput
+or absence of observed overruns as a hard real-time, CPU utilization, listening or
+native host qualification. Shared-machine scheduler noise remains in wall time.

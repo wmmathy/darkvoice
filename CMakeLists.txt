@@ -33,6 +33,13 @@ if(DARKVOICE_BUILD_SCULPTOR_CORE)
     target_include_directories(darkvoice_sculptor SYSTEM PRIVATE "${darkvoice_stretch_private}")
     set_target_properties(darkvoice_sculptor PROPERTIES POSITION_INDEPENDENT_CODE ON CXX_EXTENSIONS OFF)
     darkvoice_strict_warnings(darkvoice_sculptor)
+    add_executable(darkvoice_sculptor_bench tools/sculptor_bench.cpp)
+    target_link_libraries(darkvoice_sculptor_bench PRIVATE darkvoice_sculptor)
+    set_target_properties(darkvoice_sculptor_bench PROPERTIES CXX_EXTENSIONS OFF)
+    target_compile_definitions(darkvoice_sculptor_bench PRIVATE
+        DARKVOICE_BENCH_BUILD_TYPE="$<CONFIG>"
+        DARKVOICE_BENCH_COMPILER="${CMAKE_CXX_COMPILER_ID}-${CMAKE_CXX_COMPILER_VERSION}")
+    darkvoice_strict_warnings(darkvoice_sculptor_bench)
 endif()
 
 include(CTest)

@@ -322,3 +322,14 @@ in your settings”. No new compiler, test, native AU or quality result exists.
 No repeated rerun is requested; [skip ci] resumes for further commits until
 billing/spending availability changes. Existing local results remain applicable
 only to their recorded scope.
+
+## Experimental Sculptor performance probe — 2026-10-22
+
+Built and executed new developer-only benchmark with GCC14.2 Release, Linux x86_64.
+Parsed stdout as JSON and checked24 unique rate/profile/block cases, finite outputs,
+nonempty callbacks, ordered nearest-rank percentiles and ratio arithmetic. All
+measurements completed. Observed processing/audio wall-time ratio0.0240–0.0659 and
+2callback-budget overruns; this does not pass a real-time deadline gate. Three
+seconds per case follow one-second warm-up; harmonic/noise/transient stereo input
+and changing parameters are included. No product, device, listening or native test
+is implied. Raw output is /tmp/darkvoice-sculptor-bench.json in this instance.

@@ -83,3 +83,24 @@ host partitions produces maximum difference0 in the local Release run. Processin
 and setters allocate nothing under ordinary new/new[] rejection; latency remains
 fixed, both channels stay finite and settle to exact delayed dry. These checks do
 not establish click-free perceptual quality or resolve the three envelope failures.
+
+## CPU wall-time probe
+
+With the experimental option enabled, run `build/sculptor/darkvoice_sculptor_bench`
+without arguments and redirect stdout to a JSON file. It measures24 combinations:
+four rates, three candidate profiles and64/512-frame stereo callbacks. It warms
+one second and measures at least three seconds per combination. Signal creation,
+allocation, sorting, validation and reporting are outside the callback interval;
+setParameters/process and clock overhead are inside. Noise, harmonic and transient
+sections alternate with parameter changes. Durations are rounded to whole blocks.
+Schema1 reports compiler/configuration, actual durations, latency and callback wall
+time percentiles/maximum, processing/audio ratio and observed budget overruns.
+
+Initial GCC14.2 Release x86_64 Linux shared-cloud run: processing/audio ratios
+0.0240–0.0659, with2 observed callback-budget overruns. These are observed wall
+times, not process CPU utilization or hard real-time certification. Max callbacks
+were1.77ms Live,0.84ms Studio and1.55ms Offline in that run. The fixture has no audio
+device and does not measure audible glitches, host CPU or macOS performance. Do
+not turn this noisy shared-machine measurement into a timing-sensitive CTest gate.
+For comparisons retain raw JSON and record machine/load/toolchain; run on the
+actual target machine with repeated measurements before setting performance gates.

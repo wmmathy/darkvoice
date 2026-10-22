@@ -70,3 +70,9 @@
   profiles, including partition invariance, allocation rejection and exact neutral
   settling. Streaming269checks pass locally; three formant quality failures still
   block host integration. Core remains opt-in and excluded from products.
+
+### Experimental Sculptor performance tooling
+
+- Add a standalone developer benchmark for all candidate profiles/rates with
+  stereo automation/noise/transient workloads and JSON callback wall-time metrics.
+  It reports observed overruns without claiming hard real-time or host quality.

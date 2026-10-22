@@ -243,3 +243,12 @@ in your settings”. No new compiler, test, native AU or quality result exists.
 No repeated rerun is requested; [skip ci] resumes for further commits until
 billing/spending availability changes. Existing local results remain applicable
 only to their recorded scope.
+
+## Sculptor CPU probe continuation — 2026-10-22
+
+Lead added an opt-in developer CPU wall-time probe with reproducible synthetic
+workload, JSON output and24 rate/profile/block combinations; no product changes.
+The read-only formant_investigation agent independently investigates the remaining
+envelope failures in temporary copies only. Benchmark runs locally and reports
+actual observed callback-budget overruns rather than certifying real-time safety.
+Actions remains billing-blocked; all new commits use [skip ci].
