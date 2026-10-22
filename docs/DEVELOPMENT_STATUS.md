@@ -291,3 +291,20 @@ no reported sanitizer findings. The test-only follow-up uses [skip ci] to preser
 the in-progress8bb2186 native product validation rather than restart its builds;
 this is not a renewed Actions pause. CI success at that revision covers the
 narrower140check gate only. No complete current quality success is claimed.
+
+## Public-repository Actions verification — 2026-10-22
+
+At source8bb2186, Build and tests run39737797996 completed SUCCESS for all9jobs:
+four Linux/macOS core configurations, Linux sanitizers, both isolated Sculptor
+jobs and both product jobs. Source quality run39737798002 also SUCCESS. The
+macOS product step passed both unsigned auval validations; Linux product build,
+headless tests and GUI smoke passed. These are runner checks, not actual DAW or
+listening qualification. Repository public visibility and default main are verified.
+
+The later test-only ecdfdcf revision retains three combined-periodicity failures
+in the149check quality gate. CI8bb2186 tested the narrower140check gate; do not
+reuse it as complete current quality success. Products remain independent of the
+experimental core. Issue #18 remains open; no merge or release occurred.
+
+Build: https://github.com/wmmathy/darkvoice/actions/runs/39737797996
+Quality: https://github.com/wmmathy/darkvoice/actions/runs/39737798002
