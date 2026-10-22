@@ -318,3 +318,9 @@ feedback decay, stereo equality, partition/automation/reset, invalid warmed stat
 allocation-failure/callback probes, host actual-audio controls, v5 migration/state/
 preset roundtrip, GUI attachments, Release/sanitizers. Native outcome recorded
 from actual Actions only; actual DAW/listening remains unrun.
+
+Flanger signed feedback host range uses symmetric normalisation centered exactly
+at0 (normalised0.5), and step snapping anchored at0 rather than the negative bound.
+Retain interval metadata and [-.85,.85]bounds. This prevents fused-multiply-add
+roundoff from turning migrated neutral feedback into a nonzero value. Other
+parameter ranges/automation IDs and all legacy migrations are unchanged.

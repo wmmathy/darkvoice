@@ -18,11 +18,30 @@ juce::AudioProcessorValueTreeState::ParameterLayout DarkVoiceProcessor::createPa
         if (spec.boolean)
             layout.add(std::make_unique<juce::AudioParameterBool>(
                 juce::ParameterID{spec.id, version}, spec.name, spec.defaultValue != 0));
-        else
+        else {
+            auto range =
+                juce::NormalisableRange<float>{spec.minimum, spec.maximum, spec.step, spec.skew};
+            if (juce::String(spec.id) == "flangerFeedback") {
+                // Anchor signed feedback at zero. Start-relative snapping and affine
+                // conversion can leave a nonzero residual under fused multiply-add.
+                range = juce::NormalisableRange<float>{
+                    spec.minimum, spec.maximum,
+                    [](float, float limit, float normalised) {
+                        return static_cast<float>((2.0 * normalised - 1.0) * limit);
+                    },
+                    [](float, float limit, float value) {
+                        return static_cast<float>(.5 + .5 * static_cast<double>(value) / limit);
+                    },
+                    [step = spec.step](float low, float high, float value) {
+                        const auto snapped = static_cast<float>(
+                            std::round(static_cast<double>(value) / step) * step);
+                        return std::clamp(snapped, low, high);
+                    }};
+                range.interval = spec.step;
+            }
             layout.add(std::make_unique<juce::AudioParameterFloat>(
-                juce::ParameterID{spec.id, version}, spec.name,
-                juce::NormalisableRange<float>{spec.minimum, spec.maximum, spec.step, spec.skew},
-                spec.defaultValue));
+                juce::ParameterID{spec.id, version}, spec.name, range, spec.defaultValue));
+        }
     }
     return layout;
 }

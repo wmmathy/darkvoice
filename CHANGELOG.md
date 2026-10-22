@@ -62,3 +62,9 @@
   engine/host audio checks and a34-control GUI smoke test.
 - Publish a prioritized pending-development list, distinguishing existing preset
   library operations from remaining factory sounds and unfinished product scope.
+
+### Flanger neutral feedback correction
+
+- Center the new signed-feedback host mapping and snapping on exact zero to avoid
+  fused-rounding residuals during migration; preserve existing exact assertions
+  and append regression checks. No prior parameter identity/range is changed.

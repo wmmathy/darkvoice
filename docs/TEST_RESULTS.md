@@ -292,3 +292,24 @@ Upstream runner-images README confirms deprecated macos-14 and supported Arm64
 macos-15. Both build and manual unsigned-artifact workflow labels updated, with
 all checks retained. YAML validation and source review apply; native outcomes
 for the new label remain pending. No release/artifact dispatch is performed.
+
+## Flanger signed-neutral native correction — 2026-10-22
+
+Supported-runner workflow39748010215 passed both macOS core configurations and
+all Linux jobs. macOS product compilation passed; headless plugin.state_and_audio
+failed its exact v5-to-v6 neutral-feedback migration assertion, so auval was not
+executed. Check-run annotations identified the precise failing assertion; direct
+artifact download was denied by destination policy, so annotations supplied the
+diagnostic evidence. No failed gate is waived or softened.
+
+A local std::fma(.001f,850.f,-.85f) probe demonstrates the nonzero residual possible
+in JUCE's start-relative signed snapping; the new feedback range now uses symmetric
+zero-centered conversions and zero-anchored snapping. Interval metadata retained,
+other parameter ranges unchanged. Add exact neutral/normalisation/symmetry checks;
+existing exact migration assertions remain. Local product suites15/15 pass after
+this correction. New native result is pending; do not reuse earlier AU evidence.
+
+Independent reviewer reproduced the old1.65309757e-08 residual under -O3/-mfma/
+-ffp-contract=fast and checked all1701 legal signed-feedback grid values against
+the custom conversion/snap: exact zero, odd symmetry, bounded roundtrip error0.
+No blocking fix issue found. Native full product behavior still requires rerun.

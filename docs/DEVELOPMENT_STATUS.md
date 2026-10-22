@@ -228,3 +228,12 @@ Official actions/runner-images README now labels macos-14 deprecated and lists
 macos-15 as supported Arm64. Move build and manual unsigned-artifact workflow
 labels to macos-15, preserving every test/auval gate and time budget. No artifact
 workflow dispatched or release published. New CI outcomes pending.
+
+## Native flanger neutral correction — 2026-10-22
+
+macos-15 acquired runners and passed core/build jobs. Its product test exposed an
+exact signed-feedback neutral migration assertion; auval remained skipped. Root
+reproduced possible fused-rounding residual and centered only the new feedback
+range/conversion/snap at zero. Existing migration thresholds/assertions retained;
+new exact-neutral/symmetry regressions and local15/15 product suites pass. Native
+retry on the corrected source is pending, so PR #21 stays unmerged for now.

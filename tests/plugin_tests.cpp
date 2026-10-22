@@ -47,6 +47,17 @@ void sine(juce::AudioBuffer<float> &buffer, double rate, int start = 0) {
 }
 void stateTests() {
     DarkVoiceProcessor source;
+    const auto &feedbackRange =
+        source.parameters.getParameter("flangerFeedback")->getNormalisableRange();
+    require(feedbackRange.convertTo0to1(0) == .5f && feedbackRange.convertFrom0to1(.5f) == 0 &&
+                feedbackRange.snapToLegalValue(0) == 0,
+            "Signed feedback preserves exact neutral under normalisation and snapping");
+    for (float value : {.001f, .4f, .85f}) {
+        require(feedbackRange.snapToLegalValue(-value) == -feedbackRange.snapToLegalValue(value),
+                "Signed feedback quantisation is symmetric");
+    }
+    std::cout << "Start-relative fused feedback rounding residual: "
+              << std::fma(.001f, 850.f, -.85f) << '\n';
     set(source, "inputDb", 7.5f);
     set(source, "drive", 0.6f);
     set(source, "ratio", 4.0f);
