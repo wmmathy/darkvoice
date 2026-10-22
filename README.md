@@ -4,7 +4,7 @@ An AGPLv3, local-first vocal production project using C++20, JUCE and CMake.
 This is an early development build. It provides input/output gain, high-pass,
 warmth saturation, compression, low/high shelves and a parametric mid EQ,
 feedback delay, damped reverb, dry/wet, bypass and peak meters. The grouped editor
-has 26 real DSP controls and versioned host automation/state restoration.
+has 30 real DSP controls and versioned host automation/state restoration.
 A stereo-linked downward expander provides threshold, ratio and release controls;
 ratio 1 disables attenuation. It follows compression and precedes EQ/delay/reverb.
 Older project states and presets load with neutral gate settings.
@@ -64,3 +64,8 @@ The split-band de-esser adds frequency, threshold and maximum high-band reductio
 controls; zero reduction disables it. Existing v1/v2/v3 sessions and presets migrate
 with neutral settings. Native CI is paused because GitHub Actions credits are
 unavailable; new validation is local until further notice.
+
+Chorus adds rate, depth and mix controls; stereo width ranges from mono fold-down
+(0) through neutral (1) to doubled side (2). Width affects the wet stereo path and
+is a no-op in mono. Wider settings can increase peaks. New v5 files migrate older
+states/presets with chorus off and neutral width.

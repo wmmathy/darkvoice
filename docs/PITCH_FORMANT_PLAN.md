@@ -11,8 +11,8 @@ Build an independent streaming pitch/formant processor before adding controls.
 
 Candidate backend: evaluate Signalsmith Stretch first; verify/pin exact source,
 license and transitive licenses, allocation behavior and parameter/latency APIs.
-MIT licensing was suggested by the architecture agent but was not audited in this
-assignment. Rubber Band is a second candidate requiring exact GPL compatibility
+An initial source/license/latency audit is now recorded in PITCH_BACKEND_AUDIT.md;
+full wrapper/quality qualification remains outstanding. Rubber Band is a second candidate requiring exact GPL compatibility
 and dependency review. No backend has been integrated or installed. A simple
 resampling/granular shifter must not be described as formant-preserving.
 

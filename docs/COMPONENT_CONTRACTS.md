@@ -240,3 +240,46 @@ high-frequency reduction and low-frequency preservation, stereo linking,
 partition invariance, no callback allocations, finite/invalid-input behavior,
 engine/host audio, v1/v2/v3 migration, GUI attachments and local sanitizer builds.
 Native CI/AU checks remain unrun while Actions is paused by user instruction.
+
+# Effects contract v5 — chorus and stereo width
+
+Established before implementation. ModulationEffects.hpp exposes parameters
+{chorusRateHz=.8 [.1,5], chorusDepthMs=6 [0,12], chorusMix=0 [0,.5],
+stereoWidth=1 [0,2]}. Same four rates, mono/stereo, maxFrames1..65536 and one
+owner as existing modules. prepare allocates two bounded 30ms rings off callback,
+resets defaults/history and unprepares on failure; reset settles targets and clears
+rings/phase. Validate entire snapshots/blocks before writes or history changes.
+Processing/reset/setParameters have no allocation, lock or I/O.
+
+Each channel mixes original input with an interpolated delay of
+15ms+depth*sin(phase), minimum3ms/maximum27ms. Phase advances at rateHz/sampleRate;
+stereo right is offset a quarter cycle. Controls smooth 10ms and settle exactly.
+No feedback. Delay remains a musical effect, not compensation latency; dry path
+is immediate. Zero mix is exact neutral for normal finite samples. Then stereo
+width uses M=(L+R)/2, S=(L-R)/2, output M +/- width*S. Width1 explicitly preserves
+samples; width0 is mono fold-down, width2 doubles side. Width is a no-op in mono.
+Mono sum is preserved within floating-point tolerance absent finite-limit clamping.
+Wide settings may increase peaks or reduce mono compatibility; no limiter or
+loudness normalization is claimed. Sanitize nonfinite/true-subnormal input and
+bound extreme outputs to float range. Ordinary signal controls do not clip.
+
+Order: existing gate/de-esser/EQ/delay/reverb -> chorus -> stereo width -> global
+original dry/wet and output gain. Thus width operates on the wet path; global mix
+can restore dry stereo. Bypass freezes all histories and leaves original samples.
+This adds no algorithmic compensation delay; do not equate it with pitch/formant
+processing. Current conservative 40-second spatial tail remains unchanged.
+
+Append four IDs after27: chorusRateHz, chorusDepthMs, chorusMix, stereoWidth,
+AU hint5; existing version hints stay unchanged. State v5 has31 IDs, preset v5
+has30 non-bypass fields. Versions1/2/3/4 migrate strictly with new neutral defaults.
+Sixth editor tab exposes four actual controls. No new dependency.
+Acceptance: all rates/layouts, exact neutral defaults, width algebra/mono sum,
+measured chorus delay/modulation/rate/depth/mix, automation and partition invariance,
+invalid inputs/allocation failures, no callback allocations, engine/plugin audio,
+v4 migration, GUI attachments, local Release/sanitizers. Native CI remains unrun
+under the user's Actions pause; every commit includes [skip ci].
+
+Preset numeric validation is performed after checked conversion to the float
+parameter domain. Exact JSON decimal minima such as0.1/0.2 map to the advertised
+float bounds; finite/overflow/type checks and meaningful out-of-range rejection
+remain strict. This also corrects the existing mid-Q decimal boundary.

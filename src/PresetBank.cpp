@@ -150,7 +150,7 @@ juce::String encode(const Preset &preset) {
     std::ostringstream stream;
     stream.imbue(std::locale::classic());
     stream << std::setprecision(std::numeric_limits<float>::max_digits10)
-           << "{\"schemaVersion\":4,\"id\":" << quote(preset.id)
+           << "{\"schemaVersion\":5,\"id\":" << quote(preset.id)
            << ",\"name\":" << quote(preset.name) << ",\"parameters\":{";
     bool first = true;
     for (const auto &[id, value] : preset.values) {
@@ -201,9 +201,14 @@ juce::Result decode(const juce::File &file, Preset &preset, bool local) {
         if (!numeric(value))
             return fail("Preset parameter is not numeric");
         const auto number = static_cast<double>(value);
-        if (!std::isfinite(number) || number < spec.minimum || number > spec.maximum)
+        constexpr double floatLimit = std::numeric_limits<float>::max();
+        if (!std::isfinite(number) || number < -floatLimit || number > floatLimit)
             return fail("Preset parameter outside range");
-        candidate[spec.id] = static_cast<float>(number);
+        // Controls use float values: decimal 0.1 must be accepted at a 0.1f bound.
+        const float represented = static_cast<float>(number);
+        if (!std::isfinite(represented) || represented < spec.minimum || represented > spec.maximum)
+            return fail("Preset parameter outside range");
+        candidate[spec.id] = represented;
     }
     if (auto result = PresetBank::validate(candidate); result.failed())
         return result;

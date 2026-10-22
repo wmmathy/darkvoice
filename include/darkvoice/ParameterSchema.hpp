@@ -11,7 +11,8 @@ struct ParameterSpec {
 inline constexpr std::size_t legacyParameterCount = 8;
 inline constexpr std::size_t effectsParameterCount = 21;
 inline constexpr std::size_t gateParameterCount = 24;
-inline constexpr std::array<ParameterSpec, 27> parameterSchema{{
+inline constexpr std::size_t deEsserParameterCount = 27;
+inline constexpr std::array<ParameterSpec, 31> parameterSchema{{
     {"inputDb", "Input", -24.0f, 24.0f, 0.0f, 0.1f, 1.0f, false},
     {"outputDb", "Output", -24.0f, 24.0f, 0.0f, 0.1f, 1.0f, false},
     {"highPassHz", "High-pass", 20.0f, 400.0f, 20.0f, 1.0f, 0.5f, false},
@@ -39,19 +40,25 @@ inline constexpr std::array<ParameterSpec, 27> parameterSchema{{
     {"deEssHz", "De-esser frequency", 2000.0f, 12000.0f, 6000.0f, 1.0f, 0.6f, false},
     {"deEssThresholdDb", "De-esser threshold", -60.0f, 0.0f, -24.0f, 0.1f, 1.0f, false},
     {"deEssReductionDb", "De-esser max reduction (0 = off)", 0.0f, 18.0f, 0.0f, 0.1f, 1.0f, false},
+    {"chorusRateHz", "Chorus rate", .1f, 5.0f, .8f, .01f, .5f, false},
+    {"chorusDepthMs", "Chorus depth", 0.0f, 12.0f, 6.0f, .1f, 1.0f, false},
+    {"chorusMix", "Chorus mix", 0.0f, .5f, 0.0f, .001f, 1.0f, false},
+    {"stereoWidth", "Stereo width", 0.0f, 2.0f, 1.0f, .01f, 1.0f, false},
 }};
-inline constexpr int currentSchemaVersion = 4;
+inline constexpr int currentSchemaVersion = 5;
 constexpr std::size_t parameterCountForVersion(int version) noexcept {
     return version == 1   ? legacyParameterCount
            : version == 2 ? effectsParameterCount
            : version == 3 ? gateParameterCount
-           : version == 4 ? parameterSchema.size()
+           : version == 4 ? deEsserParameterCount
+           : version == 5 ? parameterSchema.size()
                           : 0;
 }
 constexpr int parameterVersion(std::size_t index) noexcept {
     return index < legacyParameterCount    ? 1
            : index < effectsParameterCount ? 2
            : index < gateParameterCount    ? 3
-                                           : 4;
+           : index < deEsserParameterCount ? 4
+                                           : 5;
 }
 } // namespace darkvoice

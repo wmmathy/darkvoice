@@ -217,3 +217,40 @@ for this increment. Earlier passing native evidence does not validate these chan
 The one-pole split is not linear-phase or a classifier for sibilance. Maximum
 reduction describes high-band gain, not the whole output. No new dependency,
 physical-device/DAW/listening qualification, signing or public release was added.
+
+
+## Chorus/stereo width — local-only validation (issue #16)
+
+Stacked on unmerged draft de-esser PR #15. No workflow was dispatched/rerun;
+commits use [skip ci]. Native macOS/AU, real device/DAW/listening, signing and
+release qualification remain unrun for this increment.
+
+- Linux Debug Vocal/Master VST3 and Studio standalone build; product suites pass
+  14/14. Release and ASan/UBSan core suites pass11/11.
+- effects.modulation passes182 checks at44.1/48/88.2/96kHz: fractional 15ms impulse
+  timing, exact ramp delay oracle for rate/depth/mix/stereo phase, width algebra
+  and mono sum, side-only/extreme peak behavior, mono no-op, tiny-normal neutrality,
+  partition invariance, invalid warmed blocks/snapshots, allocation failure and
+  ordinary callback allocation probes, disabled automation and finite samples.
+- Engine/host tests exercise real chorus echoes, width fold-down, original dry
+  stereo and bypass. State/presets v5 roundtrip and strict v1–v4 migrations pass,
+  including resetting active new fields. Existing AU hints are stable; new hint5.
+- Dedicated read-only QA caught a generic JSON double-versus-float minimum bug.
+  Checked float-domain validation accepts decimal0.1/0.2 and rejects meaningful
+  below/above-bound/overflow values. Regression fixtures pass without relaxing
+  type, finite, count, duplicate-key or atomic-replacement validation.
+- Initial product suite correctly failed on JUCE assertions caused by a new test
+  using the wrong getMagnitude overload. The corrected channel/start/count query
+  and full rerun pass; assertions and failure detection remain enabled.
+- Xvfb smoke passes all30 attachments, factory audio, bypass/dry-pitch feedback
+  and sixth chorus/width tab. Standalone startup and default writable preset
+  directory pass. Snapshot /tmp/darkvoice-modulation-ui.png in this instance.
+- Formatter19.1.7, exhaustive cppcheck2.17.1 on four scoped DSP/schema files and
+  limited credential/dependency scans/self-test pass. No hard real-time deadline
+  or aligned-allocation audit follows from ordinary new/new[] probes.
+
+Width applies to the wet path, can raise peaks and is not a mastering limiter.
+Chorus has no feedback and its delay is musical rather than host compensation.
+A separate read-only agent pinned/inspected MIT Stretch/Linear and ran scoped
+latency/allocation probes, recorded in PITCH_BACKEND_AUDIT.md. That backend remains
+unintegrated and its quality/near-silence/aligned-bypass gates remain outstanding.
