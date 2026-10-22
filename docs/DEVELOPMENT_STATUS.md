@@ -207,3 +207,24 @@ Preset search/favorites/import/export/rename/save-as already work; remaining pre
 scope is complete factory coverage and actual DSP-dependent sounds. Latest PR #19
 CI passed core/product jobs but retained its two experimental qualification failures;
 no Sculptor quality fix, integration, merge, actual DAW/listening or release is claimed.
+
+## Authorized automatic integration — 2026-10-22
+
+User explicitly requested automatic development/commits/merges without confirmation.
+GitHub reports main protected=false, branch rules=[] and rulesets=[]; no protection
+change or bypass performed. Independent read-only merge_review agent reviewed
+PR15/17/21, rebuilt209 de-esser/182 modulation/123 flanger standalone checks and
+found no blocking source issue. It verified relevant de-esser/chorus sources are
+unchanged in bfc9b54, whose native/core/product jobs passed. That is descendant
+evidence, not a separate parent-head workflow run.
+
+Normal head-SHA-matched merges completed: de-esser PR #15 at2f9e33d, chorus/width
+PR #17 at9917fb1. Issues #14/#16 closed; branches/worktrees preserved. PR #21 and
+blocked experimental PR #19 retargeted to main. Flanger source QA passes, but its
+macOS jobs failed to acquire hosted runners and remain unqualified at this point.
+A failed-jobs retry was requested; no failing source test is waived.
+
+Official actions/runner-images README now labels macos-14 deprecated and lists
+macos-15 as supported Arm64. Move build and manual unsigned-artifact workflow
+labels to macos-15, preserving every test/auval gate and time budget. No artifact
+workflow dispatched or release published. New CI outcomes pending.

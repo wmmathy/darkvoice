@@ -276,3 +276,19 @@ unintegrated and its quality/near-silence/aligned-bypass gates remain outstandin
 - Scoped exhaustive cppcheck2.17.1, formatter19.1.7 and limited credential/dependency
   scans apply. Native CI results pending; prior PR #19 native success is not reused
   as this increment's success. No actual DAW/microphone/listening validation.
+
+## Integration review and runner maintenance — 2026-10-22
+
+Independent read-only QA rebuilt DeEsser209/209, modulation182/182 and Flanger
+123/123 under GCC14/O2/strict warnings in /tmp. No blocking source issue found in
+PR15/17/21, old AU identities or migrations. Exact relevant parent sources match
+bfc9b54 native/product-passing evidence. PR15 andPR17 were merged normally; this
+does not qualify the unrelated experimental Sculptor failures.
+
+Flanger native run39744937318 passed Linux core/sanitizer/product jobs; macOS
+jobs had no steps and annotated “The job was not acquired by Runner of type
+hosted even after multiple attempts”. Retry only the failed/cancelled jobs.
+Upstream runner-images README confirms deprecated macos-14 and supported Arm64
+macos-15. Both build and manual unsigned-artifact workflow labels updated, with
+all checks retained. YAML validation and source review apply; native outcomes
+for the new label remain pending. No release/artifact dispatch is performed.

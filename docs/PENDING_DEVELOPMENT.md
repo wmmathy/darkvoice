@@ -12,8 +12,8 @@ three-band EQ, delay/reverb, gate/expander; worker dry-pitch telemetry; real con
 versioned state/presets and six editable factory sounds. Preset search, favorites,
 import/export, rename and save-as already work; they are not pending features.
 
-De-esser (PR #15) and chorus/width (PR #17) are implemented on stacked draft branches
-and await review/integration. Experimental pitch/formant core and alignment utility
+De-esser (PR #15) and chorus/width (PR #17) are now merged into main after
+independent QA and verified relevant native/product evidence. Experimental pitch/formant core and alignment utility
 are in draft PR #19, outside products. The three original isolated-envelope failures
 were corrected, but three combined-shift periodicity regressions still fail. Issue
 #18 remains a quality/integration blocker. Do not merge around failing gates.
@@ -28,7 +28,7 @@ Source-quality run39740257019 passed. This is not a passing overall build result
 | --- | --- | --- |
 | P1 Sculptor, #3/#18 | Qualified independent pitch/formant shifting and formant preservation; depth/body/warmth/presence/resonance/breathiness/character controls; real quality modes | Resolve combined-periodicity failures, broader F0/transient/unvoiced material, listening/CPU; integrate delayed dry/mix/bypass and host latency only after qualification |
 | P1 Effects, #3 | Flanger review/integration (implemented locally), doubler, plate/hall/room choices, slapback/tempo-sync/stereo delay variants, tape/tube saturation and parallel distortion, vocal limiter | Versioned real controls, routing, DSP evidence, safe automation, state/preset migration, GUI and native validation; existing starter effects are partial coverage |
-| P1 Integration, #14/#16/#18 | Review and integrate draft de-esser, chorus/width, flanger and eventual qualified Sculptor increments | Required repository checks/review; no automatic bypass or release; preserve stacked bases until dependencies integrate |
+| P1 Integration, #14/#16/#18 | Review/integrate flanger and eventual qualified Sculptor increments; de-esser/chorus now merged | Required repository checks/review; no automatic bypass or release; preserve stacked bases until dependencies integrate |
 | P2 Presets, #3 | Complete all20 required vocal factory sounds, audition/tune them and preserve correction/harmony independence | Underlying DSP must exist; existing six sounds and library operations remain functional; do not add presets implying unavailable correction/choir features |
 | P2 Track-aware correction, #4 | Reference WAV/AIFF/FLAC/MP3 import where available/licensed, key/scale/BPM/chord timeline/confidence and manual edits; manual/chromatic/custom correction, musical transitions/humanization/vibrato/drift; graphical tracking | Qualified shift backend and real-time pitch tracker; versioned analysis/timeline/transport contracts, preanalysis, offsets and GarageBand manual/standalone fallbacks |
 | P2 Harmony, #4 | Up to six independent voices, interval/diatonic/chord/custom modes, per-voice pitch/formant/timing/detune/pan/level/EQ/sends and mixer | Qualified shifter, manual/timeline/MIDI selection as supported, CPU budget, phase/mono/transition/listening checks |
@@ -53,3 +53,8 @@ After this increment: review its local/native evidence and draft PR, then contin
 independent effects while addressing the compensation-path quality blocker with
 measured experiments. No unattended scheduler or perpetual background agent is
 configured; the list persists the remaining work for subsequent sessions.
+
+Automatic commits/normal merges are explicitly authorized. De-esser and chorus
+are integrated; flanger awaits native runner validation, Sculptor remains blocked.
+CI is moving from deprecated macos-14 to supported macos-15 Arm64 after runner
+acquisition failures; no numerical or AU gate is removed.
