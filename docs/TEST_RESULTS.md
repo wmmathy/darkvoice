@@ -254,3 +254,62 @@ Chorus has no feedback and its delay is musical rather than host compensation.
 A separate read-only agent pinned/inspected MIT Stretch/Linear and ran scoped
 latency/allocation probes, recorded in PITCH_BACKEND_AUDIT.md. That backend remains
 unintegrated and its quality/near-silence/aligned-bypass gates remain outstanding.
+
+## Flanger integrated increment — 2026-10-22
+
+- Full Release core12/12 and ASan/UBSan core12/12 pass locally. New Flanger suite
+  has123checks: all four rates/layouts, exact neutral/tiny samples, measured4.5ms
+  impulse centroids, signed geometric feedback echoes, LFO excursion/rate, decay,
+  stereo equality, partitioned automation/reset, warmed rejection, hostile audio,
+  allocation failure and ordinary callback allocation probes. No sanitizer findings.
+- Linux Debug Vocal/Master VST3 and Studio Standalone build; product suites15/15
+  pass, including actual flanger impulse audio and all v1–v5 state defaults when
+  restoring over active flanger targets, v6 roundtrips and unchanged older AU hints.
+  Preset v5 migration retains chorus while adding neutral flanger; v6 bank roundtrip
+  and validation pass. Engine tests cover delayed wet and exact global dry mix.
+- Initial expanded legacy-state test incorrectly truncated APVTS children by order.
+  APVTS ordering is not a schema guarantee; ID-based filtering fixes the fixture
+  without changing parser checks or migration assertions. Full product rerun passes.
+- Display-backed smoke passes34 parameter attachments, seventh Flanger tab, actual
+  factory audio, bypass and dry-pitch display; screenshot inspected at
+  /tmp/darkvoice-flanger-ui.png. Xvfb uses local UNIX display with TCP disabled.
+- Scoped exhaustive cppcheck2.17.1, formatter19.1.7 and limited credential/dependency
+  scans apply. Native CI results pending; prior PR #19 native success is not reused
+  as this increment's success. No actual DAW/microphone/listening validation.
+
+## Integration review and runner maintenance — 2026-10-22
+
+Independent read-only QA rebuilt DeEsser209/209, modulation182/182 and Flanger
+123/123 under GCC14/O2/strict warnings in /tmp. No blocking source issue found in
+PR15/17/21, old AU identities or migrations. Exact relevant parent sources match
+bfc9b54 native/product-passing evidence. PR15 andPR17 were merged normally; this
+does not qualify the unrelated experimental Sculptor failures.
+
+Flanger native run39744937318 passed Linux core/sanitizer/product jobs; macOS
+jobs had no steps and annotated “The job was not acquired by Runner of type
+hosted even after multiple attempts”. Retry only the failed/cancelled jobs.
+Upstream runner-images README confirms deprecated macos-14 and supported Arm64
+macos-15. Both build and manual unsigned-artifact workflow labels updated, with
+all checks retained. YAML validation and source review apply; native outcomes
+for the new label remain pending. No release/artifact dispatch is performed.
+
+## Flanger signed-neutral native correction — 2026-10-22
+
+Supported-runner workflow39748010215 passed both macOS core configurations and
+all Linux jobs. macOS product compilation passed; headless plugin.state_and_audio
+failed its exact v5-to-v6 neutral-feedback migration assertion, so auval was not
+executed. Check-run annotations identified the precise failing assertion; direct
+artifact download was denied by destination policy, so annotations supplied the
+diagnostic evidence. No failed gate is waived or softened.
+
+A local std::fma(.001f,850.f,-.85f) probe demonstrates the nonzero residual possible
+in JUCE's start-relative signed snapping; the new feedback range now uses symmetric
+zero-centered conversions and zero-anchored snapping. Interval metadata retained,
+other parameter ranges unchanged. Add exact neutral/normalisation/symmetry checks;
+existing exact migration assertions remain. Local product suites15/15 pass after
+this correction. New native result is pending; do not reuse earlier AU evidence.
+
+Independent reviewer reproduced the old1.65309757e-08 residual under -O3/-mfma/
+-ffp-contract=fast and checked all1701 legal signed-feedback grid values against
+the custom conversion/snap: exact zero, odd symmetry, bounded roundtrip error0.
+No blocking fix issue found. Native full product behavior still requires rerun.

@@ -283,3 +283,44 @@ Preset numeric validation is performed after checked conversion to the float
 parameter domain. Exact JSON decimal minima such as0.1/0.2 map to the advertised
 float bounds; finite/overflow/type checks and meaningful out-of-range rejection
 remain strict. This also corrects the existing mid-Q decimal boundary.
+
+# Flanger effects contract v6 — independent modulation stage
+
+Shared `Flanger` core: prepare(rate,maxFrames,channels), valid(parameters),
+setParameters, process(in-place planar spans), reset. Four supported rates,
+1/2channels, maxFrames1..65536; invalid/failed prepare unprepares. Snapshots are
+atomic: flangerRateHz[.05,5]=.3, flangerDepthMs[0,4]=2,
+flangerFeedback[-.85,.85]=0, flangerMix[0,1]=0. All values finite. Single owner.
+Preallocate per-channel10ms rings off callback. Process rejects bad layout, frame
+capacity, null/direct channel aliases before samples/history. No partial overlap.
+
+Per-sample10ms smoothing with endpoint snapping, shared sinusoidal LFO phase0 on
+reset and equal phase for both channels; base delay4.5ms plus depth*sin(phase),
+range0.5..8.5ms, linear interpolation. Read delayed value before writing
+input+feedback*delayed to the ring. Output=(1-mix)*input+mix*delayed, exact dry at
+mix0; ring/LFO stay warm while disabled. Reset settles targets and clears rings.
+Feedback magnitude<1; clamp only float-range numerical overflow, sanitize
+nonfinite/true subnormal audio, preserve tiny normal dry samples. No callback
+allocation/locks/I/O, bounded per-sample work. Musical delay adds no host latency
+compensation; this is not pitch/formant shifting or a limiter.
+
+Engine routing after chorus/width; existing conservative40second tail covers the
+bounded feedback decay. Append four IDs after current31 with AU version hint6;
+existing IDs/hints unchanged. State v6 has35fields, preset v6 has34 non-bypass
+fields. Strict v1..v5 migration resets new fields to neutral defaults. Add seventh
+editor tab with four actual controls; default flanger off in existing factory
+presets. No new dependency. Separate feature branch stacked on chorus/width PR #17;
+Sculptor remains isolated in PR #19 and is not a dependency.
+
+Acceptance: all rates/layouts, exact neutral/tiny samples, measured4.5ms impulse,
+feedback echo timing/geometric signed amplitudes, modulation excursions, stable
+feedback decay, stereo equality, partition/automation/reset, invalid warmed state,
+allocation-failure/callback probes, host actual-audio controls, v5 migration/state/
+preset roundtrip, GUI attachments, Release/sanitizers. Native outcome recorded
+from actual Actions only; actual DAW/listening remains unrun.
+
+Flanger signed feedback host range uses symmetric normalisation centered exactly
+at0 (normalised0.5), and step snapping anchored at0 rather than the negative bound.
+Retain interval metadata and [-.85,.85]bounds. This prevents fused-multiply-add
+roundoff from turning migrated neutral feedback into a nonzero value. Other
+parameter ranges/automation IDs and all legacy migrations are unchanged.

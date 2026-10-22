@@ -73,7 +73,7 @@ void snapshotsAndSmoothing() {
     p.mix = 0;
     p.outputDb = 12;
     check(engine.setParameters(p) && reference.setParameters(p), "valid parameter snapshot");
-    const std::array<float darkvoice::EngineParameters::*, 30> fields{
+    const std::array<float darkvoice::EngineParameters::*, 34> fields{
         &darkvoice::EngineParameters::inputDb,
         &darkvoice::EngineParameters::outputDb,
         &darkvoice::EngineParameters::highPassHz,
@@ -103,7 +103,11 @@ void snapshotsAndSmoothing() {
         &darkvoice::EngineParameters::chorusRateHz,
         &darkvoice::EngineParameters::chorusDepthMs,
         &darkvoice::EngineParameters::chorusMix,
-        &darkvoice::EngineParameters::stereoWidth};
+        &darkvoice::EngineParameters::stereoWidth,
+        &darkvoice::EngineParameters::flangerRateHz,
+        &darkvoice::EngineParameters::flangerDepthMs,
+        &darkvoice::EngineParameters::flangerFeedback,
+        &darkvoice::EngineParameters::flangerMix};
     for (auto field : fields) {
         auto invalid = p;
         invalid.inputDb = 24;
@@ -400,6 +404,31 @@ void integratedEffects(double rate) {
           "reset clears all filter and spatial histories");
 }
 
+void integratedFlanger(double rate) {
+    darkvoice::AudioEngine engine;
+    check(engine.prepare(rate, 512, 1), "integrated flanger prepare");
+    darkvoice::EngineParameters p;
+    p.flangerMix = 1;
+    p.flangerDepthMs = 0;
+    p.flangerFeedback = .5f;
+    check(engine.setParameters(p), "integrated flanger snapshot");
+    engine.reset();
+    std::vector<float> x(static_cast<std::size_t>(rate * .03));
+    x[0] = .5f;
+    check(run(engine, x, 131), "integrated flanger render");
+    const auto delay = static_cast<std::size_t>(rate * .0045);
+    check(std::all_of(x.begin(), x.begin() + delay - 1, [](float v) { return v == 0; }) &&
+              std::max(std::abs(x[delay]), std::abs(x[delay + 1])) > .2f,
+          "engine routes actual delayed flanger signal");
+    p.mix = 0;
+    check(engine.setParameters(p), "integrated flanger dry snapshot");
+    engine.reset();
+    x = sine(rate, 220, .1);
+    const auto original = x;
+    check(run(engine, x, 193) && x == original,
+          "global dry mix preserves unprocessed flanger input");
+}
+
 void invalidBlocksAndAllocationFailure() {
     darkvoice::AudioEngine first, reference;
     check(first.prepare(48000, 256, 1) && reference.prepare(48000, 256, 1),
@@ -490,6 +519,7 @@ int main() {
         integratedGate(rate);
         integratedDeEsser(rate);
         integratedModulation(rate);
+        integratedFlanger(rate);
     }
     isolationBypassAndSafety();
     invalidBlocksAndAllocationFailure();

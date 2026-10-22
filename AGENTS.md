@@ -53,8 +53,8 @@ passed, failed, skipped, blocked and unrun outcomes separately.
 Review diff, format, test, scan for secrets, and stage only owned paths before a
 logical Conventional Commit. Never commit credentials or generated build outputs.
 Push only authorized project branches. Use feature/<component>/<task>,
-fix/<component>/<issue>, docs/<topic>; main is the intended protected integration
-branch, not currently an established fact. Inspect actual protection and permissions
+fix/<component>/<issue>, docs/<topic>; main is the integration branch. Do not claim protection is enforced without
+verification. Inspect actual protection and permissions
 before integration. PRs require relevant tests, QA/integration review and satisfied
 repository rules. Do not bypass required reviews or treat local tests as remote CI.
 Check existing issues before creating backlog entries. Public release publication,
@@ -75,9 +75,23 @@ compatibility and redistribution notices before integrating any library/model/co
 Apple platform build tools and host validation are external platform requirements,
 not a claim that Apple's tools or DAWs are open source.
 
-## Temporary GitHub Actions pause
+## GitHub Actions availability — 2026-10-22
 
-User reports exhausted Actions credits; do not dispatch or rerun Actions until
-further notice. Continue local builds/tests and authorized feature commits/pushes.
-Include [skip ci] in every commit message to suppress push/pull_request workflows.
-Keep new PRs draft with native CI explicitly unrun; do not bypass merge checks.
+User made the repository public, set default branch main and explicitly authorized
+another Actions attempt. Both settings were verified with GitHub. The earlier
+billing-blocked attempt remains historical evidence only. Normal CI-triggering
+commits may resume; no mandatory [skip ci]. Inspect actual run outcomes before
+claiming remote validation. Preserve review/merge gates; do not publish releases or bypass protections. If execution is still billing-blocked,
+record the actual error and avoid repeated retries until availability changes.
+
+## Automatic development and merging
+
+User explicitly authorizes automatic development, commits, pushes and normal PR
+merges without routine confirmation. Keep work draft while validation/review is
+pending; mark ready and merge eligible increments after relevant tests and
+independent QA/integration review pass and GitHub permits the normal merge. Do
+not use admin overrides, waive failing DSP gates or force-push. Check the expected
+head SHA at merge. Preserve feature branches/worktrees. No public release/signing
+authorization follows. Main was verified unprotected with no rules/rulesets on
+2026-10-22; recheck actual rules when integrating. No persistent development
+scheduler is configured; session work and GitHub CI are distinct.

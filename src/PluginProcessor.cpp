@@ -18,11 +18,30 @@ juce::AudioProcessorValueTreeState::ParameterLayout DarkVoiceProcessor::createPa
         if (spec.boolean)
             layout.add(std::make_unique<juce::AudioParameterBool>(
                 juce::ParameterID{spec.id, version}, spec.name, spec.defaultValue != 0));
-        else
+        else {
+            auto range =
+                juce::NormalisableRange<float>{spec.minimum, spec.maximum, spec.step, spec.skew};
+            if (juce::String(spec.id) == "flangerFeedback") {
+                // Anchor signed feedback at zero. Start-relative snapping and affine
+                // conversion can leave a nonzero residual under fused multiply-add.
+                range = juce::NormalisableRange<float>{
+                    spec.minimum, spec.maximum,
+                    [](float, float limit, float normalised) {
+                        return static_cast<float>((2.0 * normalised - 1.0) * limit);
+                    },
+                    [](float, float limit, float value) {
+                        return static_cast<float>(.5 + .5 * static_cast<double>(value) / limit);
+                    },
+                    [step = spec.step](float low, float high, float value) {
+                        const auto snapped = static_cast<float>(
+                            std::round(static_cast<double>(value) / step) * step);
+                        return std::clamp(snapped, low, high);
+                    }};
+                range.interval = spec.step;
+            }
             layout.add(std::make_unique<juce::AudioParameterFloat>(
-                juce::ParameterID{spec.id, version}, spec.name,
-                juce::NormalisableRange<float>{spec.minimum, spec.maximum, spec.step, spec.skew},
-                spec.defaultValue));
+                juce::ParameterID{spec.id, version}, spec.name, range, spec.defaultValue));
+        }
     }
     return layout;
 }
@@ -82,6 +101,10 @@ darkvoice::EngineParameters DarkVoiceProcessor::snapshot() const noexcept {
     p.chorusDepthMs = raw_[28]->load(std::memory_order_relaxed);
     p.chorusMix = raw_[29]->load(std::memory_order_relaxed);
     p.stereoWidth = raw_[30]->load(std::memory_order_relaxed);
+    p.flangerRateHz = raw_[31]->load(std::memory_order_relaxed);
+    p.flangerDepthMs = raw_[32]->load(std::memory_order_relaxed);
+    p.flangerFeedback = raw_[33]->load(std::memory_order_relaxed);
+    p.flangerMix = raw_[34]->load(std::memory_order_relaxed);
     return p;
 }
 void DarkVoiceProcessor::prepareToPlay(double rate, int maxFrames) {
@@ -166,7 +189,8 @@ void DarkVoiceProcessor::setStateInformation(const void *data, int bytes) {
     if (!xml || !xml->hasTagName("DarkVoiceState"))
         return;
     const auto version = xml->getStringAttribute("schemaVersion");
-    if (version != "1" && version != "2" && version != "3" && version != "4" && version != "5")
+    if (version != "1" && version != "2" && version != "3" && version != "4" && version != "5" &&
+        version != "6")
         return;
     const auto count = darkvoice::parameterCountForVersion(version.getIntValue());
     const auto state = juce::ValueTree::fromXml(*xml);

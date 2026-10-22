@@ -183,3 +183,57 @@ host fixture used an out-of-bounds magnitude-query overload; correction retains
 JUCE assertions and the full suite now passes. The MIT candidate
 audit found material latency/near-silence integration gates; see
 PITCH_BACKEND_AUDIT.md. No pitch/formant processor has been integrated.
+
+## Flanger continuation and current backlog — 2026-10-22
+
+Lead established effects contract v6 and feature/effects/flanger directly from
+chorus/width, independent of the experimental Sculptor branch. DSP agent wrote
+only Flanger header/source/tests in isolated feature/effects/flanger-dsp worktree
+and reported123 passing initial signal checks. Its final turn hit model capacity;
+lead preserved that worktree, copied only the three assigned files, reviewed and
+completed integration/formatting/Release/sanitizer tests directly. No agent commit
+or completed independent final review is claimed. Agent files/worktree preserved.
+
+Flanger uses a preallocated causal interpolated0.5–8.5ms sinusoidal delay, signed
+feedback and smoothed controls, after chorus/width. Four real controls/seventh tab,
+append-only AU hint6 and schema6 state/preset migration; factory sounds stay off.
+No new dependency or host latency. Full Release and ASan/UBSan core12/12 pass;
+Linux products15/15 and34-control GUI/tab/audio smoke pass. Initial legacy fixture
+trimmed by child order instead of parameter ID; corrected ID-based fixture keeps
+all assertions and migration checks. New native CI outcome remains pending.
+
+PENDING_DEVELOPMENT.md now records remaining specification scope and review queue.
+Preset search/favorites/import/export/rename/save-as already work; remaining preset
+scope is complete factory coverage and actual DSP-dependent sounds. Latest PR #19
+CI passed core/product jobs but retained its two experimental qualification failures;
+no Sculptor quality fix, integration, merge, actual DAW/listening or release is claimed.
+
+## Authorized automatic integration — 2026-10-22
+
+User explicitly requested automatic development/commits/merges without confirmation.
+GitHub reports main protected=false, branch rules=[] and rulesets=[]; no protection
+change or bypass performed. Independent read-only merge_review agent reviewed
+PR15/17/21, rebuilt209 de-esser/182 modulation/123 flanger standalone checks and
+found no blocking source issue. It verified relevant de-esser/chorus sources are
+unchanged in bfc9b54, whose native/core/product jobs passed. That is descendant
+evidence, not a separate parent-head workflow run.
+
+Normal head-SHA-matched merges completed: de-esser PR #15 at2f9e33d, chorus/width
+PR #17 at9917fb1. Issues #14/#16 closed; branches/worktrees preserved. PR #21 and
+blocked experimental PR #19 retargeted to main. Flanger source QA passes, but its
+macOS jobs failed to acquire hosted runners and remain unqualified at this point.
+A failed-jobs retry was requested; no failing source test is waived.
+
+Official actions/runner-images README now labels macos-14 deprecated and lists
+macos-15 as supported Arm64. Move build and manual unsigned-artifact workflow
+labels to macos-15, preserving every test/auval gate and time budget. No artifact
+workflow dispatched or release published. New CI outcomes pending.
+
+## Native flanger neutral correction — 2026-10-22
+
+macos-15 acquired runners and passed core/build jobs. Its product test exposed an
+exact signed-feedback neutral migration assertion; auval remained skipped. Root
+reproduced possible fused-rounding residual and centered only the new feedback
+range/conversion/snap at zero. Existing migration thresholds/assertions retained;
+new exact-neutral/symmetry regressions and local15/15 product suites pass. Native
+retry on the corrected source is pending, so PR #21 stays unmerged for now.
