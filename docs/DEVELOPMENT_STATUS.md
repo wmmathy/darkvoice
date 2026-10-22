@@ -295,3 +295,7 @@ Access retry succeeded after user requested another attempt. Exact source head
 929926d has successful native run39835022228 (all7jobs including both product
 jobs) and source-quality39835021918. Historical401 observations remain accurate;
 no repository change was needed. Docs-only follow-up adds no product differences.
+
+Authentication retry worked without a repository change. Preset PR23 native checks
+passed and it was normally merged. Limiter core can now proceed through push/CI
+and normal review gates; earlier401 block is historical evidence only.
