@@ -408,3 +408,26 @@ experimental core. Issue #18 remains open; no merge or release occurred.
 
 Build: https://github.com/wmmathy/darkvoice/actions/runs/39737797996
 Quality: https://github.com/wmmathy/darkvoice/actions/runs/39737798002
+
+## Latency-aligned mix utility — 2026-10-22
+
+New latency.aligned_mix suite passes464checks in Release and ASan/UBSan, with no
+reported sanitizer findings. Covers all four rates, mono/stereo, delays0/1152/
+9216/18432/65536, measured impulse alignment, exact endpoints/tiny normals, half
+mix of a synthetic aligned wet backend, delayed bypass, sample-positioned buffer
+partition invariance, warm dry history, reset, invalid warmed-state rejection,
+allocation failure, ordinary callback allocation rejection, supported aliasing,
+nonfinite/subnormal/large samples and measured10ms bypass ramp/settling.
+
+Full experimental Release passes13/14 suites: only the known Sculptor
+qualification149checks/3failures fails. Its outcome remains a real failing gate;
+no tolerance or failing test was changed. Default Linux product suites pass15/15;
+the new utility is compiled/tested but not wired into product processing. No new
+GUI, host-alignment or listening test is implied. Formatter19.1.7, scoped exhaustive
+cppcheck2.17.1 and limited credential/dependency scans pass.
+
+A read-only review found no blocking utility bounds/lifecycle/aliasing issue.
+Separate DSP controls disabling preservation give target-period correlations
+0.999618/0.979937/0.994710 for the three source/filter fixtures. A private-copy
+synthesis-only formant-gain experiment still failed them and was rejected; no
+unqualified backend change was integrated. New native CI results remain pending.

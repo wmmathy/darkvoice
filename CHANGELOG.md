@@ -92,3 +92,13 @@
 - Add three independently reviewed intended-F0 periodicity regressions. Expanded
   qualification149checks retains3failures although all original140checks pass.
   Core remains experimental and unlinked to products; issue #18 stays open.
+
+### Latency-aligned mix prerequisite
+
+- Add a preallocated shared dry/wet and smoothed-bypass utility with exact delayed
+  endpoints, warm dry history and atomic buffer/snapshot validation. No current
+  product routing or latency changes.
+- Add464 regression checks across four rates, mono/stereo, zero through65536sample
+  delay, automation/partitions, hostile inputs and callback allocation probes.
+- Narrow combined-shift failures to the compensation path for the tested fixtures;
+  reject an unsuccessful synthesis-gain staging experiment without weakening gates.

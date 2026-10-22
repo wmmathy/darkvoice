@@ -141,3 +141,20 @@ It does not infer one trustworthy F0 from these inharmonic outputs. At48k Offlin
 pass, the three new setup/render pairs pass and all three periodicity gates fail.
 Keep issue #18 open and investigate pitch phase/frequency mapping or compare a
 compatible backend. The envelope correction improves a documented subset only.
+
+## Compensation-path investigation and alignment prerequisite
+
+A read-only follow-up compared the three failing source/filter fixtures with
+preserveFormants=false and formant shift0. Target-period correlations then reach
+0.999618/0.979937/0.994710, isolating the observed limitation to the compensation
+path for those fixtures. An experimental private copy kept raw energy/phase history
+and applied the envelope ratio only when copying to the synthesis spectrum; it
+still failed all three periodicity gates. That experiment is rejected and was
+not integrated. Boosting weak mapped spectral regions is a candidate explanation,
+not a proven complete diagnosis. Investigate excitation-aware transfer or a
+compatible backend; do not insert an arbitrary gain clamp to tune fixtures.
+
+`LatencyAlignedMix` now independently implements delayed original-dry blending
+and smoothed bypass with warm dry history. It is not connected to this backend
+or any product. Callers still own backend warming, actual matching delay and host
+latency reporting. Its contract and tests do not waive the existing quality gate.

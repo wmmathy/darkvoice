@@ -308,3 +308,22 @@ experimental core. Issue #18 remains open; no merge or release occurred.
 
 Build: https://github.com/wmmathy/darkvoice/actions/runs/39737797996
 Quality: https://github.com/wmmathy/darkvoice/actions/runs/39737798002
+
+## Aligned mix prerequisite — 2026-10-22
+
+Lead established contract v1 and implemented shared LatencyAlignedMix with delayed
+original dry, smoothed effective wet fraction/bypass, exact endpoints and always
+advancing dry history. No product routing, parameters, state or host latency change.
+Read-only formant_investigation agent reviewed exact bounds/alias/lifecycle behavior
+and found no blocking issue; lead owns all mutations/tests/integration. No new
+dependency. Release464checks pass; full experimental Release passes13/14 suites,
+with only the retained149check/3failure Sculptor quality gate failing.
+
+The DSP follow-up shows preservation-disabled controls pass all three representative
+periodicity fixtures. A raw-phase-history/synthesis-only gain experiment did not
+resolve them and is not integrated. The compensation path remains blocked under
+issue #18; future host integration can use the independently tested mix utility.
+
+Final aligned-mix464checks pass Release and ASan/UBSan without reported findings;
+default Linux product suites pass15/15. Formatter, scoped static analysis and
+limited credential/dependency scans pass. Native CI for this increment is pending.

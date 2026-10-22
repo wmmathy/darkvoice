@@ -368,3 +368,31 @@ all original qualification gates; expand source/filter fixtures across F0/rates
 and shifts with harmonic-grid resolution recorded explicitly. Passing synthetic
 fixtures permits further experiments only; defaults/products remain unchanged
 pending listening, transients/unvoiced, CPU and aligned-host qualification.
+
+## Latency-aligned mix contract v1
+
+Independent `LatencyAlignedMix` DSP utility; no product routing or latency change
+until explicit host integration. Lead owns include/src/tests and CMake wiring.
+prepare(rate,maxFrames,channels,latencySamples) accepts the four standard rates,
+1/2channels,1..65536maxFrames and0..65536delay samples, allocates/clears dry rings.
+Latency changes require off-callback prepare. Invalid/failed prepare unprepares.
+setParameters({mix,bypass}) atomically rejects nonfinite/out-of-[0,1]mix; default
+mix1,bypassfalse. Smooth effective wet fraction (bypass ?0:mix) over10ms, snap
+within1e-6 to exact endpoints. reset retains/settles targets and clears dry history.
+
+process(originalDry,processedWet,frames) validates shape/capacity/null/direct
+cross-channel aliases before state/output. Inputs must have at least frames
+samples, with no partial overlap. Same-channel dry/wet alias is permitted; capture
+all channel inputs before writing outputs. Wet is replaced by mixed output;
+originalDry is not modified unless it aliases wet. Delay dry by exactly the
+configured samples, including during bypass/mix0. Caller must keep its backend
+warm and report the matching host latency. Utility neither runs nor compensates
+an incorrectly aligned wet backend. Backend tails remain caller-owned.
+
+Prepare allocates; setters/process/reset perform no allocation, locks or I/O.
+Sanitize nonfinite/subnormal audio to0, retain normal tiny dry values and clamp
+mixed overflow to float range. Exact wet/dry endpoints avoid cancellation and
+unnecessary rounding. Acceptance: impulse/neutral timing including zero delay,
+all rates/layouts, known dry/wet blend, settled bypass, history kept while bypassed,
+partition invariance, invalid warmed-state rejection, hostile audio, allocation
+failure and callback probes, Release/sanitizers. Host and listening remain separate.
