@@ -212,3 +212,13 @@ Do not expose pitch/formant controls or mark the quality milestone complete.
 Resolve/replace the backend envelope algorithm, then qualify further material,
 CPU/listening and aligned host dry/mix/bypass. Reproduce with
 PITCH_FORMANT_CORE.md; failing qualification is not skipped or WILL_FAIL.
+
+## Voice Sculptor automation continuation — 2026-10-22
+
+Lead extended the isolated core regression coverage on the existing draft PR #19;
+no new agents or product controls were added in this increment. All12 rate/profile
+stereo combinations now exercise sample-positioned pitch/formant/preservation/base
+automation, opposite extremes and return to exact neutral. Streaming now passes
+269checks in Release and ASan/UBSan. Full experimental Release remains12/13 suites
+with the same3 formant qualification failures. Issue #18 remains open and host
+integration remains blocked. Actions stays paused.

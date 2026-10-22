@@ -279,6 +279,63 @@ void safety() {
               std::all_of(r.begin(), r.end(), [](float x) { return std::isfinite(x); }),
           "hostile audio finite");
 }
+// Both renderers receive identical sample-positioned events; only host partitions differ.
+void automation(double rate, darkvoice::PitchQuality quality) {
+    darkvoice::PitchFormantProcessor one, split;
+    check(one.prepare({rate, 1024, 2, quality}) && split.prepare({rate, 1024, 2, quality}),
+          "automation prepare");
+    const auto latency = one.latencySamples();
+    const std::array<std::size_t, 6> positions{0, 137, 4093, 8191, 12289, 17003};
+    const std::array<darkvoice::PitchFormantParameters, 6> targets{{{12, -12, true, 40},
+                                                                    {-12, 12, false, 1000},
+                                                                    {7, 3, true, 0},
+                                                                    {-7, -3, false, 100},
+                                                                    {0, 0, true, 0},
+                                                                    {}}};
+    auto left = tone(rate, 137, 1.5), right = tone(rate, 211, 1.5);
+    // Nonidentical channels catch accidental channel reuse during automation.
+    const auto dryLeft = left, dryRight = right;
+    auto otherLeft = left, otherRight = right;
+    const auto run = [&](darkvoice::PitchFormantProcessor &fx, std::vector<float> &l,
+                         std::vector<float> &r, std::size_t block) {
+        std::size_t offset = 0, event = 0;
+        while (offset < l.size()) {
+            if (event < positions.size() && offset == positions[event]) {
+                if (!fx.setParameters(targets[event++]))
+                    return false;
+            }
+            const auto end = event < positions.size() ? positions[event] : l.size();
+            const auto count = std::min(block, end - offset);
+            std::array<float *, 2> ptr{l.data() + offset, r.data() + offset};
+            if (!fx.process(ptr, count))
+                return false;
+            offset += count;
+        }
+        return true;
+    };
+    const auto before = allocations.load();
+    reject = true;
+    const bool ok = run(one, left, right, 1024) && run(split, otherLeft, otherRight, 37);
+    reject = false;
+    check(ok && allocations.load() == before, "automated processing and setters allocate nothing");
+    double error = 0;
+    bool finite = true, settled = true;
+    for (std::size_t i = 0; i < left.size(); ++i) {
+        finite = finite && std::isfinite(left[i]) && std::isfinite(right[i]) &&
+                 std::isfinite(otherLeft[i]) && std::isfinite(otherRight[i]);
+        error = std::max({error, std::abs(static_cast<double>(left[i]) - otherLeft[i]),
+                          std::abs(static_cast<double>(right[i]) - otherRight[i])});
+        if (i >= static_cast<std::size_t>(rate) && i >= latency)
+            settled =
+                settled && left[i] == dryLeft[i - latency] && right[i] == dryRight[i - latency];
+    }
+    std::printf("automation rate %.0f profile %d partition error %.9g\n", rate,
+                static_cast<int>(quality), error);
+    check(finite && error < 1e-5, "automation finite and invariant under host partition changes");
+    check(settled, "automation settles to exact delayed neutral on both channels");
+    check(one.latencySamples() == latency && split.latencySamples() == latency,
+          "automation leaves reported latency fixed");
+}
 void drain() {
     darkvoice::PitchFormantProcessor fx;
     check(fx.prepare({48000, 1024, 2, darkvoice::PitchQuality::Studio}) &&
@@ -360,6 +417,10 @@ int main(int argc, char **argv) {
                                  darkvoice::PitchQuality::Offline})
                 for (std::size_t channels : {1U, 2U})
                     neutral(rate, quality, channels);
+        for (double rate : {44100., 48000., 88200., 96000.})
+            for (auto quality : {darkvoice::PitchQuality::Live, darkvoice::PitchQuality::Studio,
+                                 darkvoice::PitchQuality::Offline})
+                automation(rate, quality);
         safety();
         drain();
         quiet();

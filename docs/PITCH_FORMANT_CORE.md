@@ -72,3 +72,14 @@ automation, transient/unvoiced behavior, CPU and real-vocal listening. Before ho
 integration, establish and test latency-aligned global dry/mix/bypass and product
 boundaries. No reference-aware correction, harmonies or host qualification is
 implemented by this core. Actions remains paused; native checks are unrun.
+
+## Automation regression coverage
+
+Sample-positioned parameter events now cover all four rates and all three candidate
+profiles in stereo, with independent channel inputs. Events at non-grid offsets
+exercise opposite pitch/formant extremes, preservation changes, auto/manual base
+changes and return to neutral. Rendering identical events in 37- and 1024-sample
+host partitions produces maximum difference0 in the local Release run. Processing
+and setters allocate nothing under ordinary new/new[] rejection; latency remains
+fixed, both channels stay finite and settle to exact delayed dry. These checks do
+not establish click-free perceptual quality or resolve the three envelope failures.

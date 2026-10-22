@@ -63,3 +63,10 @@
   tests; live track-aware correction and harmony remain future work.
 - Display measured dry input note/frequency/confidence using a bounded worker
   queue; verify dry-before-DSP input, overflow/lifecycle and concurrency behavior.
+
+### Experimental Sculptor automation regression
+
+- Exercise sample-positioned pitch/formant automation across four rates and three
+  profiles, including partition invariance, allocation rejection and exact neutral
+  settling. Streaming269checks pass locally; three formant quality failures still
+  block host integration. Core remains opt-in and excluded from products.

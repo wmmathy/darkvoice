@@ -295,3 +295,18 @@ No new GUI/state parameters, host latency/bypass changes, live correction, real
 voice/listening/CPU deadline, native macOS/AU, signing or release is validated.
 Actions was not dispatched/rerun. See PITCH_FORMANT_CORE.md for opt-in commands;
 its full CTest command intentionally continues to report the unresolved failures.
+
+## Voice Sculptor automation regression — 2026-10-22
+
+- Streaming269checks pass in Release and ASan/UBSan (60new assertions); no reported
+  sanitizer findings. Four rates times three profiles, stereo with different input
+  frequencies per channel, sample-positioned events at137/4093/8191/12289/17003
+  exercise extreme targets, preserve flag, auto/manual base and return to neutral.
+- Identical events rendered in37/1024sample partitions have maximum difference0
+  in every tested configuration. Both outputs remain finite, ordinary new/new[]
+  rejection reports no callback allocation, reported latency stays fixed and the
+  final half-second exactly matches delayed dry on both channels.
+- Full Release rerun remains12/13 suites: qualification76checks retains the same
+  3formant failures. No quality tolerance or production code changed. The earlier
+  14/14 product result belongs to the preceding core increment; no new GUI/native
+  host test or listening/CPU-deadline qualification was performed here.
