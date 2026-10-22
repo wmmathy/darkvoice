@@ -68,3 +68,10 @@
 - Center the new signed-feedback host mapping and snapping on exact zero to avoid
   fused-rounding residuals during migration; preserve existing exact assertions
   and append regression checks. No prior parameter identity/range is changed.
+
+### Reviewed effects integration and backend comparison
+
+- Merge de-esser, chorus/width and flanger into main after relevant validation and
+  independent QA; fix exact-neutral signed feedback and use supported macOS15 CI.
+- Record a reproducible open-source alternative-backend probe; periodicity improves
+  but one envelope fixture still fails. No backend replacement or release claimed.
