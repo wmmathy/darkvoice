@@ -255,6 +255,22 @@ notes, reported variable startup delays and reproducible developer probe are in
 RUBBERBAND_AUDIT.md. PR #19 remains draft/blocked. Product/runtime source is
 unchanged by this documentation/probe increment.
 
+## Vocal limiter core continuation — 2026-10-22
+
+Lead established a bounded zero-latency, stereo-linked sample-peak contract before
+assigning DSP agent flanger_dsp to exclusive header/source/tests in isolated
+feature/effects/vocal-limiter worktree. Lead owns CMake and documentation.
+This module is initially outside product routing: no new product controls,
+state schema or factory sounds, and no mastering true-peak claim. Host integration
+requires a later explicit default-off enable and migration contract.
+
+Core completed locally: DSP agent184checks in strict Release and ASan/UBSan;
+lead full core Release13/13 and ASan/UBSan13/13. Independent read-only merge_review
+agent rebuilt184checks and approved numerical/real-time/lifecycle behavior.
+Formatting, new-module cppcheck and tracked secret/dependency scans pass.
+Commit is local only while GitHub authentication returns401. No native CI or
+merge is claimed. Next: restore access, push this branch, normal CI/review/merge,
+then default-off final-output host integration with versioned migration/UI tests.
 ## Factory catalogue continuation
 
 Fourteen factory presets now use implemented DSP; the original six retain their
@@ -279,3 +295,18 @@ Access retry succeeded after user requested another attempt. Exact source head
 929926d has successful native run39835022228 (all7jobs including both product
 jobs) and source-quality39835021918. Historical401 observations remain accurate;
 no repository change was needed. Docs-only follow-up adds no product differences.
+
+Authentication retry worked without a repository change. Preset PR23 native checks
+passed and it was normally merged. Limiter core can now proceed through push/CI
+and normal review gates; earlier401 block is historical evidence only.
+
+## Current ARM runner fallback — 2026-10-22
+
+Core39837615535 first attempt failed/cancelled macOS jobs before acquiring hosted
+runners; annotations explicitly report ARM capacity constraints. Failed-job retry
+attempt2 was requested and queued. GitHub actions/runner-images official README
+now lists macos-26 ARM as standard macos-latest, with macos-15 also supported.
+Move explicit CI/manual-artifact labels to macos-26 to try the current supported
+ARM image; keep all build/test/auval gates and timeouts. This supersedes the queued
+retry on source push, not a passing macOS15 result. No manual artifact workflow or
+release is dispatched. Native outcome on the new image remains pending.

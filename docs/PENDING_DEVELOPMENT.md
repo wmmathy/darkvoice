@@ -57,3 +57,10 @@ versioned contracts and normal reviewed/tested automatic merges.
 Automatic commits/normal merges are explicitly authorized. No unattended scheduler
 or perpetual development agent is configured; GitHub CI and active session work
 are distinct. Actual DAW/microphone/listening and release qualification remain open.
+
+Limiter continuation: a stereo-linked zero-latency sample-peak core is under local
+development outside product routing. Product enable/ceiling/release controls,
+versioned state/preset migration and final-output routing remain pending until
+core validation/review. This does not cover the oversampled mastering true-peak
+limiter. GitHub authentication subsequently failed with HTTP401; remote validation
+and integration require restored credentials, not waived gates.

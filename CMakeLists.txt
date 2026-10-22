@@ -11,7 +11,7 @@ target_compile_features(darkvoice_core INTERFACE cxx_std_20)
 target_include_directories(darkvoice_core INTERFACE
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>")
 
-add_library(darkvoice_engine STATIC src/AudioEngine.cpp src/ToneEffects.cpp src/PitchDetector.cpp src/NoiseGate.cpp src/DeEsser.cpp src/ModulationEffects.cpp src/Flanger.cpp)
+add_library(darkvoice_engine STATIC src/AudioEngine.cpp src/ToneEffects.cpp src/PitchDetector.cpp src/NoiseGate.cpp src/DeEsser.cpp src/ModulationEffects.cpp src/Flanger.cpp src/VocalLimiter.cpp)
 add_library(DarkVoice::Engine ALIAS darkvoice_engine)
 target_link_libraries(darkvoice_engine PUBLIC DarkVoice::Core)
 set_target_properties(darkvoice_engine PROPERTIES POSITION_INDEPENDENT_CODE ON CXX_EXTENSIONS OFF)
@@ -41,6 +41,13 @@ if(DARKVOICE_ENABLE_SANITIZERS)
 endif()
 
 if(BUILD_TESTING)
+    add_executable(darkvoice_limiter_tests tests/limiter_tests.cpp)
+    target_link_libraries(darkvoice_limiter_tests PRIVATE DarkVoice::Engine)
+    set_target_properties(darkvoice_limiter_tests PROPERTIES CXX_EXTENSIONS OFF)
+    darkvoice_strict_warnings(darkvoice_limiter_tests)
+    add_test(NAME dynamics.limiter COMMAND darkvoice_limiter_tests)
+    set_tests_properties(dynamics.limiter PROPERTIES TIMEOUT 60)
+
     add_executable(darkvoice_flanger_tests tests/flanger_tests.cpp)
     target_link_libraries(darkvoice_flanger_tests PRIVATE DarkVoice::Engine)
     set_target_properties(darkvoice_flanger_tests PROPERTIES CXX_EXTENSIONS OFF)

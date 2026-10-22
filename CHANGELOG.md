@@ -82,3 +82,11 @@
   independent QA; fix exact-neutral signed feedback and use supported macOS15 CI.
 - Record a reproducible open-source alternative-backend probe; periodicity improves
   but one envelope fixture still fails. No backend replacement or release claimed.
+
+## Vocal sample-peak limiter core
+
+- Add independent linked mono/stereo sample-peak limiter with immediate ceiling
+  protection, exponential release and no algorithmic latency or dependency.
+- Cover supported rates, variable partitions, stereo ratio, exact unity, float
+  extremes, parameter transitions, lifecycle and callback allocation behavior.
+- Keep product routing/controls and oversampled mastering true-peak limiting pending.

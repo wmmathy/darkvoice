@@ -325,6 +325,26 @@ Retain interval metadata and [-.85,.85]bounds. This prevents fused-multiply-add
 roundoff from turning migrated neutral feedback into a nonzero value. Other
 parameter ranges/automation IDs and all legacy migrations are unchanged.
 
+### Vocal sample-peak limiter core v1
+
+Independent module `VocalLimiter`, initially outside product routing. Parameters:
+ceilingDb [-24,0], default -1; releaseMs [5,1000], default100. Always active module;
+future host integration must provide explicit default-off enable and schema migration.
+API matches NoiseGate: valid, prepare, setParameters, process, reset. Supported
+44.1/48/88.2/96kHz, mono/stereo, maxFrames1..65536. Prepare invalidates lifecycle
+on failure; invalid parameter snapshots preserve previous targets. Invalid buffers
+return false without writes/state advance; zero frames allowed after prepare.
+
+Zero latency; instantaneous linked gain reduction to bound sample peaks, exponential
+release toward unity. Both stereo channels receive identical gain. This is NOT
+oversampled/true-peak limiting, and fast attenuation may distort transients.
+Ceiling reductions must apply immediately, including during release; no makeup.
+Finite float-range input handled in double precision; nonfinite/true subnormal input
+sanitized to zero. No callback allocation/locks/I/O. Exact dry samples below ceiling
+at unity gain, reset clears gain reduction. Acceptance: all rates/layouts, impulses,
+sustained peaks, release, stereo ratio, partition equivalence, parameter transitions,
+invalid lifecycle/buffers/values, extremes/tiny data and allocation probes; Release
+and ASan/UBSan. Host controls/state/UI are a subsequent integration increment.
 ### Factory catalogue increment (schema 6)
 
 Expand six existing factory sounds to fourteen using existing sound parameters.
