@@ -84,3 +84,12 @@ are available. If billing still blocks execution, record the failure and avoid
 repeated retries. Preserve draft PRs and merge/review gates; no releases or
 protection bypass is authorized. Historical pause records remain valid for their
 original revisions.
+
+### Retry outcome
+
+The authorized attempt at b663d94 was blocked before job execution. GitHub reports
+failed recent payments or a spending limit requiring increase (runs39736030287
+and39736030307). Resume [skip ci] on commits to avoid repeated blocked runs.
+Continue local development; try Actions again when the user reports billing or
+spending availability has changed. Do not interpret infrastructure failures as
+source/test results.

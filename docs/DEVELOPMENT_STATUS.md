@@ -231,3 +231,15 @@ Results are pending; no available credits or new native success is assumed.
 Experimental Sculptor remains OFF in existing CI; its three local formant failures
 continue to block integration even if default product CI passes. Draft PRs and
 merge/review gates remain in force.
+
+## Actions retry result — 2026-10-22
+
+At b663d94, GitHub accepted the push/PR triggers. Superseded push runs were
+cancelled by existing concurrency rules. PR build run39736030287 and source
+quality run39736030307 failed before executing jobs. GitHub annotations state:
+“The job was not started because recent account payments have failed or your
+spending limit needs to be increased. Please check the 'Billing & plans' section
+in your settings”. No new compiler, test, native AU or quality result exists.
+No repeated rerun is requested; [skip ci] resumes for further commits until
+billing/spending availability changes. Existing local results remain applicable
+only to their recorded scope.

@@ -310,3 +310,15 @@ its full CTest command intentionally continues to report the unresolved failures
   3formant failures. No quality tolerance or production code changed. The earlier
   14/14 product result belongs to the preceding core increment; no new GUI/native
   host test or listening/CPU-deadline qualification was performed here.
+
+## Actions retry result — 2026-10-22
+
+At b663d94, GitHub accepted the push/PR triggers. Superseded push runs were
+cancelled by existing concurrency rules. PR build run39736030287 and source
+quality run39736030307 failed before executing jobs. GitHub annotations state:
+“The job was not started because recent account payments have failed or your
+spending limit needs to be increased. Please check the 'Billing & plans' section
+in your settings”. No new compiler, test, native AU or quality result exists.
+No repeated rerun is requested; [skip ci] resumes for further commits until
+billing/spending availability changes. Existing local results remain applicable
+only to their recorded scope.
