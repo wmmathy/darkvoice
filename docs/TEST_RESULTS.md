@@ -354,3 +354,15 @@ Native CI/push/PR/merge are blocked by expired/rejected GitHub authentication401
 no remote validation is claimed.
 Full Debug ASan/UBSan core CTest13/13 subsequently passed with leak detection and
 halt-on-error enabled; no sanitizer diagnostic reported.
+## Factory catalogue expansion — 2026-10-22
+
+Linux Debug product build and all15 CTest suites passed after expanding six
+factory snapshots to fourteen. New product render fixture applies every preset
+at44.1/48/88.2/96kHz, mono/stereo, variable73/257frame buffers, checking finite
+non-silent output. Preset persistence suite checks all34field maps and unique
+snapshots, favorites, schema migration, import/export and user-file preservation.
+No listening or actual DAW qualification was performed. Native CI pending.
+Factory catalogue native follow-up: run39835022228 passed all7jobs on exact
+source929926d, including macOS15/Linux products and Linux sanitizers; source
+quality39835021918 passed. Credentials worked again on retry. Actual DAW/listening
+qualification remains unrun.

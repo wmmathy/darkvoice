@@ -53,7 +53,7 @@ void basicPersistence() {
     TemporaryDirectory temp;
     darkvoice::PresetBank bank(temp.file.getChildFile("library"));
     good(bank.refresh(), "Empty library refresh");
-    require(bank.presets().size() == 6, "Six factory sounds expected");
+    require(bank.presets().size() == 14, "Fourteen factory sounds expected");
     std::set<std::string> factorySnapshots;
     for (const auto &preset : bank.presets()) {
         require(preset.factory && !preset.favorite, "Factory flags");
@@ -62,7 +62,7 @@ void basicPersistence() {
                 "Preset excludes bypass");
         factorySnapshots.insert(jsonFor(preset.values).toStdString());
     }
-    require(factorySnapshots.size() == 6, "Factory settings must actually differ");
+    require(factorySnapshots.size() == 14, "Factory settings must actually differ");
     const auto factory = bank.presets().front().id;
     require(bank.rename(factory, "Changed").failed(), "Cannot rename factory");
     good(bank.setFavorite(factory, true), "Favorite factory");
@@ -292,7 +292,7 @@ void malformedAndMigration() {
     const auto broken = temp.file.getChildFile("bank").getChildFile("broken.json");
     write(broken, "broken");
     require(bank.refresh().failed(), "Refresh reports malformed local file");
-    require(bank.find(id) != nullptr && bank.presets().size() == 11,
+    require(bank.find(id) != nullptr && bank.presets().size() == 19,
             "Refresh retains valid files and factories");
     require(broken.loadFileAsString() == "broken", "Malformed user file preserved");
     const auto favorites = temp.file.getChildFile("bank").getChildFile(".favorites.json");
@@ -333,7 +333,7 @@ void hostilePathsAndLimits() {
                                     userLink.getFullPathName().toStdString());
     require(bank.rename(uuid, "Changed").failed(), "Reject symlink user rename");
     require(bank.refresh().failed(), "Refresh reports symlink user file");
-    require(bank.presets().size() == 6, "Symlink preset not loaded");
+    require(bank.presets().size() == 14, "Symlink preset not loaded");
     const auto capped = temp.file.getChildFile("capped");
     good(capped.createDirectory(), "Cap fixture root");
     for (int i = 0; i < 512; ++i)

@@ -345,3 +345,13 @@ at unity gain, reset clears gain reduction. Acceptance: all rates/layouts, impul
 sustained peaks, release, stereo ratio, partition equivalence, parameter transitions,
 invalid lifecycle/buffers/values, extremes/tiny data and allocation probes; Release
 and ASan/UBSan. Host controls/state/UI are a subsequent integration increment.
+### Factory catalogue increment (schema 6)
+
+Expand six existing factory sounds to fourteen using existing sound parameters.
+Preserve existing factory IDs and values, user files and favorites. New entries:
+Dark Wave, Deep Narrator, Industrial Whisper, Grunge Baritone, Acoustic Baritone,
+Dark Melodic, Industrial Power, Natural Dark Baritone. No schema, dependency,
+latency or callback changes. Six correction/choir/octave/double-track presets
+remain pending their actual DSP. Acceptance: unique validated full snapshots,
+persistence/migration regressions, and finite non-silent product rendering at all
+four supported rates in mono/stereo. Names describe styles, not qualified naturalness.
