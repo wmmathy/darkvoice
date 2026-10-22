@@ -35,7 +35,7 @@ struct TemporaryDirectory {
         file.deleteRecursively();
     }
 };
-juce::String jsonFor(const darkvoice::PresetValues &values, int version = 6,
+juce::String jsonFor(const darkvoice::PresetValues &values, int version = 7,
                      const juce::String &name = "Test preset") {
     juce::DynamicObject::Ptr parameters = new juce::DynamicObject();
     for (const auto &[id, value] : values)
@@ -57,8 +57,12 @@ void basicPersistence() {
     std::set<std::string> factorySnapshots;
     for (const auto &preset : bank.presets()) {
         require(preset.factory && !preset.favorite, "Factory flags");
+        require(preset.values.at("limiterEnabled") == 0 &&
+                    preset.values.at("limiterCeilingDb") == -1 &&
+                    preset.values.at("limiterReleaseMs") == 100,
+                "Factory limiter remains off with neutral defaults");
         good(darkvoice::PresetBank::validate(preset.values), "Factory values invalid");
-        require(preset.values.size() == 34 && !preset.values.contains("bypass"),
+        require(preset.values.size() == 37 && !preset.values.contains("bypass"),
                 "Preset excludes bypass");
         factorySnapshots.insert(jsonFor(preset.values).toStdString());
     }
@@ -76,6 +80,9 @@ void basicPersistence() {
     settings["deEssReductionDb"] = 6;
     settings["flangerMix"] = .7f;
     settings["flangerFeedback"] = -.4f;
+    settings["limiterEnabled"] = 1;
+    settings["limiterCeilingDb"] = -9.2f;
+    settings["limiterReleaseMs"] = 210;
     settings["chorusMix"] = .3f;
     settings["stereoWidth"] = 1.5f;
     juce::String id;
@@ -99,6 +106,7 @@ void basicPersistence() {
     require(std::abs(restored.find(originalId)->values.at("eqMidGainDb") - 3.4f) < .00001f,
             "Parameter roundtrip");
     require(restored.search("renamed").size() == 1, "Name search");
+    require(restored.find(originalId)->values == settings, "Full v7 nondefault preset roundtrip");
     const auto exported = temp.file.getChildFile("export.json");
     good(restored.exportFile(originalId, exported), "Export user preset");
     const auto exportedBytes = exported.loadFileAsString();
@@ -181,7 +189,7 @@ void malformedAndMigration() {
     }
     const auto initial = bank.presets().size();
     for (const auto &data :
-         {juce::String("{}"), juce::String("[]"), juce::String("{broken"), jsonFor(settings, 7),
+         {juce::String("{}"), juce::String("[]"), juce::String("{broken"), jsonFor(settings, 8),
           jsonFor(settings).replace("\"inputDb\": 0.0", "\"inputDb\": true"),
           juce::String("{\"schemaVersion\":2,\"schemaVersion\":1}")}) {
         write(external, data);
@@ -192,7 +200,7 @@ void malformedAndMigration() {
     const auto cleanJson = jsonFor(settings);
     for (const auto &hostile :
          {cleanJson + " trailing-garbage", cleanJson + "{}",
-          cleanJson.replace("\"schemaVersion\": 6", "\"schemaVersion\": 4294967301"),
+          cleanJson.replace("\"schemaVersion\": 7", "\"schemaVersion\": 4294967301"),
           juce::String("{\"nested\":") + juce::String::repeatedString("[", 10000) + "0" +
               juce::String::repeatedString("]", 10000) + "}"}) {
         write(external, hostile);
@@ -217,6 +225,8 @@ void malformedAndMigration() {
     write(external, juce::String::repeatedString(" ", 1024 * 1024 + 1));
     require(bank.importFile(external, id).failed(), "Reject oversized JSON");
     auto v2 = darkvoice::PresetBank::defaults();
+    for (const auto *key : {"limiterEnabled", "limiterCeilingDb", "limiterReleaseMs"})
+        v2.erase(key);
     for (const auto *key : {"flangerRateHz", "flangerDepthMs", "flangerFeedback", "flangerMix"})
         v2.erase(key);
     v2.erase("gateThresholdDb");
@@ -236,6 +246,8 @@ void malformedAndMigration() {
             "V2 preset preserves effects and disables gate");
 
     auto v3 = darkvoice::PresetBank::defaults();
+    for (const auto *key : {"limiterEnabled", "limiterCeilingDb", "limiterReleaseMs"})
+        v3.erase(key);
     for (const auto *key : {"flangerRateHz", "flangerDepthMs", "flangerFeedback", "flangerMix"})
         v3.erase(key);
     v3.erase("deEssHz");
@@ -252,6 +264,8 @@ void malformedAndMigration() {
                 bank.find(id)->values.at("gateRatio") == 4,
             "V3 preset retains gate and disables de-esser");
     auto v4 = darkvoice::PresetBank::defaults();
+    for (const auto *key : {"limiterEnabled", "limiterCeilingDb", "limiterReleaseMs"})
+        v4.erase(key);
     for (const auto *key : {"flangerRateHz", "flangerDepthMs", "flangerFeedback", "flangerMix"})
         v4.erase(key);
     for (const auto *key : {"chorusRateHz", "chorusDepthMs", "chorusMix", "stereoWidth"})
@@ -266,6 +280,8 @@ void malformedAndMigration() {
                 bank.find(id)->values.at("deEssReductionDb") == 9,
             "V4 preset retains de-esser and neutral modulation");
     auto v5 = darkvoice::PresetBank::defaults();
+    for (const auto *key : {"limiterEnabled", "limiterCeilingDb", "limiterReleaseMs"})
+        v5.erase(key);
     for (const auto *key : {"flangerRateHz", "flangerDepthMs", "flangerFeedback", "flangerMix"})
         v5.erase(key);
     v5["chorusMix"] = .25f;
@@ -286,9 +302,84 @@ void malformedAndMigration() {
     legacy["drive"] = .3f;
     write(external, jsonFor(legacy, 1, "Legacy"));
     good(bank.importFile(external, id), "Migrate legacy preset");
-    require(bank.find(id)->values.size() == 34 && bank.find(id)->values.at("delayMix") == 0 &&
+    require(bank.find(id)->values.size() == 37 && bank.find(id)->values.at("delayMix") == 0 &&
                 bank.find(id)->values.at("drive") == .3f,
             "Migration preserves old controls and new defaults");
+    {
+        darkvoice::PresetBank migration(temp.file.getChildFile("limiter-migration"));
+        for (int version = 1; version <= 6; ++version) {
+            darkvoice::PresetValues old;
+            for (std::size_t i = 0; i < darkvoice::parameterCountForVersion(version); ++i) {
+                const auto &spec = darkvoice::parameterSchema[i];
+                if (juce::String(spec.id) != "bypass")
+                    old[spec.id] = spec.defaultValue;
+            }
+            old["inputDb"] = 5.0f;
+            if (version == 6)
+                old["flangerMix"] = .6f;
+            write(external, jsonFor(old, version, "Limiter migration"));
+            juce::String migratedId;
+            good(migration.importFile(external, migratedId), "Migrate exact legacy preset into v7");
+            const auto &migrated = migration.find(migratedId)->values;
+            require(migrated.size() == 37 && migrated.at("limiterEnabled") == 0 &&
+                        migrated.at("limiterCeilingDb") == -1 &&
+                        migrated.at("limiterReleaseMs") == 100 && migrated.at("inputDb") == 5,
+                    "All legacy presets preserve old values and disable limiter");
+            if (version == 6)
+                require(migrated.at("flangerMix") == .6f, "V6 preset retains flanger settings");
+        }
+        for (float invalid : {.5f, -1.f, 2.f, std::numeric_limits<float>::quiet_NaN()}) {
+            auto bad = darkvoice::PresetBank::defaults();
+            bad["limiterEnabled"] = invalid;
+            juce::String created;
+            require(darkvoice::PresetBank::validate(bad).failed() &&
+                        migration.saveAs("Invalid limiter", bad, created).failed(),
+                    "Invalid preset limiter boolean rejected");
+        }
+        for (const auto &invalid : {juce::var(.5), juce::var(true), juce::var("1")}) {
+            auto parsed = juce::JSON::parse(jsonFor(darkvoice::PresetBank::defaults()));
+            parsed.getDynamicObject()
+                ->getProperty("parameters")
+                .getDynamicObject()
+                ->setProperty("limiterEnabled", invalid);
+            write(external, juce::JSON::toString(parsed, true));
+            juce::String created;
+            const auto count = migration.presets().size();
+            require(migration.importFile(external, created).failed() &&
+                        migration.presets().size() == count,
+                    "Invalid JSON limiter boolean rejected atomically");
+        }
+    }
+    // Emit raw literals: JUCE's JSON writer can round very small doubles to zero.
+    for (const auto *invalid :
+         {"1e-50", "1.00000001", "0.99999999", "1e-500", "1.00000000000000000001"}) {
+        auto parsed = juce::JSON::parse(jsonFor(darkvoice::PresetBank::defaults()));
+        parsed.getDynamicObject()
+            ->getProperty("parameters")
+            .getDynamicObject()
+            ->setProperty("limiterEnabled", "invalid-boolean-token");
+        write(external,
+              juce::JSON::toString(parsed, true).replace("\"invalid-boolean-token\"", invalid));
+        juce::String created;
+        const auto count = bank.presets().size();
+        require(bank.importFile(external, created).failed() && bank.presets().size() == count,
+                "Fractional JSON booleans rejected before float rounding");
+    }
+    for (const auto *valid : {"0.0", "1.0", "10e-1", "0e-500"}) {
+        auto parsed = juce::JSON::parse(jsonFor(darkvoice::PresetBank::defaults()));
+        parsed.getDynamicObject()
+            ->getProperty("parameters")
+            .getDynamicObject()
+            ->setProperty("limiterEnabled", "boolean-token");
+        write(external, juce::JSON::toString(parsed, true).replace("\"boolean-token\"", valid));
+        darkvoice::PresetBank accepted(
+            temp.file.getChildFile("valid-number-" + juce::Uuid().toString()));
+        juce::String created;
+        require(accepted.importFile(external, created).wasOk() &&
+                    accepted.find(created)->values.at("limiterEnabled") ==
+                        (juce::String(valid).startsWithChar('0') ? 0.0f : 1.0f),
+                "Exact decimal and scientific Boolean values remain accepted");
+    }
     const auto broken = temp.file.getChildFile("bank").getChildFile("broken.json");
     write(broken, "broken");
     require(bank.refresh().failed(), "Refresh reports malformed local file");

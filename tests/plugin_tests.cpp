@@ -80,6 +80,9 @@ void stateTests() {
     set(source, "flangerDepthMs", 3);
     set(source, "flangerFeedback", -.4f);
     set(source, "flangerMix", .6f);
+    set(source, "limiterEnabled", 1);
+    set(source, "limiterCeilingDb", -8.5f);
+    set(source, "limiterReleaseMs", 345);
     juce::MemoryBlock state;
     source.getStateInformation(state);
     require(state.getSize() > 0, "State serialization empty");
@@ -96,10 +99,11 @@ void stateTests() {
                                                                               : i < 24 ? 3
                                                                               : i < 27 ? 4
                                                                               : i < 31 ? 5
-                                                                                       : 6),
+                                                                              : i < 35 ? 6
+                                                                                       : 7),
                 "AU version hint changed");
         require(std::abs(raw(restored, spec.id) - raw(source, spec.id)) < 0.001f,
-                "Full v6 state roundtrip failed");
+                "Full v7 state roundtrip failed");
     }
     require(source.getTailLengthSeconds() == 40.0, "Spatial tail not reported");
 
@@ -107,7 +111,7 @@ void stateTests() {
     restored.setStateInformation(garbage, sizeof(garbage));
     require(raw(restored, "inputDb") == raw(source, "inputDb"),
             "Malformed state changed parameters");
-    for (const char *version : {"7", "1junk"}) {
+    for (const char *version : {"8", "1junk"}) {
         auto xml = source.parameters.copyState().createXml();
         xml->setAttribute("schemaVersion", version);
         juce::MemoryBlock invalid;
@@ -147,6 +151,8 @@ void stateTests() {
     // must reset to defaults even when restoring into a modified v2 instance.
     auto legacy = source.parameters.copyState();
     legacy.setProperty("schemaVersion", 1, nullptr);
+    for (const auto *id : {"limiterEnabled", "limiterCeilingDb", "limiterReleaseMs"})
+        legacy.removeChild(legacy.getChildWithProperty("id", id), nullptr);
     for (int index = legacy.getNumChildren() - 1; index >= 0; --index) {
         const auto id = legacy.getChild(index).getProperty("id").toString();
         bool original = false;
@@ -170,6 +176,8 @@ void stateTests() {
     }
     auto v2 = source.parameters.copyState();
     v2.setProperty("schemaVersion", 2, nullptr);
+    for (const auto *id : {"limiterEnabled", "limiterCeilingDb", "limiterReleaseMs"})
+        v2.removeChild(v2.getChildWithProperty("id", id), nullptr);
     for (const auto *id : {"flangerRateHz", "flangerDepthMs", "flangerFeedback", "flangerMix"})
         v2.removeChild(v2.getChildWithProperty("id", id), nullptr);
     for (const auto *id :
@@ -199,6 +207,8 @@ void stateTests() {
             "V2 state resets modulation");
     auto v3 = source.parameters.copyState();
     v3.setProperty("schemaVersion", 3, nullptr);
+    for (const auto *id : {"limiterEnabled", "limiterCeilingDb", "limiterReleaseMs"})
+        v3.removeChild(v3.getChildWithProperty("id", id), nullptr);
     for (const auto *id : {"flangerRateHz", "flangerDepthMs", "flangerFeedback", "flangerMix"})
         v3.removeChild(v3.getChildWithProperty("id", id), nullptr);
     for (const auto *id : {"deEssHz", "deEssThresholdDb", "deEssReductionDb", "chorusRateHz",
@@ -223,6 +233,8 @@ void stateTests() {
             "V3 state resets modulation");
     auto v4 = source.parameters.copyState();
     v4.setProperty("schemaVersion", 4, nullptr);
+    for (const auto *id : {"limiterEnabled", "limiterCeilingDb", "limiterReleaseMs"})
+        v4.removeChild(v4.getChildWithProperty("id", id), nullptr);
     for (const auto *id : {"flangerRateHz", "flangerDepthMs", "flangerFeedback", "flangerMix"})
         v4.removeChild(v4.getChildWithProperty("id", id), nullptr);
     for (const auto *id : {"chorusRateHz", "chorusDepthMs", "chorusMix", "stereoWidth"})
@@ -240,6 +252,8 @@ void stateTests() {
             "V4 state retains de-esser and resets modulation defaults");
     auto v5 = source.parameters.copyState();
     v5.setProperty("schemaVersion", 5, nullptr);
+    for (const auto *id : {"limiterEnabled", "limiterCeilingDb", "limiterReleaseMs"})
+        v5.removeChild(v5.getChildWithProperty("id", id), nullptr);
     for (const auto *id : {"flangerRateHz", "flangerDepthMs", "flangerFeedback", "flangerMix"})
         v5.removeChild(v5.getChildWithProperty("id", id), nullptr);
     set(restored, "flangerRateHz", 4);
@@ -254,7 +268,7 @@ void stateTests() {
                 raw(restored, "flangerMix") == 0 &&
                 std::abs(raw(restored, "chorusMix") - .25f) < .001f,
             "V5 state preserves chorus and resets active flanger defaults");
-    for (int version = 1; version <= 5; ++version) {
+    for (int version = 1; version <= 6; ++version) {
         auto old = source.parameters.copyState();
         old.setProperty("schemaVersion", version, nullptr);
         for (int child = old.getNumChildren() - 1; child >= 0; --child) {
@@ -265,6 +279,9 @@ void stateTests() {
             if (!keep)
                 old.removeChild(child, nullptr);
         }
+        set(restored, "limiterEnabled", 1);
+        set(restored, "limiterCeilingDb", -20);
+        set(restored, "limiterReleaseMs", 950);
         set(restored, "flangerRateHz", 5);
         set(restored, "flangerDepthMs", 4);
         set(restored, "flangerFeedback", -.8f);
@@ -272,10 +289,15 @@ void stateTests() {
         juce::MemoryBlock bytes;
         juce::AudioProcessor::copyXmlToBinary(*old.createXml(), bytes);
         restored.setStateInformation(bytes.getData(), static_cast<int>(bytes.getSize()));
-        require(std::abs(raw(restored, "flangerRateHz") - .3f) < .001f &&
-                    raw(restored, "flangerDepthMs") == 2 && raw(restored, "flangerFeedback") == 0 &&
-                    raw(restored, "flangerMix") == 0,
-                "Every legacy state clears active flanger fields");
+        require(raw(restored, "limiterEnabled") == 0 &&
+                    std::abs(raw(restored, "limiterCeilingDb") + 1) < .001f &&
+                    raw(restored, "limiterReleaseMs") == 100,
+                "Every legacy state clears active limiter and initializes safe defaults");
+        if (version <= 5)
+            require(std::abs(raw(restored, "flangerRateHz") - .3f) < .001f &&
+                        raw(restored, "flangerDepthMs") == 2 &&
+                        raw(restored, "flangerFeedback") == 0 && raw(restored, "flangerMix") == 0,
+                    "Every legacy state clears active flanger fields");
     }
     set(restored, "gateRatio", 1);
     for (const char *badGate : {"NaN", "21", "0"}) {
@@ -299,6 +321,19 @@ void stateTests() {
         require(restored.snapshotPresetValues() == before,
                 "Invalid de-esser state changed live parameters");
     }
+    for (const auto *invalidEnable : {"0.5", "-1", "2", "NaN", "1.00000001", "0.99999999", "1e-500",
+                                      "1.00000000000000000001"}) {
+        auto bad = source.parameters.copyState();
+        bad.setProperty("schemaVersion", darkvoice::currentSchemaVersion, nullptr);
+        bad.getChildWithProperty("id", "limiterEnabled")
+            .setProperty("value", invalidEnable, nullptr);
+        const auto before = restored.snapshotPresetValues();
+        juce::MemoryBlock binary;
+        juce::AudioProcessor::copyXmlToBinary(*bad.createXml(), binary);
+        restored.setStateInformation(binary.getData(), static_cast<int>(binary.getSize()));
+        require(restored.snapshotPresetValues() == before,
+                "Invalid limiter boolean changed live snapshot");
+    }
     for (int fault = 0; fault < 3; ++fault) {
         auto invalidTree = source.parameters.copyState();
         invalidTree.setProperty("schemaVersion", darkvoice::currentSchemaVersion, nullptr);
@@ -316,7 +351,7 @@ void stateTests() {
                 "Invalid ID set partially changed state");
     }
     auto values = source.snapshotPresetValues();
-    require(values.size() == 34 && values.count("bypass") == 0,
+    require(values.size() == 37 && values.count("bypass") == 0,
             "Preset must contain only sound parameters");
     values["inputDb"] = 10.0f;
     values["delayMix"] = 0.2f;
@@ -331,6 +366,71 @@ void stateTests() {
     require(std::abs(raw(restored, "inputDb") - 10.0f) < 0.01f,
             "Invalid preset partially changed state");
 }
+void limiterAudioTests() {
+    for (double rate : {44100., 48000., 88200., 96000.}) {
+        for (int channels : {1, 2}) {
+            DarkVoiceProcessor p;
+            layout(p, channels);
+            require(raw(p, "limiterEnabled") == 0, "Limiter default must remain off");
+            set(p, "mix", 0);
+            set(p, "outputDb", 12);
+            set(p, "limiterEnabled", 1);
+            set(p, "limiterCeilingDb", -6);
+            set(p, "limiterReleaseMs", 1000);
+            p.prepareToPlay(rate, 73);
+            juce::MidiBuffer midi;
+            juce::AudioBuffer<float> audio(channels, 257);
+            const auto fill = [&](float value) {
+                for (int c = 0; c < channels; ++c)
+                    for (int i = 0; i < audio.getNumSamples(); ++i)
+                        audio.setSample(c, i, c == 0 ? value : value * .5f);
+            };
+            fill(.8f);
+            p.processBlock(audio, midi);
+            const double ceiling = std::pow(10., raw(p, "limiterCeilingDb") / 20.);
+            require(p.outputPeak() <= ceiling && p.outputPeak() > .49f,
+                    "Host meters must reflect limiter after output gain and dry mix");
+            for (int i = 0; i < audio.getNumSamples(); ++i) {
+                require(std::abs(audio.getSample(0, i)) <= ceiling,
+                        "Actual host output exceeds sample ceiling");
+                if (channels == 2)
+                    require(std::abs(audio.getSample(1, i) - audio.getSample(0, i) * .5f) < 1e-7f,
+                            "Host limiter stereo image not linked");
+            }
+            set(p, "limiterCeilingDb", -18);
+            fill(.8f);
+            p.processBlock(audio, midi);
+            require(audio.getSample(0, 0) <= std::pow(10., raw(p, "limiterCeilingDb") / 20.),
+                    "Host ceiling automation must protect next sample");
+            fill(.001f);
+            p.processBlock(audio, midi);
+            require(audio.getSample(0, 256) > audio.getSample(0, 0),
+                    "Host limiter release must recover continuously");
+            set(p, "limiterEnabled", 0);
+            fill(.8f);
+            p.processBlock(audio, midi);
+            require(audio.getSample(0, 0) > 3, "Disabling host limiter must restore dry gain");
+            set(p, "limiterEnabled", 1);
+            fill(.001f);
+            p.processBlock(audio, midi);
+            require(std::abs(audio.getSample(0, 0) - .001f * std::pow(10., 12. / 20.)) < 1e-8,
+                    "Host reenable must clear stale reduction");
+            set(p, "bypass", 1);
+            fill(2.5f);
+            p.processBlock(audio, midi);
+            require(audio.getSample(0, 0) == 2.5f,
+                    "Host global bypass must bypass limiter exactly");
+            set(p, "bypass", 0);
+            set(p, "mix", 1);
+            p.prepareToPlay(rate, 73);
+            fill(.8f);
+            p.processBlock(audio, midi);
+            require(p.outputPeak() <= std::pow(10., raw(p, "limiterCeilingDb") / 20.),
+                    "Wet host output gain also protected");
+        }
+    }
+}
+
 void gateAudioTests() {
     DarkVoiceProcessor p;
     layout(p, 2);
@@ -529,6 +629,7 @@ int main() {
         deEsserAudioTests();
         modulationAudioTests();
         flangerAudioTests();
+        limiterAudioTests();
         std::cout
             << "PASS plugin state, automation/render, rates/layouts, lifecycle and identity\n";
         return 0;

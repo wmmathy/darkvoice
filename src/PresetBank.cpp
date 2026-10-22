@@ -1,4 +1,5 @@
 #include "PresetBank.hpp"
+#include "BooleanNumber.hpp"
 #include <algorithm>
 #include <cmath>
 #include <darkvoice/ParameterSchema.hpp>
@@ -54,7 +55,7 @@ bool acceptableId(const juce::String &id) {
 bool numeric(const juce::var &value) {
     return value.isInt() || value.isInt64() || value.isDouble();
 }
-// JUCE's JSON object parser overwrites repeated property names; reject those before parsing.
+// Reject duplicate keys and validate Boolean number tokens before JUCE numeric rounding.
 bool uniqueKeys(const juce::String &source) {
     const auto text = source.toStdString();
     struct Scope {
@@ -118,6 +119,17 @@ bool uniqueKeys(const juce::String &source) {
             const auto key = decodedKey.toString().toStdString();
             if (!scopes.back().keys.insert(key).second)
                 return false;
+            if (key == "limiterEnabled") {
+                auto token = after + 1;
+                while (token < text.size() && std::isspace(static_cast<unsigned char>(text[token])))
+                    ++token;
+                auto end = token;
+                while (end < text.size() && text[end] != ',' && text[end] != '}' &&
+                       text[end] != ']' && !std::isspace(static_cast<unsigned char>(text[end])))
+                    ++end;
+                if (!exactBooleanNumber(std::string_view(text).substr(token, end - token)))
+                    return false;
+            }
         }
     }
     return started && complete && scopes.empty();
@@ -195,18 +207,21 @@ juce::Result decode(const juce::File &file, Preset &preset, bool local) {
     std::size_t position = 0;
     for (const auto &spec : parameterSchema) {
         const auto index = position++;
-        if (spec.boolean || index >= count)
+        if (juce::String(spec.id) == "bypass" || index >= count)
             continue;
         const auto value = values->getProperty(spec.id);
         if (!numeric(value))
             return fail("Preset parameter is not numeric");
         const auto number = static_cast<double>(value);
         constexpr double floatLimit = std::numeric_limits<float>::max();
-        if (!std::isfinite(number) || number < -floatLimit || number > floatLimit)
+        if (!std::isfinite(number) || number < -floatLimit || number > floatLimit ||
+            (spec.boolean && number != 0.0 && number != 1.0))
             return fail("Preset parameter outside range");
         // Controls use float values: decimal 0.1 must be accepted at a 0.1f bound.
         const float represented = static_cast<float>(number);
-        if (!std::isfinite(represented) || represented < spec.minimum || represented > spec.maximum)
+        if (!std::isfinite(represented) || represented < spec.minimum ||
+            represented > spec.maximum ||
+            (spec.boolean && represented != 0.0f && represented != 1.0f))
             return fail("Preset parameter outside range");
         candidate[spec.id] = represented;
     }
@@ -432,19 +447,20 @@ PresetBank::PresetBank(juce::File directory)
 PresetValues PresetBank::defaults() {
     PresetValues values;
     for (const auto &spec : parameterSchema)
-        if (!spec.boolean)
+        if (juce::String(spec.id) != "bypass")
             values[spec.id] = spec.defaultValue;
     return values;
 }
 juce::Result PresetBank::validate(const PresetValues &values) {
     if (values.size() != parameterSchema.size() - 1)
-        return fail("Preset must contain exactly twenty sound parameters");
+        return fail("Preset must contain exactly the current non-bypass sound parameters");
     for (const auto &spec : parameterSchema) {
-        if (spec.boolean)
+        if (juce::String(spec.id) == "bypass")
             continue;
         const auto value = values.find(spec.id);
         if (value == values.end() || !std::isfinite(value->second) ||
-            value->second < spec.minimum || value->second > spec.maximum)
+            value->second < spec.minimum || value->second > spec.maximum ||
+            (spec.boolean && value->second != 0.0f && value->second != 1.0f))
             return fail("Invalid preset sound parameter");
     }
     return juce::Result::ok();

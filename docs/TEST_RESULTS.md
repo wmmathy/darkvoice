@@ -366,3 +366,34 @@ Factory catalogue native follow-up: run39835022228 passed all7jobs on exact
 source929926d, including macOS15/Linux products and Linux sanitizers; source
 quality39835021918 passed. Credentials worked again on retry. Actual DAW/listening
 qualification remains unrun.
+
+Limiter core product follow-up: Linux Debug products built and all16 CTest suites
+passed on the core-only revision, including factory catalogue rendering. This does
+not validate the subsequently implemented host routing/schema7 controls.
+
+## Limiter host integration v7 — 2026-10-22
+
+Linux Debug product build and16/16 suites passed, including v1..6 preset/state
+migration, v7 nondefault limiter roundtrips, invalid Boolean rejection, all14
+factory renders and final-output limiter actual audio. Engine regression5783checks
+passed; Debug ASan/UBSan core13/13 passed. GUI smoke passed37controls/eighttabs,
+all attachments/bypass/factory audio and dry-pitch feedback. Lead inspected the
+900x780 screenshot: all8tabs and Limiter enable/ceiling/release visible. clang-format
+and cppcheck of changed independent engine/schema/limiter passed. Native CI and
+independent host QA pending. No actual DAW or listening qualification claimed.
+
+Lead follow-up found Boolean input could round from fractional double to0/1 before
+validation. JSON now checks the numeric Boolean domain before float conversion;
+XML validates a double Boolean before existing float parsing. Added raw JSON
+1e-50/1.00000001/0.99999999 and XML near-one regressions. Initial writer-based tiny
+fixture serialized to valid0, so corrected fixtures emit raw literals. Targeted
+preset/plugin suites2/2 now pass. Core/GUI unchanged; native updated source pending.
+
+Independent review additionally demonstrated double underflow (`1e-500`) and
+beyond-double near-one literals. Final implementation validates decimal Boolean
+text exactly before numeric parsing, including JSON decoded property keys. Shared
+helper has an internal1MiB bound and saturated exponent arithmetic; accepts exact
+scientific0/1 equivalents while rejecting tiny/high-precision fractions. Independent
+Decimal-oracle comparison4425cases passed. Updated raw JSON/XML rejection and
+valid scientific-equivalent tests pass in targeted2/2 suites. Formatter/static
+checks pass; new native source run pending. Earlier double-only fix was incomplete.

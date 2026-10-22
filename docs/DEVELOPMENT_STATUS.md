@@ -300,6 +300,36 @@ Authentication retry worked without a repository change. Preset PR23 native chec
 passed and it was normally merged. Limiter core can now proceed through push/CI
 and normal review gates; earlier401 block is historical evidence only.
 
+## Limiter host integration v7
+
+Following independent core QA, lead established final-output/default-off routing
+and schema7 contract. Host agent assigned exclusive engine/schema/processor/editor/
+preset and corresponding tests in isolated feature/effects/limiter-host worktree;
+lead integrates owned files in feature/effects/limiter-integration and owns docs,
+builds and normal GitHub gates. No persistent service is configured.
+
+Host agent delivered frozen owned files without commits; lead copied only assigned
+paths into integration branch. Local Debug products16/16, ASan core13/13 and GUI
+37controls/eighttabs passed;5783 engine assertions. Limiter is default off, applies
+after dry/wet/output gain and before output meters, with exact global bypass.
+New enabled Boolean is stored in presets; only bypass is excluded. Legacy v1..6
+restore limiting off; v7 has38state/37preset fields. Native/review gates pending.
+
+Independent read-only host QA approved and rebuilt5783checks/0failures. Host
+integration committed651ed11 and pushed as draft PR25 atop core PR24. Native CI
+pending; core Linux checks pass but macOS runners still queue. No gate waived.
+
+While native runners queue, lead assigned pitch_quality a finite isolated
+fix/sculptor/combined-periodicity worktree investigation based on experimental
+bfc9b54. Preserve all existing quality assertions and module contracts; no host or
+dependency integration. Task permits only principled DSP/test/core-doc changes,
+with broader regression evidence; otherwise retain issue18/PR19 blockers honestly.
+
+Core run39837615535 first attempt: Linux core/product/sanitizer passed; macOS jobs
+failed/cancelled before acquiring hosted runners, with ARM capacity annotations.
+Failed-jobs retry requested (attempt2), no DSP/check waiver. Host lexical Boolean
+follow-up now rejects decimal underflow/highprecision fractions before conversion;
+independent4425case exact oracle approved; targeted product suites2/2 pass.
 ## Current ARM runner fallback — 2026-10-22
 
 Core39837615535 first attempt failed/cancelled macOS jobs before acquiring hosted

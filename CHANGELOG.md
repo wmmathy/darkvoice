@@ -1,5 +1,13 @@
 # Changelog
 
+## Vocal limiter host integration
+
+- Add default-off final-output sample-peak limiting with enable, ceiling and release controls.
+- Append AU hint-7 parameters and schema-7 state/presets; migrate legacy versions with limiting off.
+- Include limiter enable in sound presets while keeping global bypass independent.
+- This limiter adds no latency and does not establish oversampled true-peak mastering.
+
+
 ## Factory catalogue expansion
 
 - Add eight style presets using existing DSP, bringing the catalogue to fourteen.
