@@ -283,3 +283,49 @@ Preset numeric validation is performed after checked conversion to the float
 parameter domain. Exact JSON decimal minima such as0.1/0.2 map to the advertised
 float bounds; finite/overflow/type checks and meaningful out-of-range rejection
 remain strict. This also corrects the existing mid-Q decimal boundary.
+
+# Sculptor core contract v1 — streaming pitch/formant qualification
+
+Separate PitchFormantProcessor module/library, not yet connected to AudioEngine,
+plugin controls or saved presets. Existing products retain their latency/bypass
+behavior. Header owns a PImpl; prepare/reset/setParameters/process single-owner.
+Prepare accepts four rates, mono/stereo, maxFrames1..65536 and quality enum
+Live/Studio/Offline. These are candidate DSP profiles, not listening-qualified host
+modes: FFT blocks1024/2048/4096 at44.1/48k, doubled at88.2/96k, hop=block/8,
+split computation. Query measured backend input+output latency; do not promise
+low-latency monitoring. Quality changes require off-callback preparation.
+
+Parameters: pitchSemitones[-12,12]=0, formantSemitones[-12,12]=0,
+preserveFormants=true, formantBaseHz=0 (auto) or40..1000. Reject any invalid
+snapshot without changing target. At fixed64-sample boundaries, smooth semitones
+and base over10ms; base auto/manual and preserve switches occur at boundaries.
+Process prevalidates all buffers/layout/capacity before samples/history. Nonfinite
+and true-subnormal input become0; FFT input clamps to +/-8 for numerical safety.
+Neutral delayed dry retains all normal finite values. Backend output sanitizes
+nonfinite values and bounds float range. Numerical safety is not a peak limiter.
+
+Use explicitly seeded Signalsmith Stretch/Linear, pure C++ FFT, both MIT and exact
+pinned sources/licenses. A fingerprint-guarded configure-time private-header copy
+changes only the single near-silence direct-copy condition to false; preserve
+noiseFloor elsewhere for spectral stability. Originals remain untouched. Quiet
+active audio may still be attenuated by the backend noise floor; no transparency
+claim follows. Neutral output uses an exact latency-aligned dry ring while the
+backend stays warm. Crossfade between dry and processed paths over20ms; settle
+controls/blend to exact endpoints. Invalid prepare unprepares; failure is caught.
+Prepare owns allocation; process/setParameters/reset must not allocate/lock/I/O.
+
+Reset retains targets, settles them and clears backend/rings/cursors. process may
+be called with zero input to drain; tailSamples reports latency+FFT-block as a
+conservative bounded drain length, not a musical sustain guarantee. No streaming
+worker, recording, inference or file access. Existing dry pitch telemetry remains
+independent. Host dry/wet and bypass alignment must be implemented/tested before
+future host integration; no inactive public controls will be added in this stage.
+
+Acceptance: profiles/rates/layouts, exact neutral impulse delay and tiny samples,
+near-silence timing with the patch, pitch accuracy within20cents on stable synthetic
+bass/baritone tones, independent F0/formant-envelope fixtures (initial synthetic
+formant peaks within20% for preserved pitch and within20% of intended shift),
+partitions/reset/drain, finite inputs/automation, ordinary callback allocation
+probes, Release/ASan/UBSan, existing product regression. Tolerances qualify only
+these fixtures, not arbitrary voices/transients/naturalness. Listening/native CI
+remain unrun while Actions is paused. Every commit uses [skip ci].
