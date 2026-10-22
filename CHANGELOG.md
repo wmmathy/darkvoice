@@ -1,5 +1,12 @@
 # Changelog
 
+## Factory catalogue expansion
+
+- Add eight style presets using existing DSP, bringing the catalogue to fourteen.
+- Preserve original factory identities/settings and schema-6 user libraries.
+- Keep six sounds dependent on unfinished correction/harmony/doubling pending.
+
+
 ## Chorus/stereo-width continuation
 
 - Add interpolated stereo chorus (rate/depth/mix) and mid/side width, neutral by

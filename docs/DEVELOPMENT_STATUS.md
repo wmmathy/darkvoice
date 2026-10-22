@@ -254,3 +254,12 @@ It is an unqualified candidate, not an integrated dependency. Source, license/AP
 notes, reported variable startup delays and reproducible developer probe are in
 RUBBERBAND_AUDIT.md. PR #19 remains draft/blocked. Product/runtime source is
 unchanged by this documentation/probe increment.
+
+## Factory catalogue continuation
+
+Fourteen factory presets now use implemented DSP; the original six retain their
+IDs and parameter snapshots. Eight additions cover Dark Wave, Deep Narrator,
+Industrial Whisper, Grunge/Acoustic Baritone, Dark Melodic, Industrial Power and
+Natural Dark Baritone. Six correction/choir/octave/double-track sounds remain
+blocked by missing DSP. No schema, dependency or latency changes. Numerical
+rendering does not establish listening qualification.
