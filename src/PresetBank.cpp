@@ -1,4 +1,5 @@
 #include "PresetBank.hpp"
+#include "BooleanNumber.hpp"
 #include <algorithm>
 #include <cmath>
 #include <darkvoice/ParameterSchema.hpp>
@@ -54,7 +55,7 @@ bool acceptableId(const juce::String &id) {
 bool numeric(const juce::var &value) {
     return value.isInt() || value.isInt64() || value.isDouble();
 }
-// JUCE's JSON object parser overwrites repeated property names; reject those before parsing.
+// Reject duplicate keys and validate Boolean number tokens before JUCE numeric rounding.
 bool uniqueKeys(const juce::String &source) {
     const auto text = source.toStdString();
     struct Scope {
@@ -118,6 +119,17 @@ bool uniqueKeys(const juce::String &source) {
             const auto key = decodedKey.toString().toStdString();
             if (!scopes.back().keys.insert(key).second)
                 return false;
+            if (key == "limiterEnabled") {
+                auto token = after + 1;
+                while (token < text.size() && std::isspace(static_cast<unsigned char>(text[token])))
+                    ++token;
+                auto end = token;
+                while (end < text.size() && text[end] != ',' && text[end] != '}' &&
+                       text[end] != ']' && !std::isspace(static_cast<unsigned char>(text[end])))
+                    ++end;
+                if (!exactBooleanNumber(std::string_view(text).substr(token, end - token)))
+                    return false;
+            }
         }
     }
     return started && complete && scopes.empty();

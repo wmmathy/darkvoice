@@ -388,3 +388,12 @@ XML validates a double Boolean before existing float parsing. Added raw JSON
 1e-50/1.00000001/0.99999999 and XML near-one regressions. Initial writer-based tiny
 fixture serialized to valid0, so corrected fixtures emit raw literals. Targeted
 preset/plugin suites2/2 now pass. Core/GUI unchanged; native updated source pending.
+
+Independent review additionally demonstrated double underflow (`1e-500`) and
+beyond-double near-one literals. Final implementation validates decimal Boolean
+text exactly before numeric parsing, including JSON decoded property keys. Shared
+helper has an internal1MiB bound and saturated exponent arithmetic; accepts exact
+scientific0/1 equivalents while rejecting tiny/high-precision fractions. Independent
+Decimal-oracle comparison4425cases passed. Updated raw JSON/XML rejection and
+valid scientific-equivalent tests pass in targeted2/2 suites. Formatter/static
+checks pass; new native source run pending. Earlier double-only fix was incomplete.

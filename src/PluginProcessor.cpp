@@ -1,4 +1,5 @@
 #include "PluginProcessor.hpp"
+#include "BooleanNumber.hpp"
 #include "PluginEditor.hpp"
 #include <algorithm>
 #include <cmath>
@@ -214,18 +215,11 @@ void DarkVoiceProcessor::setStateInformation(const void *data, int bytes) {
         if (index == count || seen[index])
             return;
         const auto &spec = darkvoice::parameterSchema[index];
-        std::istringstream parser(child.getProperty("value").toString().trim().toStdString());
+        const auto numberText = child.getProperty("value").toString().trim().toStdString();
+        if (spec.boolean && !darkvoice::exactBooleanNumber(numberText))
+            return;
+        std::istringstream parser(numberText);
         parser.imbue(std::locale::classic());
-        // Validate Boolean values before float rounding can turn a fraction into 0/1.
-        if (spec.boolean) {
-            double exact = 0;
-            parser >> std::noskipws >> exact;
-            if (!parser || parser.peek() != std::char_traits<char>::eof() ||
-                (exact != 0.0 && exact != 1.0))
-                return;
-            parser.clear();
-            parser.seekg(0);
-        }
         float value = 0;
         parser >> std::noskipws >> value;
         if (!parser || parser.peek() != std::char_traits<char>::eof() || !std::isfinite(value) ||

@@ -351,7 +351,8 @@ void malformedAndMigration() {
         }
     }
     // Emit raw literals: JUCE's JSON writer can round very small doubles to zero.
-    for (const auto *invalid : {"1e-50", "1.00000001", "0.99999999"}) {
+    for (const auto *invalid :
+         {"1e-50", "1.00000001", "0.99999999", "1e-500", "1.00000000000000000001"}) {
         auto parsed = juce::JSON::parse(jsonFor(darkvoice::PresetBank::defaults()));
         parsed.getDynamicObject()
             ->getProperty("parameters")
@@ -363,6 +364,21 @@ void malformedAndMigration() {
         const auto count = bank.presets().size();
         require(bank.importFile(external, created).failed() && bank.presets().size() == count,
                 "Fractional JSON booleans rejected before float rounding");
+    }
+    for (const auto *valid : {"0.0", "1.0", "10e-1", "0e-500"}) {
+        auto parsed = juce::JSON::parse(jsonFor(darkvoice::PresetBank::defaults()));
+        parsed.getDynamicObject()
+            ->getProperty("parameters")
+            .getDynamicObject()
+            ->setProperty("limiterEnabled", "boolean-token");
+        write(external, juce::JSON::toString(parsed, true).replace("\"boolean-token\"", valid));
+        darkvoice::PresetBank accepted(
+            temp.file.getChildFile("valid-number-" + juce::Uuid().toString()));
+        juce::String created;
+        require(accepted.importFile(external, created).wasOk() &&
+                    accepted.find(created)->values.at("limiterEnabled") ==
+                        (juce::String(valid).startsWithChar('0') ? 0.0f : 1.0f),
+                "Exact decimal and scientific Boolean values remain accepted");
     }
     const auto broken = temp.file.getChildFile("bank").getChildFile("broken.json");
     write(broken, "broken");

@@ -324,3 +324,9 @@ fix/sculptor/combined-periodicity worktree investigation based on experimental
 bfc9b54. Preserve all existing quality assertions and module contracts; no host or
 dependency integration. Task permits only principled DSP/test/core-doc changes,
 with broader regression evidence; otherwise retain issue18/PR19 blockers honestly.
+
+Core run39837615535 first attempt: Linux core/product/sanitizer passed; macOS jobs
+failed/cancelled before acquiring hosted runners, with ARM capacity annotations.
+Failed-jobs retry requested (attempt2), no DSP/check waiver. Host lexical Boolean
+follow-up now rejects decimal underflow/highprecision fractions before conversion;
+independent4425case exact oracle approved; targeted product suites2/2 pass.
