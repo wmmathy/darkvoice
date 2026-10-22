@@ -33,7 +33,26 @@ if(NOT darkvoice_quiet_count EQUAL 1)
 endif()
 string(REPLACE "if (totalEnergy < noiseFloor) {" "if (false && totalEnergy < noiseFloor) {"
     darkvoice_stretch_header "${darkvoice_stretch_header}")
+# Replace the audited envelope stage, preserving the declared fundamental units.
+string(REPLACE "formantMetric.resize(bands + 2);"
+    "formantMetric.resize(bands + 2);\n\t\tformantSource.resize(bands);"
+    darkvoice_stretch_header "${darkvoice_stretch_header}")
+string(REPLACE "std::vector<Sample> formantMetric;"
+    "std::vector<Sample> formantMetric;\n\tstd::vector<Sample> formantSource;"
+    darkvoice_stretch_header "${darkvoice_stretch_header}")
+string(FIND "${darkvoice_stretch_header}" "\t\t\tSample decay = 1 - 1/(freqEstimate*Sample(0.5) + 1);" darkvoice_envelope_start)
+string(FIND "${darkvoice_stretch_header}" "\n\t\t} else {\n\t\t\tauto getFormant" darkvoice_envelope_end)
+if(darkvoice_envelope_start LESS 0 OR darkvoice_envelope_end LESS darkvoice_envelope_start)
+    message(FATAL_ERROR "Audited Signalsmith envelope stage not found")
+endif()
+math(EXPR darkvoice_envelope_length "${darkvoice_envelope_end} - ${darkvoice_envelope_start}")
+string(SUBSTRING "${darkvoice_stretch_header}" ${darkvoice_envelope_start} ${darkvoice_envelope_length} darkvoice_envelope_original)
+file(READ "${CMAKE_CURRENT_LIST_DIR}/signalsmith-formant-envelope.inc" darkvoice_envelope_replacement)
+string(STRIP "${darkvoice_envelope_replacement}" darkvoice_envelope_replacement)
+# STRIP removes initial indentation only; restore it for a stable private header.
+string(REPLACE "${darkvoice_envelope_original}" "\t\t\t${darkvoice_envelope_replacement}"
+    darkvoice_stretch_header "${darkvoice_stretch_header}")
 file(WRITE "${darkvoice_stretch_private}/signalsmith-stretch.h" "${darkvoice_stretch_header}")
-darkvoice_verify_file("${darkvoice_stretch_private}/signalsmith-stretch.h" 37931a803c099719de6956b9330655f5a777245a006c862dd15b353cb58cda76)
+darkvoice_verify_file("${darkvoice_stretch_private}/signalsmith-stretch.h" 7003842b8347ba10710f280c33dba494cd3466a54b240cef76cfbbe32a9a93b8)
 configure_file("${darkvoice_linear_SOURCE_DIR}/stft.h" "${darkvoice_stretch_private}/signalsmith-linear/stft.h" COPYONLY)
 configure_file("${darkvoice_linear_SOURCE_DIR}/fft.h" "${darkvoice_stretch_private}/signalsmith-linear/fft.h" COPYONLY)

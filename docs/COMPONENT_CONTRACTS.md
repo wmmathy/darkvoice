@@ -290,7 +290,7 @@ Separate PitchFormantProcessor module/library, not yet connected to AudioEngine,
 plugin controls or saved presets. Existing products retain their latency/bypass
 behavior. Header owns a PImpl; prepare/reset/setParameters/process single-owner.
 Prepare accepts four rates, mono/stereo, maxFrames1..65536 and quality enum
-Live/Studio/Offline. This optional module defaults OFF while qualification fails.
+Live/Studio/Offline. This optional module defaults OFF pending broader quality and host qualification.
 These are candidate DSP profiles, not listening-qualified host
 modes: FFT blocks1024/4096/8192 at44.1/48k, doubled at88.2/96k, hop=block/8,
 split computation. Query measured backend input+output latency; do not promise
@@ -307,8 +307,9 @@ nonfinite values and bounds float range. Numerical safety is not a peak limiter.
 
 Use explicitly seeded Signalsmith Stretch/Linear, pure C++ FFT, both MIT and exact
 pinned sources/licenses. A fingerprint-guarded configure-time private-header copy
-changes only the single near-silence direct-copy condition to false; preserve
-noiseFloor elsewhere for spectral stability. Originals remain untouched. Quiet
+disables the near-silence direct-copy condition; preserve noiseFloor elsewhere
+for spectral stability. The estimator revision below further replaces envelope
+smoothing while retaining the guarded source-copy strategy. Originals remain untouched. Quiet
 active audio may still be attenuated by the backend noise floor; no transparency
 claim follows. Neutral output uses an exact latency-aligned dry ring while the
 backend stays warm. Crossfade between dry and processed paths over20ms; settle
@@ -352,3 +353,18 @@ observed callback-budget overruns. Percentiles use nearest rank. Count nonfinite
 output as an error; fail prepare/process/setter errors. Never interpret throughput
 or absence of observed overruns as a hard real-time, CPU utilization, listening or
 native host qualification. Shared-machine scheduler noise remains in wall time.
+
+### Sculptor envelope estimator revision1 (experimental)
+
+Replace backend morphological envelope dilation/erosion with a symmetric
+linear-energy mean across one fundamental spacing (radius ceil(F0-bins/2), clamped
+1..bands-1). F0 retains Hz/sampleRate semantics; no fixture-specific centers or
+retuning. Sum stereo energy before smoothing, then reuse the existing envelope
+ratio and frequency mapping. Preallocate source scratch at configure. Use a
+compensated double sliding sum, rebased once per window width to control drift;
+work stays O(bands), storage O(bands). Normalize edge windows by actual bin count.
+Keep the independent near-silence patch and source/final fingerprints. Preserve
+all original qualification gates; expand source/filter fixtures across F0/rates
+and shifts with harmonic-grid resolution recorded explicitly. Passing synthetic
+fixtures permits further experiments only; defaults/products remain unchanged
+pending listening, transients/unvoiced, CPU and aligned-host qualification.

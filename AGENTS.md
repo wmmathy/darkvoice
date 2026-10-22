@@ -75,21 +75,12 @@ compatibility and redistribution notices before integrating any library/model/co
 Apple platform build tools and host validation are external platform requirements,
 not a claim that Apple's tools or DAWs are open source.
 
-## GitHub Actions retry authorized — 2026-10-22
+## GitHub Actions availability — 2026-10-22
 
-User authorized trying GitHub Actions again, lifting the temporary pause and
-mandatory [skip ci] convention. Run a bounded validation attempt on the current
-feature branch; inspect actual outcomes before claiming credits or native checks
-are available. If billing still blocks execution, record the failure and avoid
-repeated retries. Preserve draft PRs and merge/review gates; no releases or
-protection bypass is authorized. Historical pause records remain valid for their
-original revisions.
-
-### Retry outcome
-
-The authorized attempt at b663d94 was blocked before job execution. GitHub reports
-failed recent payments or a spending limit requiring increase (runs39736030287
-and39736030307). Resume [skip ci] on commits to avoid repeated blocked runs.
-Continue local development; try Actions again when the user reports billing or
-spending availability has changed. Do not interpret infrastructure failures as
-source/test results.
+User made the repository public, set default branch main and explicitly authorized
+another Actions attempt. Both settings were verified with GitHub. The earlier
+billing-blocked attempt remains historical evidence only. Normal CI-triggering
+commits may resume; no mandatory [skip ci]. Inspect actual run outcomes before
+claiming remote validation. Keep PRs draft and preserve review/merge gates; do not
+publish releases or bypass protections. If execution is still billing-blocked,
+record the actual error and avoid repeated retries until availability changes.

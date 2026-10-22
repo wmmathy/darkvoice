@@ -333,3 +333,40 @@ measurements completed. Observed processing/audio wall-time ratio0.0240–0.0659
 seconds per case follow one-second warm-up; harmonic/noise/transient stereo input
 and changing parameters are included. No product, device, listening or native test
 is implied. Raw output is /tmp/darkvoice-sculptor-bench.json in this instance.
+
+## Corrected experimental envelope — 2026-10-22
+
+Local Release full CTest13/13 passes, including streaming269 and qualification140
+checks. The original76 qualification checks and their tolerances are preserved.
+Sixteen new fixtures span48/96k, F070/180Hz,600/1200Hz isolated envelopes and+/-7
+formant shifts; envelope peak and F0-periodicity assertions pass. The original
+600Hz/+7,1200Hz/-7 and1200Hz/+7 peaks now measure900/800/1800Hz against targets
+899/801/1798Hz. No F0 retuning or original tolerance relaxation was used.
+
+The private patched header is fingerprinted as
+7003842b8347ba10710f280c33dba494cd3466a54b240cef76cfbbe32a9a93b8;
+upstream source checkouts remain pristine. The new bounded sliding estimator uses
+compensated double sums with per-window rebasing and preallocated source storage.
+A repeated24case Release benchmark reports processing/audio wall-time ratios
+0.0232–0.0624 with1 observed callback-budget overrun (shared Linux cloud). This
+neither proves deadlines nor establishes target/native performance. Raw instance
+output: /tmp/darkvoice-sculptor-bench-envelope.json.
+
+CI YAML parses with isolated Linux/macOS Sculptor jobs. Actions is now reauthorized
+following verified public visibility/default main; native/remote outcomes are
+pending. Products remain unlinked to this experimental target, which defaults OFF.
+
+Current correction validation also passes full ASan/UBSan13/13 (no reported
+findings) and the unchanged Linux product regression14/14. Formatter19.1.7 and
+scoped cppcheck2.17.1 on wrapper/benchmark pass; limited credential/dependency
+scans pass. No new GUI, actual DAW or listening qualification is claimed.
+
+Independent review of the exact compensated/rebased stage found no blocking
+bounds, lifecycle, allocation or O(bands) issue. A temporary exploratory combined
+pitch/formant matrix reported38 envelope-peak failures in144cases. Its exact-grid
+amplitude estimator has not been independently verified against pitch errors, so
+these are unresolved exploratory results, not a passed preservation qualification
+or a proven diagnosis. Preserve issue #18 and investigate broader simultaneous
+pitch/formant behavior before exposing the core. The committed140check suite
+qualifies its stated synthetic subset only. No claim of arbitrary formant
+preservation or perceptual completion follows from correcting the original cases.

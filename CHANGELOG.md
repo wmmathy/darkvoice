@@ -76,3 +76,13 @@
 - Add a standalone developer benchmark for all candidate profiles/rates with
   stereo automation/noise/transient workloads and JSON callback wall-time metrics.
   It reports observed overruns without claiming hard real-time or host quality.
+
+### Experimental formant-envelope correction
+
+- Replace morphological envelope estimation with a preallocated, compensated
+  one-fundamental-spacing energy mean. Resolve all three retained synthetic
+  formant failures without changing original tolerance or F0 semantics.
+- Add16 independent F0/rate/center/shift cases and Linux/macOS opt-in qualification
+  CI jobs. The core remains experimental, OFF by default and outside products.
+- Resume normal CI triggering after the user made the repository public and set
+  default branch main; actual remote outcomes remain separate validation evidence.

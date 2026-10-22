@@ -37,13 +37,16 @@ Signalsmith core sources and MIT licenses were inspected before integration. Bot
 notices are retained in third_party/licenses. cmake/Signalsmith.cmake pins both
 revisions, checks exact required header/license fingerprints and skips upstream
 CMake entirely, avoiding mutable transitive tags and platform FFT defaults. It
-copies only Stretch and Linear FFT/STFT into a private build directory. One guarded
-patch disables the near-silence direct-copy shortcut; numerical noise floors
-remain unchanged. Upstream checkouts remain untouched.
+copies only Stretch and Linear FFT/STFT into a private build directory. Guarded private-copy
+changes disable the near-silence direct-copy shortcut and replace morphological
+formant-envelope smoothing with a bounded one-fundamental-spacing energy mean.
+Numerical noise floors remain unchanged. The new source scratch is preallocated;
+compensated sums with periodic rebasing keep work linear in FFT bins. Upstream checkouts remain untouched.
 
 This is an isolated optional core target (DARKVOICE_BUILD_SCULPTOR_CORE), not yet
 linked into Vocal/Master/Studio. No Accelerate/IPP/PFFFT/xsimd/CMSIS backend is
 selected. Product controls and latency/bypass behavior are unchanged. The module's
-streaming tests pass, but independent formant quality qualification fails; the
-option defaults OFF. No live-correction or listening qualification follows from
+streaming and synthetic formant qualification tests pass locally after the
+experimental estimator correction; the option remains OFF pending broader quality
+and host integration. No live-correction or listening qualification follows from
 adding this dependency.

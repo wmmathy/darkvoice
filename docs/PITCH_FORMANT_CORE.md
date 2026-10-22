@@ -3,7 +3,7 @@
 This is development/qualification infrastructure, not a completed Voice Sculptor
 feature. It is OFF by default, is not linked to Vocal/Master/Studio, and exposes no
 plugin controls or new preset/state fields. Existing products retain their current
-latency, bypass and dry/wet behavior. Host integration is blocked by issue #18.
+latency, bypass and dry/wet behavior. Host integration is tracked by issue #18 and remains unimplemented.
 
 The isolated PitchFormantProcessor wraps pinned MIT Signalsmith Stretch/Linear
 with bounded 64-sample scratch buffers, deterministic parameter updates, a delayed
@@ -16,8 +16,9 @@ low-latency monitoring promise is made.
 
 cmake/Signalsmith.cmake fetches exact audited SHAs without executing upstream
 CMake, verifies required header/license hashes and makes a private header copy.
-One exact, hash-guarded change disables the near-silence immediate-copy shortcut;
-it preserves numerical floors elsewhere and leaves upstream files unchanged.
+Hash-guarded changes disable the near-silence immediate-copy shortcut and replace
+the morphological envelope stage with a one-fundamental-spacing energy mean.
+They preserve numerical floors and leave upstream files unchanged.
 Active tiny audio can still be attenuated. The neutral path preserves delayed
 normal finite input exactly, including tiny normals. Spectral processing clamps
 input to +/-8 for numerical safety; it is not a mastering limiter.
@@ -31,15 +32,14 @@ cmake --build build/sculptor --parallel 2
 ctest --test-dir build/sculptor --output-on-failure
 ```
 
-The last command currently exits nonzero: sculptor.qualification is a retained,
-real failing test. It is not skipped or marked WILL_FAIL. To inspect passing
-streaming behavior separately, select `-R '^sculptor.streaming$'`; doing so does
-not establish a passing overall qualification run. Add
+Both streaming and synthetic qualification now pass locally; the qualification
+gate remains a real test, never skipped or marked WILL_FAIL. Select
+`-R '^sculptor.streaming$'` to inspect streaming behavior separately. Add
 `-DDARKVOICE_ENABLE_SANITIZERS=ON` in a separate build for ASan/UBSan.
 
 For audited existing checkouts, CMake supports the standard overrides
 FETCHCONTENT_SOURCE_DIR_DARKVOICE_STRETCH and FETCHCONTENT_SOURCE_DIR_DARKVOICE_LINEAR.
-Fingerprints still verify every required header/license. A tampered-source negative
+Fingerprints still verify every required header/license and final patched header. A tampered-source negative
 fixture was rejected before compilation. MIT notices are in third_party/licenses.
 Set DARKVOICE_BUILD_SCULPTOR_CORE=OFF to build the current products without these
 experimental dependencies; this is the clean-build default.
@@ -56,22 +56,28 @@ accuracy. Backend stereo phase-lock arithmetic is numerically, not bit, equal.
 
 The first multi-formant fixture used overlapping fixed search ranges that excluded
 one downshifted target. Review corrected them to geometric boundaries between
-resonances without changing tolerance. Independent isolated-formant cases still
-fail the20% envelope-peak gate at F0100Hz/base100Hz:
+resonances without changing tolerance. Independent isolated-formant cases originally
+failed the20% envelope-peak gate at F0100Hz/base100Hz:
 
-| Input envelope | Formant shift | Expected peak | Measured peak |
-| --- | ---: | ---: | ---: |
-| 600Hz | +7 | 899Hz | 700Hz |
-| 1200Hz | -7 | 801Hz | 1000Hz |
-| 1200Hz | +7 | 1798Hz | 2200Hz |
+| Input envelope | Formant shift | Expected peak | Original peak | Corrected peak |
+| --- | ---: | ---: | ---: | ---: |
+| 600Hz | +7 | 899Hz | 700Hz | 900Hz |
+| 1200Hz | -7 | 801Hz | 1000Hz | 800Hz |
+| 1200Hz | +7 | 1798Hz | 2200Hz | 1800Hz |
 
-Do not silently halve the declared F0/base parameter to tune these fixtures, relax
-quality tolerances or expose controls while this gate fails. Investigate a better
-envelope estimator/algorithm or compare another compatible backend. Then qualify
-automation, transient/unvoiced behavior, CPU and real-vocal listening. Before host
-integration, establish and test latency-aligned global dry/mix/bypass and product
-boundaries. No reference-aware correction, harmonies or host qualification is
-implemented by this core. Actions remains paused; native checks are unrun.
+The correction uses a symmetric linear-energy mean over one fundamental spacing,
+with preallocated source scratch, compensated double accumulation and periodic
+rebasing for O(bands) processing. No F0 reinterpretation, center-specific tuning or
+tolerance relaxation is used. All original76checks pass. Sixteen additional cases
+at48/96k, F070/180Hz,600/1200Hz envelopes and+/-7semitones pass, bringing the
+qualification suite to140checks. These grids resolve the expected envelope target;
+a20% envelope gate cannot usefully qualify a target between very sparse harmonics.
+
+This remains experimental. Wider pitch/F0/material coverage, transient/unvoiced
+behavior, CPU/listening and aligned host dry/mix/bypass still require qualification.
+No reference-aware correction, harmonies or host integration is implemented by
+this core. Issue #18 stays open. The user has made the repo public and reauthorized
+Actions; new native results must be recorded from actual runs.
 
 ## Automation regression coverage
 
@@ -82,7 +88,7 @@ changes and return to neutral. Rendering identical events in 37- and 1024-sample
 host partitions produces maximum difference0 in the local Release run. Processing
 and setters allocate nothing under ordinary new/new[] rejection; latency remains
 fixed, both channels stay finite and settle to exact delayed dry. These checks do
-not establish click-free perceptual quality or resolve the three envelope failures.
+not establish click-free perceptual quality or establish perceptual formant quality.
 
 ## CPU wall-time probe
 
@@ -104,3 +110,13 @@ device and does not measure audible glitches, host CPU or macOS performance. Do
 not turn this noisy shared-machine measurement into a timing-sensitive CTest gate.
 For comparisons retain raw JSON and record machine/load/toolchain; run on the
 actual target machine with repeated measurements before setting performance gates.
+
+Independent review of the exact compensated/rebased stage found no blocking
+bounds, lifecycle, allocation or O(bands) issue. A temporary exploratory combined
+pitch/formant matrix reported38 envelope-peak failures in144cases. Its exact-grid
+amplitude estimator has not been independently verified against pitch errors, so
+these are unresolved exploratory results, not a passed preservation qualification
+or a proven diagnosis. Preserve issue #18 and investigate broader simultaneous
+pitch/formant behavior before exposing the core. The committed140check suite
+qualifies its stated synthetic subset only. No claim of arbitrary formant
+preservation or perceptual completion follows from correcting the original cases.

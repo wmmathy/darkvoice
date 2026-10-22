@@ -252,3 +252,21 @@ The read-only formant_investigation agent independently investigates the remaini
 envelope failures in temporary copies only. Benchmark runs locally and reports
 actual observed callback-budget overruns rather than certifying real-time safety.
 Actions remains billing-blocked; all new commits use [skip ci].
+
+## Formant estimator correction and public-repository CI — 2026-10-22
+
+GitHub confirms public visibility and default branch main. User reauthorized Actions;
+normal CI triggering resumes. Historical billing failures remain historical only.
+Lead integrated a guarded private-header estimator correction proposed/tested by
+read-only formant_investigation agent. Preallocated scratch and compensated/rebased
+linear-energy sliding mean replace morphological dilation/erosion, retaining F0
+units and existing numerical floors. The three retained formant failures now pass
+without changed thresholds. Expanded qualification140checks and streaming269checks
+pass in the local13/13 Release run. New isolated Linux/macOS CI jobs exercise these
+gates; remote results are pending. Existing product links/defaults remain unchanged.
+Issue #18 stays open for broader material/listening and aligned host integration.
+
+Current correction validation also passes full ASan/UBSan13/13 (no reported
+findings) and the unchanged Linux product regression14/14. Formatter19.1.7 and
+scoped cppcheck2.17.1 on wrapper/benchmark pass; limited credential/dependency
+scans pass. No new GUI, actual DAW or listening qualification is claimed.

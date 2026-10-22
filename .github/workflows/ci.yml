@@ -47,6 +47,33 @@ jobs:
           UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
         run: python3 tools/ci-build.py build/test-run.log ctest --test-dir build --output-on-failure --no-tests=error
 
+  sculptor:
+    name: Experimental Sculptor / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-14]
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Configure isolated pitch and formant qualification
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON -DDARKVOICE_BUILD_SCULPTOR_CORE=ON
+      - name: Build experimental core and performance probe
+        run: cmake --build build --parallel 2
+      - name: Run streaming and retained numerical qualification gates
+        run: python3 tools/ci-build.py build/test-run.log ctest --test-dir build --output-on-failure --no-tests=error
+      - name: Retain current-run qualification evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: sculptor-test-logs-${{ matrix.os }}
+          path: |
+            build/Testing/Temporary/
+            build/test-run.log
+          if-no-files-found: warn
+          retention-days: 14
+
   products:
     name: JUCE products / ${{ matrix.os }}
     runs-on: ${{ matrix.os }}

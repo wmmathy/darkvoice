@@ -59,10 +59,10 @@ double amplitude(const std::vector<float> &x, double rate, double hz) {
     }
     return 2 * std::hypot(s, c) / (x.size() - x.size() / 2);
 }
-std::vector<float> vowel(double rate, double center = 0) {
+std::vector<float> vowel(double rate, double center = 0, double f0 = 100) {
     std::vector<float> x(static_cast<std::size_t>(rate * 2));
     for (int h = 1; h <= 80; ++h) {
-        const double f = 100 * h;
+        const double f = f0 * h;
         const double envelope =
             center > 0 ? std::exp(-.5 * std::pow((f - center) / 100, 2)) + .002 / h
                        : std::exp(-.5 * std::pow((f - 600) / 90, 2)) +
@@ -235,6 +235,31 @@ void isolatedFormants() {
                   "isolated envelope peak within20percent of formant target");
             check(correlation(x, 48000, 100) > .8, "isolated formant change retains F0 grid");
         }
+}
+void envelopeMatrix() {
+    // These grids resolve each target to substantially better than the20% gate.
+    // Keep the original100Hz fixtures and their exact thresholds unchanged.
+    for (double rate : {48000., 96000.})
+        for (double f0 : {70., 180.})
+            for (double center : {600., 1200.})
+                for (float shift : {-7.f, 7.f}) {
+                    darkvoice::PitchFormantProcessor fx;
+                    check(fx.prepare({rate, 1024, 1, darkvoice::PitchQuality::Offline}) &&
+                              fx.setParameters({0, shift, true, static_cast<float>(f0)}),
+                          "expanded envelope setup");
+                    fx.reset();
+                    auto x = vowel(rate, center, f0);
+                    check(render(fx, x, nullptr, 257), "expanded envelope render");
+                    const double expected = center * std::pow(2., shift / 12.);
+                    const double measured = peak(x, rate, f0, 200, 3000);
+                    std::printf(
+                        "envelope rate %.0f F0 %.0f center %.0f shift %.0f peak %.2f target %.2f\n",
+                        rate, f0, center, shift, measured, expected);
+                    check(std::abs(measured / expected - 1) < .2,
+                          "expanded envelope peak within20percent");
+                    check(correlation(x, rate, f0) > .8,
+                          "expanded formant shift preserves F0 periodicity");
+                }
 }
 void safety() {
     darkvoice::PitchFormantProcessor one, split;
@@ -429,6 +454,7 @@ int main(int argc, char **argv) {
             accuracy(rate);
         formants();
         isolatedFormants();
+        envelopeMatrix();
     } else
         return 2;
     std::printf("%d checks %d failures\n", checks, failures);

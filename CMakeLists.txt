@@ -25,7 +25,7 @@ function(darkvoice_strict_warnings target)
 endfunction()
 darkvoice_strict_warnings(darkvoice_engine)
 
-option(DARKVOICE_BUILD_SCULPTOR_CORE "Build experimental pitch/formant module (quality gate currently fails)" OFF)
+option(DARKVOICE_BUILD_SCULPTOR_CORE "Build experimental pitch/formant module (not host/listening qualified)" OFF)
 if(DARKVOICE_BUILD_SCULPTOR_CORE)
     include(cmake/Signalsmith.cmake)
     add_library(darkvoice_sculptor STATIC src/PitchFormantProcessor.cpp)
