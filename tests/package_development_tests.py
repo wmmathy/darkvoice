@@ -3,6 +3,7 @@ import hashlib
 import importlib.util
 import json
 import os
+import plistlib
 import subprocess
 import tarfile
 import tempfile
@@ -85,6 +86,8 @@ class PackagingTests(unittest.TestCase):
         standalone = self.build / 'DarkVoiceStudio_artefacts/Release/Standalone'
         if target_platform == 'macos':
             self.write(standalone / 'DarkVoice Studio.app/Contents/MacOS/DarkVoice Studio', 'App fixture\n')
+            self.write(standalone / 'DarkVoice Studio.app/Contents/Info.plist',
+                       plistlib.dumps({'NSMicrophoneUsageDescription': 'Local monitoring fixture'}).decode())
         else:
             self.write(standalone / 'DarkVoice Studio', 'Standalone fixture\n')
 
@@ -127,6 +130,14 @@ class PackagingTests(unittest.TestCase):
             self.assertIn('products/DarkVoice Vocal.component/Contents/module', names)
             self.assertIn('products/DarkVoice Studio.app/Contents/MacOS/DarkVoice Studio', names)
             self.assertTrue(archive.getmember('products/DarkVoice Vocal.vst3/Contents/Current').issym())
+
+    def test_mac_microphone_declaration_required(self):
+        self.products('macos')
+        information = self.build / 'DarkVoiceStudio_artefacts/Release/Standalone/DarkVoice Studio.app/Contents/Info.plist'
+        information.unlink()
+        self.fails(target_platform='macos')
+        self.write(information, plistlib.dumps({'NSMicrophoneUsageDescription': ''}).decode())
+        self.fails(target_platform='macos')
 
     def test_wrong_pin_and_dirty_dependency(self):
         with mock.patch.object(PACKAGER, 'JUCE_COMMIT', '0' * 40):

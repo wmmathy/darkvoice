@@ -396,3 +396,9 @@ Tests: real temp Git fixtures and tar/source/provenance integrity, dirty/wrongpi
 missing/unsafe-link failure without partial deliverables. Full local real packaging
 or actual manual workflow run required before claiming developer artifacts exist.
 Final redistribution legal/host/listening/signing gates remain separate.
+
+Standalone microphone declaration: Studio alone enables JUCE microphone permission
+metadata with local monitoring/analysis purpose text. macOS packaging must validate
+its generated Info.plist has a nonempty NSMicrophoneUsageDescription; plugin hosts
+own their microphone permission. Runtime granting and actual hardware tests remain
+user/OS actions, never inferred from metadata or auval success.

@@ -5,6 +5,7 @@ import hashlib
 import json
 import os
 import platform
+import plistlib
 import posixpath
 import subprocess
 import sys
@@ -117,6 +118,12 @@ def product_paths(build, configuration, target_platform):
                 require(entry.is_file() or entry.is_dir(), 'Unsupported runtime product entry')
                 regular_files += entry.is_file()
         require(regular_files > 0, 'Runtime product is empty: ' + product.name)
+    if target_platform == 'macos':
+        with (standalone / 'DarkVoice Studio.app/Contents/Info.plist').open('rb') as stream:
+            information = plistlib.load(stream)
+        usage = information.get('NSMicrophoneUsageDescription')
+        require(isinstance(usage, str) and bool(usage.strip()),
+                'Studio application is missing its microphone usage declaration')
     return products
 
 

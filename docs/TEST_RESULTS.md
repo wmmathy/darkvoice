@@ -416,3 +416,9 @@ project/JUCE pins have no gitlinks or archive attributes excluding tracked sourc
 Archive commands disable lazy-fetch networking; Python3.11+ is documented. Builder
 architecture is identified as provenance, not universal/Intel qualification.
 Actual manual workflow/native packaging remains pending; no artifact-exists claim.
+
+Standalone review found Studio had no explicit JUCE microphone-permission metadata.
+CMake now enables it only for the Standalone format with a local monitoring/analysis
+purpose. Packaging checks actual generated macOS Info.plist for a nonempty usage
+entry; fixture/negative tests now13/13 pass. Updated real native build required
+before handing over artifacts; no microphone hardware/runtime grant is claimed.
