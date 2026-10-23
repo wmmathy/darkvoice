@@ -376,3 +376,29 @@ and dry/wet, linked stereo/release/disable/bypass/neutral defaults; exact v6
 migration and v7 nondefault state/preset roundtrips, invalid snapshots atomic,
 all rates/layouts/variable buffers and callback allocation safety; GUI37 controls
 and all attachments/eighttabs. Native CI/auval and independent review before merge.
+
+### Unsigned developer artifact contract v1
+
+Manual workflow only, never a GitHub release, signing or notarization. Build/test
+exact selected repository HEAD with immutable JUCE8.0.6 source. Package ready
+Vocal/Master VST3, Studio standalone and macOS AU bundles, not static intermediates.
+Artifact includes exact project source plus full pinned JUCE source (bundled SDKs
+and upstream notices retained), project license/dependency policy, build SHA,
+platform/unsigned/unqualified status, checksums and build instructions using the
+bundled JUCE tree. No experimental pitch backend enters default products.
+
+Packaging script accepts explicit build/JUCE/output paths, verifies source pin,
+rejects dirty tracked source/untracked dependency contamination, archives tracked
+source (never .git or environment files), preserves bundle-relative symlinks and
+rejects unsafe external/absolute symlinks. Fail missing products/source/provenance;
+output must not overwrite source or user files. No network/secret access in script.
+Tests: real temp Git fixtures and tar/source/provenance integrity, dirty/wrongpin/
+missing/unsafe-link failure without partial deliverables. Full local real packaging
+or actual manual workflow run required before claiming developer artifacts exist.
+Final redistribution legal/host/listening/signing gates remain separate.
+
+Standalone microphone declaration: Studio alone enables JUCE microphone permission
+metadata with local monitoring/analysis purpose text. macOS packaging must validate
+its generated Info.plist has a nonempty NSMicrophoneUsageDescription; plugin hosts
+own their microphone permission. Runtime granting and actual hardware tests remain
+user/OS actions, never inferred from metadata or auval success.

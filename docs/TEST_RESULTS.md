@@ -397,3 +397,39 @@ scientific0/1 equivalents while rejecting tiny/high-precision fractions. Indepen
 Decimal-oracle comparison4425cases passed. Updated raw JSON/XML rejection and
 valid scientific-equivalent tests pass in targeted2/2 suites. Formatter/static
 checks pass; new native source run pending. Earlier double-only fix was incomplete.
+
+Native limiter final: core39840690725 and host39840737529 each passed all7jobs
+on5f79aaa/82a3edd, with corresponding source-quality39840690694/39840737603 passed.
+macOS26 ARM product builds, headless suites and both unsigned auval checks passed;
+Linux products/GUI and core sanitizer checks passed. PR24/25 normally merged.
+Actual GarageBand/Logic/listening remains unrun. Earlier macOS15 allocation failures
+are runner failures, not a successful platform result or waived DSP assertion.
+
+## Unsigned developer packaging — 2026-10-23
+
+Lead and independent QA each passed12real-temporary-Git packaging fixtures.
+Checks cover both runtime layouts, full pinned source/notice inclusion, checksums,
+wrong/dirty/untracked dependency, stale/missing build provenance, missing products,
+unsafe product/source symlinks and exclusive-output/partial-publication cleanup.
+Fixtures contain labelled fake binaries, not runnable products. Verified current
+project/JUCE pins have no gitlinks or archive attributes excluding tracked source.
+Archive commands disable lazy-fetch networking; Python3.11+ is documented. Builder
+architecture is identified as provenance, not universal/Intel qualification.
+Actual manual workflow/native packaging remains pending; no artifact-exists claim.
+
+Standalone review found Studio had no explicit JUCE microphone-permission metadata.
+CMake now enables it only for the Standalone format with a local monitoring/analysis
+purpose. Packaging checks actual generated macOS Info.plist for a nonempty usage
+entry; fixture/negative tests now13/13 pass. Updated real native build required
+before handing over artifacts; no microphone hardware/runtime grant is claimed.
+
+Developer artifacts verified on exact sourcea2f45e7: manual39902701073 passed both
+Linux/macOS26 jobs, including actual compiled-runtime packaging and the generated
+Studio microphone Info.plist check. Normal CI39902703362 passed all7jobs; source
+quality39902703358 passed (13packaging fixtures). Artifacts12480210082Linux and
+12479651652macOS are present/unexpired (34,641,269/37,753,609bytes respectively); no public release.
+Lead also rebuilt local Debug products16/16 and packaged real Linux binaries:
+all4294tracked project/JUCE source files matched archive entries exactly, all5
+runtime regular files matched original bytes, and all sidecar checksums passed.
+Local Debug archive is development evidence, not the uploaded Release artifact.
+Actual GarageBand/Logic/microphone hardware/listening qualification remains pending.

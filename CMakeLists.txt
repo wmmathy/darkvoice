@@ -138,7 +138,14 @@ if(DARKVOICE_BUILD_PRODUCTS)
     endif()
 
     function(darkvoice_product target product code mastering)
+        set(darkvoice_permission_args)
+        if("Standalone" IN_LIST ARGN)
+            list(APPEND darkvoice_permission_args
+                MICROPHONE_PERMISSION_ENABLED TRUE
+                MICROPHONE_PERMISSION_TEXT "DarkVoice Studio uses microphone input for local vocal monitoring and analysis.")
+        endif()
         juce_add_plugin(${target}
+            ${darkvoice_permission_args}
             COMPANY_NAME "DarkVoice"
             BUNDLE_ID "studio.darkvoice.${target}"
             PLUGIN_MANUFACTURER_CODE Dkvc

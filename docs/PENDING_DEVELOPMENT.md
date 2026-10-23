@@ -60,6 +60,6 @@ are distinct. Actual DAW/microphone/listening and release qualification remain o
 
 Limiter continuation: a linked zero-latency sample-peak core and default-off
 final-output host integration now pass local product/sanitizer/GUI validation.
-Core PR24 and host integration still need native checks and normal merge gates.
+Core PR24 and host PR25 are merged after all native/quality checks and independent QA.
 This does not cover the oversampled mastering true-peak limiter. Historical401
 authentication failure resolved on retry without a repository change.

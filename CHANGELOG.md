@@ -1,5 +1,12 @@
 # Changelog
 
+## Unsigned developer artifacts
+
+- Package runtime bundles with complete pinned project/JUCE source, notices, provenance and checksums.
+- Add fail-closed packaging regression tests and developer build/host-test instructions.
+- Declare Studio microphone usage on macOS and verify generated privacy metadata before packaging.
+
+
 ## Vocal limiter host integration
 
 - Add default-off final-output sample-peak limiting with enable, ceiling and release controls.
