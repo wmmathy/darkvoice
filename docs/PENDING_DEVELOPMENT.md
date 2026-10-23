@@ -29,7 +29,7 @@ Source-quality run39740257019 passed. This is not a passing overall build result
 | Priority / tracking | Pending implementation | Dependency / acceptance |
 | --- | --- | --- |
 | P1 Sculptor, #3/#18 | Qualified independent pitch/formant shifting and formant preservation; depth/body/warmth/presence/resonance/breathiness/character controls; real quality modes | Resolve combined-periodicity failures, broader F0/transient/unvoiced material, listening/CPU; integrate delayed dry/mix/bypass and host latency only after qualification |
-| P1 Effects, #3 | Doubler, plate/hall/room choices, tape/tube saturation and parallel distortion | Versioned real controls, routing, DSP evidence, safe automation, state/preset migration, GUI and native validation; existing starter effects are partial coverage |
+| P1 Effects, #3 | Plate/hall/room choices, tape/tube saturation and parallel distortion | Versioned real controls, routing, DSP evidence, safe automation, state/preset migration, GUI and native validation; existing starter effects are partial coverage |
 | P1 Integration, #14/#16/#18 | Review/integrate eventual qualified Sculptor and remaining effects; de-esser/chorus/flanger now merged | Required repository checks/review; no automatic bypass or release; preserve stacked bases until dependencies integrate |
 | P2 Presets, #3 | Complete all20 required vocal factory sounds, audition/tune them and preserve correction/harmony independence | Underlying DSP must exist; fourteen sounds now use existing DSP; six correction/choir/octave/double-track sounds remain pending; do not add presets implying unavailable correction/choir features |
 | P2 Track-aware correction, #4 | Reference WAV/AIFF/FLAC/MP3 import where available/licensed, key/scale/BPM/chord timeline/confidence and manual edits; manual/chromatic/custom correction, musical transitions/humanization/vibrato/drift; graphical tracking | Qualified shift backend and real-time pitch tracker; versioned analysis/timeline/transport contracts, preanalysis, offsets and GarageBand manual/standalone fallbacks |
@@ -69,3 +69,8 @@ authentication failure resolved on retry without a repository change.
 Stereo delay continuation: stereo/single-echo/slapback/ping-pong with manual or
 validated host BPM sync is implemented and passes local core/product/sanitizer/GUI
 and independent source review. Native checks and normal merge are pending.
+
+Doubler continuation: independently wandering dual-tap simulated double tracking,
+not pitch/harmony, is implemented and passes local18product/15core/15sanitizer
+suites and49control GUI/independent QA. Native CI and normal merge remain pending.
+The actual second-performance/listening qualification is not claimed.

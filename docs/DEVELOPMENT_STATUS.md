@@ -414,3 +414,17 @@ Next bounded work: independently simulated dual-tap double tracking. Architectur
 agent proposed the slice; lead established Doubler v1/schema9 contract before
 assigning deesser_review core/header/tests and host engine/state/UI in isolated
 doubler-core/doubler-host worktrees. Pitch/formant blocker remains unresolved.
+
+## Simulated doubler integrated locally — 2026-10-23
+
+Actual core/header/tests by deesser_review and engine/host/preset/UI regressions
+by host were integrated by lead after contract approval in isolated worktrees.
+Doubler381checks pass strict Release and ASan/UBSan, independently reproduced by
+QA. Lead all18JUCEproduct suites pass (45.66sec),15Release suites pass (3.34sec),
+15sanitizer suites pass (47.29sec), presets1209checks, real GUI49attachments/10tabs
+pass and /tmp/darkvoice-doubler.png inspected. Sidebar keeps labels readable.
+
+Independent source/sidebar/test review approved. Fixed a new rawdry test's nominal
+0dB/FMA assumption with exact pairedreference output; preserved trulyexact bypass.
+Schema9 retains allold IDs and migrates v1..8 neutrally. Native CI and normal
+stacked PR integration remain pending; actual manualqualification deferred.
