@@ -428,3 +428,17 @@ Independent source/sidebar/test review approved. Fixed a new rawdry test's nomin
 0dB/FMA assumption with exact pairedreference output; preserved trulyexact bypass.
 Schema9 retains allold IDs and migrates v1..8 neutrally. Native CI and normal
 stacked PR integration remain pending; actual manualqualification deferred.
+
+## Double Tracked Rock factory continuation — 2026-10-23
+
+Host agent added the15th specification factory using actual simulatedDoubler.
+Old14ID/name/all49floatmap fingerprints unchanged, schema9 unchanged; no invented
+group field or changed IDsyntax. Lead actual product build and relevant preset/
+host suites2/2 pass23.95sec. Independent source/test QA approved. Actualpaired
+render comparison isolates doublerMix across4rates/layouts and checks meaningful
+audio difference. Favoriteslimit now derives actualfactorycount, preserving a
+finite527cap. Native CI/normal merge pending. Manual audition remains deferred.
+
+StereoDelayPR28 merged04a0b404 after exact8b3befe all7native39955609604 and
+quality39955609594 passed. RingfixPR29 merged0598ce915 after13a2a7a all7native
+39955678027 andquality39955678063 passed. DoublerPR30 remains pendingnative.

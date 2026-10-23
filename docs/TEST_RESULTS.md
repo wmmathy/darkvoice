@@ -493,3 +493,12 @@ pass. Drymix uses exact pairedreference comparison rather than assuming nominal
 smoke passes49attachments/10sidebar groups and factoryaudio; inspected
 /tmp/darkvoice-doubler.png. Independent source/sidebar/test QA approved. NativeCI
 and actual host/listening remain separate, pending/deferred respectively.
+
+## Fifteenth factory preset — 2026-10-23
+
+Lead product build and2/2relevant preset/host suites pass23.95sec. Testsfingerprint
+all14originalfactory ID/name/49floats, validate15uniquecompletefactories and
+persistence, then isolate actual DoubleTrackedRock audio against identical
+settings withdoublerMix0 atfourrates/mono/stereo. Independent QA approved; native
+checks remain pending. No perceptual/actualsecondperformer claim, manualaudition
+deferred. StereoDelay andringfix native results/merges recorded in status.
