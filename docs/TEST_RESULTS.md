@@ -466,3 +466,13 @@ pass666effects and171flanger checks, including independent QA reproduction and
 approval. Focused ASan/UBSan passes without findings; integrated14sanitizer suites
 and17JUCEproduct suites pass (33.71sec/37.62sec). Native CI is pending. Manual
 host/listening tests remain deferred. No parameter/state/latency/API change.
+
+Stereo delay first native run39954039990: core jobs pass, macOS product suite
+failed the invalid-raw-enum regression's exact0.1f output assumption. Independent
+QA reproduced JUCE/FMA signed0dB snapping residual: fma(0.1f,240,-24) gives
+3.5762786865e-7dB, sufficient to change float output despite correct rejection.
+Replaced that assumption with a stronger paired-processor test of every sample
+against a held valid snapshot, injecting invalid mode/division plus observable
+valid gain changes, then requiring gain divergence after valid enum restoration.
+Both NaN and finite/out-of-range enums are covered; no production DSP or quality
+tolerance was relaxed. Local corrected plugin suite passes; native rerun pending.
