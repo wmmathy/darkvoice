@@ -422,3 +422,14 @@ CMake now enables it only for the Standalone format with a local monitoring/anal
 purpose. Packaging checks actual generated macOS Info.plist for a nonempty usage
 entry; fixture/negative tests now13/13 pass. Updated real native build required
 before handing over artifacts; no microphone hardware/runtime grant is claimed.
+
+Developer artifacts verified on exact sourcea2f45e7: manual39902701073 passed both
+Linux/macOS26 jobs, including actual compiled-runtime packaging and the generated
+Studio microphone Info.plist check. Normal CI39902703362 passed all7jobs; source
+quality39902703358 passed (13packaging fixtures). Artifacts12480210082Linux and
+12479651652macOS are present/unexpired,37/38MB approximately; no public release.
+Lead also rebuilt local Debug products16/16 and packaged real Linux binaries:
+all4294tracked project/JUCE source files matched archive entries exactly, all5
+runtime regular files matched original bytes, and all sidecar checksums passed.
+Local Debug archive is development evidence, not the uploaded Release artifact.
+Actual GarageBand/Logic/microphone hardware/listening qualification remains pending.

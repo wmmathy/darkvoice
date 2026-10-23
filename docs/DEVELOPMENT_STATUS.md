@@ -367,3 +367,19 @@ lead preserved its worktree, reviewed and completed networking guard/prerequisit
 architecture metadata/guide refinements. Independent QA approved and reran12tests;
 lead also passed12tests. Manual build verification is next, with no release or
 signing authority. Code remains isolated pending normal repository checks.
+
+## Developer builds available — 2026-10-23
+
+Exact sourcea2f45e7 passed normal native CI39902703362 (all7jobs), quality39902703358
+(13packaging fixtures) and manual artifact39902701073 (bothplatforms). Source/SDK
+archives and real runtime bundles now exist as14day developer artifacts, including
+correct Studio microphone purpose metadata. Lead locally verified4294sourcefiles,
+5runtimefiles and checksums against actual Debug build after16/16tests. Earlier
+01a8dce build was superseded/canceled before handoff by microphone metadata fix.
+
+Independent packaging and microphone follow-up QA approved; rules rechecked with
+main protected=false/rules=[]/rulesets=[]. No public release/signing/notarization.
+User asked asynchronously to test the concrete macOS ARM artifact in GarageBand
+and Studio and report OS/host/rate/preset/limiter/state observations. Cloud/auval
+cannot supply hands-on host or listening qualification. Other incomplete scope
+remains listed in PENDING_DEVELOPMENT.md; pitch experiments remain outside main.
