@@ -383,3 +383,20 @@ User asked asynchronously to test the concrete macOS ARM artifact in GarageBand
 and Studio and report OS/host/rate/preset/limiter/state observations. Cloud/auval
 cannot supply hands-on host or listening qualification. Other incomplete scope
 remains listed in PENDING_DEVELOPMENT.md; pitch experiments remain outside main.
+
+## Stereo musical delay continuation — 2026-10-23
+
+User postpones all manual host/microphone/listening tests until remaining features
+are implemented for combined verification. Earlier handoff request is superseded;
+manual evidence stays deferred/unrun, not a blocker to independent development.
+Lead established StereoDelay DSP/schema8 contract, assigned core/header/tests to
+flanger_dsp in isolated stereo-delay-dsp worktree and engine/schema/host/editor/
+preset/GUI regressions to host in isolated stereo-delay-host. Lead owns CMake,
+quality workflow, status/docs, integration and normal CI/review/merge gates.
+
+Core388checks pass strict Release and ASan/UBSan. Lead integrated all17 Linux Debug
+product suites,14 Release core suites and14 ASan/UBSan core suites, all passing.
+Independent read-only QA approved core/engine/host/migration/UI source and
+separately reproduced388core and5839engine checks. Real GUI smoke passes45controls
+and all attachments; ninth-tab screenshot inspected. Preset suite passes1000checks.
+Native CI and normal PR integration remain pending; no actual DAW/listening claim.

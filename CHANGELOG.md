@@ -1,5 +1,12 @@
 # Changelog
 
+## Stereo musical delay
+
+- Add independent stereo repeats, single echo/slapback and ping-pong with smooth automation.
+- Add beat divisions, manual BPM and validated host-tempo fallback, without transport-phase claims.
+- Append eight AU hint-8 controls, schema-8 state/presets and a ninth editor tab; legacy sounds stay neutral.
+- Preserve the original delay/reverb and final limiter routing. Manual listening/DAW qualification is deferred.
+
 ## Unsigned developer artifacts
 
 - Package runtime bundles with complete pinned project/JUCE source, notices, provenance and checksums.

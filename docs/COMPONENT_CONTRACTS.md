@@ -402,3 +402,44 @@ metadata with local monitoring/analysis purpose text. macOS packaging must valid
 its generated Info.plist has a nonempty NSMicrophoneUsageDescription; plugin hosts
 own their microphone permission. Runtime granting and actual hardware tests remain
 user/OS actions, never inferred from metadata or auval success.
+
+### Stereo musical delay core v1 / host schema8
+
+New independent StereoDelay module; existing ToneEffects classic delay/reverb and
+all38 old parameter IDs/hints remain unchanged. Insert after flanger, before final
+mix/output gain/limiter. Defaults neutral mix0. Three modes: stereo repeats,
+single echo (use short manual times for slapback), ping-pong crossfeedback. Mono
+ping-pong falls back to ordinary repeats; no fabricated stereo output from mono.
+Time20..2000ms default100; feedback0..0.8 default0.25; mix0..0.5 default0. Manual
+syncBPM20..300 default120; divisions in beats [0.25,1/3,0.5,2/3,0.75,1] default
+quarter(index5). Sync defaultoff; optional host-tempo selection defaultoff uses
+valid host BPM20..300 else manualBPM. Sync defines interval, not transport phase.
+Maximum effective delay3seconds. No dependency or algorithmic host latency.
+
+DSP header/source StereoDelay.hpp/.cpp: parameters timeMs/feedback/mix/bpm,
+mode0..2, syncfalse, division0..5; valid/prepare/setParameters/process/reset API
+matching other effects. Exact supported4rates, mono/stereo, maxFrames1..65536.
+Prepare allocates bounded3second rings; invalid prepare unprepares. Validate full
+snapshots and buffers before replacing targets/writing/history. No callback
+allocation/locks/I/O. Interpolated delay with10ms per-sample time/mix/feedback and
+mode-route smoothing; reset settles controls and clears histories. Read both
+channel taps before feedback writes; crossfeedback convex and <=0.8, single mode
+settles feedback0. Mix0 preserves exact finite normal dry samples. Sanitize NaNs,
+infinities and true subnormals; prevent float overflow. Zero frames do not advance.
+
+Append8 IDs/AU hint8: stereoDelayMode[0,2]/0/step1;
+stereoDelayMs[20,2000]/100/1; stereoDelayFeedback[0,.8]/.25/.001;
+stereoDelayMix[0,.5]/0/.001; stereoDelaySync Boolean0;
+stereoDelayBpm[20,300]/120/.1; stereoDelayDivision[0,5]/5/1;
+stereoDelayHostTempo Boolean0. State46fields/presets45(non-bypass), strictv1..7
+migration to defaults; factories remain neutral. Ninth Stereo Delay tab8actual
+controls; meaningful mode/division text, host-tempo availability/manual fallback
+status. Keep bypass independent. Tail reporting conservatively extends to240seconds
+when this delay is audible (3s repeats at.8feedback), otherwise retain40seconds.
+
+Acceptance: analytic impulses/timing/single-vs-repeat/signed stereo alternation,
+beat division/BPM/maxdelay, mono fallback, partition/reset/automation, allrates/layouts,
+invalid warmed state, extremes/tiny audio and callback allocation probes. Host
+actual audio, fake playhead tempo/fallback, schema7 migration and schema8 Boolean
+roundtrip/rejection, GUI45controls/ninetabs, Release/sanitizers/nativeCI/review.
+Listening/actual host tests explicitly deferred until combined feature completion.

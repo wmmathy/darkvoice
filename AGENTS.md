@@ -95,3 +95,10 @@ head SHA at merge. Preserve feature branches/worktrees. No public release/signin
 authorization follows. Main was verified unprotected with no rules/rulesets on
 2026-10-22; recheck actual rules when integrating. No persistent development
 scheduler is configured; session work and GitHub CI are distinct.
+
+## Manual qualification timing — 2026-10-23
+
+User explicitly postpones manual host/microphone/listening tests until the other
+features are implemented so they can be verified together. Do not pause independent
+development to request those tests. Keep them deferred/unrun, preserve automated
+quality gates, and do not claim DAW/listening qualification from CI or auval.

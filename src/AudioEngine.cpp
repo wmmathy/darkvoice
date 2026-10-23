@@ -21,6 +21,18 @@ ToneEffectsParameters toneParameters(const EngineParameters &p) noexcept {
             p.eqHighHz,   p.eqHighGainDb,  p.delayMs,  p.delayFeedback, p.delayMix,
             p.reverbSize, p.reverbDamping, p.reverbMix};
 }
+StereoDelayParameters stereoDelayParameters(const EngineParameters &p) noexcept {
+    StereoDelayParameters result;
+    result.timeMs = p.stereoDelayMs;
+    result.feedback = p.stereoDelayFeedback;
+    result.mix = p.stereoDelayMix;
+    result.bpm = p.stereoDelayBpm;
+    result.mode = p.stereoDelayMode;
+    result.sync = p.stereoDelaySync;
+    result.division = p.stereoDelayDivision;
+    return result;
+}
+
 } // namespace
 
 bool AudioEngine::prepare(double sampleRate, std::size_t maxFrames, std::size_t channels) noexcept {
@@ -43,6 +55,7 @@ bool AudioEngine::prepare(double sampleRate, std::size_t maxFrames, std::size_t 
         !deEsser_.prepare(sampleRate, maxFrames, channels) ||
         !modulation_.prepare(sampleRate, maxFrames, channels) ||
         !flanger_.prepare(sampleRate, maxFrames, channels) ||
+        !stereoDelay_.prepare(sampleRate, maxFrames, channels) ||
         !limiter_.prepare(sampleRate, maxFrames, channels))
         return false;
     rate_ = sampleRate;
@@ -62,7 +75,8 @@ bool AudioEngine::setParameters(const EngineParameters &p) noexcept {
         !DeEsser::valid({p.deEssHz, p.deEssThresholdDb, p.deEssReductionDb}) ||
         !ModulationEffects::valid({p.chorusRateHz, p.chorusDepthMs, p.chorusMix, p.stereoWidth}) ||
         !Flanger::valid({p.flangerRateHz, p.flangerDepthMs, p.flangerFeedback, p.flangerMix}) ||
-        !VocalLimiter::valid({p.limiterCeilingDb, p.limiterReleaseMs}))
+        !VocalLimiter::valid({p.limiterCeilingDb, p.limiterReleaseMs}) ||
+        !StereoDelay::valid(stereoDelayParameters(p)))
         return false;
     // All snapshots are fully validated before any target is replaced.
     if (!effects_.setParameters(toneParameters(p)))
@@ -72,6 +86,7 @@ bool AudioEngine::setParameters(const EngineParameters &p) noexcept {
     (void)modulation_.setParameters({p.chorusRateHz, p.chorusDepthMs, p.chorusMix, p.stereoWidth});
     (void)flanger_.setParameters(
         {p.flangerRateHz, p.flangerDepthMs, p.flangerFeedback, p.flangerMix});
+    (void)stereoDelay_.setParameters(stereoDelayParameters(p));
     (void)limiter_.setParameters({p.limiterCeilingDb, p.limiterReleaseMs});
     if (p.limiterEnabled != target_.limiterEnabled)
         limiter_.reset();
@@ -90,6 +105,7 @@ void AudioEngine::reset() noexcept {
     deEsser_.reset();
     modulation_.reset();
     flanger_.reset();
+    stereoDelay_.reset();
     limiter_.reset();
 }
 
@@ -151,7 +167,8 @@ bool AudioEngine::process(std::span<float *> channels, std::size_t frames) noexc
         !deEsser_.process(std::span<float *>(wetChannels.data(), channels_), frames) ||
         !effects_.process(std::span<float *>(wetChannels.data(), channels_), frames) ||
         !modulation_.process(std::span<float *>(wetChannels.data(), channels_), frames) ||
-        !flanger_.process(std::span<float *>(wetChannels.data(), channels_), frames))
+        !flanger_.process(std::span<float *>(wetChannels.data(), channels_), frames) ||
+        !stereoDelay_.process(std::span<float *>(wetChannels.data(), channels_), frames))
         return false; // Prepared capacities/layout have already been validated.
     for (std::size_t i = 0; i < frames; ++i) {
         smooth(current_.outputDb, target_.outputDb);

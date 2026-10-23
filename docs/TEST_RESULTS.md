@@ -433,3 +433,31 @@ all4294tracked project/JUCE source files matched archive entries exactly, all5
 runtime regular files matched original bytes, and all sidecar checksums passed.
 Local Debug archive is development evidence, not the uploaded Release artifact.
 Actual GarageBand/Logic/microphone hardware/listening qualification remains pending.
+
+## Stereo delay integration — 2026-10-23
+
+At the stereo-delay working revision, lead Linux Debug product build and all17
+CTest suites pass (37.14sec), including fake-playhead actual echo timing and strict
+v8/legacy state/preset regressions. Release core14/14 and ASan/UBSan core14/14 pass
+(leak detection/halt enabled,33.82sec sanitizer suite). Core388checks cover all
+four rates, mono/stereo, three modes,72tempo/division cases, fractional/3sec timing,
+feedback decay, invalid calls, allocation, smoothing, partition/reset and extremes.
+Engine5839checks and preset1000checks pass. Independent QA reproduced388core and
+5839engine checks in strict optimized builds and approved source integration.
+
+Generalized exact-small-integer lexer independently matched70,182Decimal-oracle
+cases, preserving Boolean exactness and rejecting fractional/rounded enum tokens.
+Real virtual-X GUI smoke passes45attached controls, nine tabs and preset audio;
+/tmp/darkvoice-stereo-delay.png inspected. This is local automated evidence;
+native CI is pending, and user explicitly defers actual host/microphone/listening
+qualification until remaining feature implementation is complete.
+
+Stereo delay first native run39954039990: core jobs pass, macOS product suite
+failed the invalid-raw-enum regression's exact0.1f output assumption. Independent
+QA reproduced JUCE/FMA signed0dB snapping residual: fma(0.1f,240,-24) gives
+3.5762786865e-7dB, sufficient to change float output despite correct rejection.
+Replaced that assumption with a stronger paired-processor test of every sample
+against a held valid snapshot, injecting invalid mode/division plus observable
+valid gain changes, then requiring gain divergence after valid enum restoration.
+Both NaN and finite/out-of-range enums are covered; no production DSP or quality
+tolerance was relaxed. Local corrected plugin suite passes; native rerun pending.
