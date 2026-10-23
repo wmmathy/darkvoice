@@ -4,6 +4,8 @@ Scope: authoritative PRODUCT_SPECIFICATION.md. This is an implementation backlog
 not a claim that the complete suite is delivered. Check DEVELOPMENT_STATUS.md and
 TEST_RESULTS.md for revision-specific evidence. Public repository/default main are
 verified; Actions executes again. Actual DAW/listening qualification remains unrun.
+User postpones manual qualification until feature implementation is complete; it
+must not pause independent development or be misreported as passed.
 
 ## Current foundation and review queue
 
@@ -27,7 +29,7 @@ Source-quality run39740257019 passed. This is not a passing overall build result
 | Priority / tracking | Pending implementation | Dependency / acceptance |
 | --- | --- | --- |
 | P1 Sculptor, #3/#18 | Qualified independent pitch/formant shifting and formant preservation; depth/body/warmth/presence/resonance/breathiness/character controls; real quality modes | Resolve combined-periodicity failures, broader F0/transient/unvoiced material, listening/CPU; integrate delayed dry/mix/bypass and host latency only after qualification |
-| P1 Effects, #3 | Doubler, plate/hall/room choices, slapback/tempo-sync/stereo delay variants, tape/tube saturation and parallel distortion | Versioned real controls, routing, DSP evidence, safe automation, state/preset migration, GUI and native validation; existing starter effects are partial coverage |
+| P1 Effects, #3 | Doubler, plate/hall/room choices, tape/tube saturation and parallel distortion | Versioned real controls, routing, DSP evidence, safe automation, state/preset migration, GUI and native validation; existing starter effects are partial coverage |
 | P1 Integration, #14/#16/#18 | Review/integrate eventual qualified Sculptor and remaining effects; de-esser/chorus/flanger now merged | Required repository checks/review; no automatic bypass or release; preserve stacked bases until dependencies integrate |
 | P2 Presets, #3 | Complete all20 required vocal factory sounds, audition/tune them and preserve correction/harmony independence | Underlying DSP must exist; fourteen sounds now use existing DSP; six correction/choir/octave/double-track sounds remain pending; do not add presets implying unavailable correction/choir features |
 | P2 Track-aware correction, #4 | Reference WAV/AIFF/FLAC/MP3 import where available/licensed, key/scale/BPM/chord timeline/confidence and manual edits; manual/chromatic/custom correction, musical transitions/humanization/vibrato/drift; graphical tracking | Qualified shift backend and real-time pitch tracker; versioned analysis/timeline/transport contracts, preanalysis, offsets and GarageBand manual/standalone fallbacks |
@@ -63,3 +65,7 @@ final-output host integration now pass local product/sanitizer/GUI validation.
 Core PR24 and host PR25 are merged after all native/quality checks and independent QA.
 This does not cover the oversampled mastering true-peak limiter. Historical401
 authentication failure resolved on retry without a repository change.
+
+Stereo delay continuation: stereo/single-echo/slapback/ping-pong with manual or
+validated host BPM sync is implemented and passes local core/product/sanitizer/GUI
+and independent source review. Native checks and normal merge are pending.

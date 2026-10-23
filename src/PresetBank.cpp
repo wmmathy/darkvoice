@@ -119,7 +119,14 @@ bool uniqueKeys(const juce::String &source) {
             const auto key = decodedKey.toString().toStdString();
             if (!scopes.back().keys.insert(key).second)
                 return false;
-            if (key == "limiterEnabled") {
+            const auto booleanSound = std::any_of(
+                parameterSchema.begin(), parameterSchema.end(), [&key](const auto &spec) {
+                    return spec.boolean && key == spec.id && key != "bypass";
+                });
+            const int choiceMaximum = key == "stereoDelayMode"       ? 2
+                                      : key == "stereoDelayDivision" ? 5
+                                                                     : -1;
+            if (booleanSound || choiceMaximum >= 0) {
                 auto token = after + 1;
                 while (token < text.size() && std::isspace(static_cast<unsigned char>(text[token])))
                     ++token;
@@ -127,7 +134,8 @@ bool uniqueKeys(const juce::String &source) {
                 while (end < text.size() && text[end] != ',' && text[end] != '}' &&
                        text[end] != ']' && !std::isspace(static_cast<unsigned char>(text[end])))
                     ++end;
-                if (!exactBooleanNumber(std::string_view(text).substr(token, end - token)))
+                if (!exactSmallIntegerNumber(std::string_view(text).substr(token, end - token),
+                                             booleanSound ? 1 : choiceMaximum))
                     return false;
             }
         }
@@ -223,6 +231,10 @@ juce::Result decode(const juce::File &file, Preset &preset, bool local) {
             represented > spec.maximum ||
             (spec.boolean && represented != 0.0f && represented != 1.0f))
             return fail("Preset parameter outside range");
+        if ((juce::String(spec.id) == "stereoDelayMode" ||
+             juce::String(spec.id) == "stereoDelayDivision") &&
+            std::trunc(number) != number)
+            return fail("Preset delay choice must be an integer");
         candidate[spec.id] = represented;
     }
     if (auto result = PresetBank::validate(candidate); result.failed())
@@ -463,6 +475,9 @@ juce::Result PresetBank::validate(const PresetValues &values) {
             (spec.boolean && value->second != 0.0f && value->second != 1.0f))
             return fail("Invalid preset sound parameter");
     }
+    for (const auto *id : {"stereoDelayMode", "stereoDelayDivision"})
+        if (std::trunc(values.at(id)) != values.at(id))
+            return fail("Preset delay choice must be an integer");
     return juce::Result::ok();
 }
 juce::Result PresetBank::refresh() {

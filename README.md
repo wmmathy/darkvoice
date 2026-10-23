@@ -79,3 +79,16 @@ include or depend on experimental pitch/formant shifting.
 
 See [pending development](docs/PENDING_DEVELOPMENT.md) for the current prioritized
 backlog, existing functionality, review queue and quality blockers.
+
+## Stereo musical delay
+
+The Stereo Delay tab provides stereo repeats, single echo (including short-time
+slapback) and ping-pong; mono uses ordinary repeats. Choose 20–2000 ms manually or
+sync to six musical divisions. Optional host tempo uses valid 20–300 BPM and
+falls back to the manual BPM when unavailable. Sync sets repeat spacing, not
+transport phase. Synchronized spacing is capped at 3 seconds. New controls are
+neutral in existing presets and schema versions1–7 migrate to version8.
+
+The engine now has45 sound controls plus global bypass. The original delay/reverb
+remain available separately. Manual host/microphone/listening qualification is
+deferred until feature implementation is complete, as requested by the user.

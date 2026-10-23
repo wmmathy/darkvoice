@@ -2,7 +2,7 @@
 #include <cmath>
 namespace {
 const juce::Colour background{0xff111418}, panel{0xff1c2229}, accent{0xffe54b52}, text{0xffecedf0};
-constexpr std::array<const char *, 37> ids{"inputDb",
+constexpr std::array<const char *, 45> ids{"inputDb",
                                            "highPassHz",
                                            "drive",
                                            "thresholdDb",
@@ -38,8 +38,16 @@ constexpr std::array<const char *, 37> ids{"inputDb",
                                            "flangerMix",
                                            "limiterEnabled",
                                            "limiterCeilingDb",
-                                           "limiterReleaseMs"};
-constexpr std::array<const char *, 37> names{"INPUT GAIN",
+                                           "limiterReleaseMs",
+                                           "stereoDelayMode",
+                                           "stereoDelayMs",
+                                           "stereoDelayFeedback",
+                                           "stereoDelayMix",
+                                           "stereoDelaySync",
+                                           "stereoDelayBpm",
+                                           "stereoDelayDivision",
+                                           "stereoDelayHostTempo"};
+constexpr std::array<const char *, 45> names{"INPUT GAIN",
                                              "HIGH-PASS",
                                              "WARMTH DRIVE",
                                              "COMPRESSOR THRESHOLD",
@@ -75,11 +83,20 @@ constexpr std::array<const char *, 37> names{"INPUT GAIN",
                                              "FLANGER MIX",
                                              "LIMITER ENABLE (0 = OFF, 1 = ON)",
                                              "LIMITER CEILING",
-                                             "LIMITER RELEASE"};
-constexpr std::array<const char *, 37> suffixes{
-    " dB", " Hz", "", " dB", ":1",  "",    " dB", " Hz", " dB", " Hz", " dB", "",    " Hz",
-    " dB", " ms", "", "",    "",    "",    "",    " dB", ":1",  " ms", " Hz", " dB", " dB",
-    " Hz", " ms", "", "",    " Hz", " ms", "",    "",    "",    " dB", " ms"};
+                                             "LIMITER RELEASE",
+                                             "STEREO DELAY MODE",
+                                             "STEREO DELAY TIME",
+                                             "STEREO DELAY FEEDBACK",
+                                             "STEREO DELAY MIX",
+                                             "STEREO DELAY SYNC (0 / 1)",
+                                             "MANUAL TEMPO",
+                                             "BEAT DIVISION",
+                                             "USE HOST TEMPO (0 / 1)"};
+constexpr std::array<const char *, 45> suffixes{
+    " dB", " Hz", "",    " dB", ":1", "", " dB",  " Hz", " dB", " Hz", " dB", "",
+    " Hz", " dB", " ms", "",    "",   "", "",     "",    " dB", ":1",  " ms", " Hz",
+    " dB", " dB", " Hz", " ms", "",   "", " Hz",  " ms", "",    "",    "",    " dB",
+    " ms", "",    " ms", "",    "",   "", " BPM", "",    ""};
 juce::File presetDirectory(const juce::File &supplied) {
     if (supplied != juce::File{})
         return supplied;
@@ -117,6 +134,7 @@ DarkVoiceEditor::DarkVoiceEditor(DarkVoiceProcessor &p, juce::File root)
     tabs_.addTab("CHORUS / WIDTH", panel, &pages_[5], false);
     tabs_.addTab("FLANGER", panel, &pages_[6], false);
     tabs_.addTab("LIMITER", panel, &pages_[7], false);
+    tabs_.addTab("STEREO DELAY", panel, &pages_[8], false);
     addAndMakeVisible(tabs_);
     for (std::size_t i = 0; i < sliders_.size(); ++i) {
         auto &slider = sliders_[i];
@@ -126,8 +144,11 @@ DarkVoiceEditor::DarkVoiceEditor(DarkVoiceProcessor &p, juce::File root)
         slider.setName(names[i]);
         slider.setTitle(names[i]);
         slider.setTooltip(
-            i >= 34 ? "Default off. Final-output sample-peak limiting, not true-peak. Enable 0 is "
-                      "off; 1 is on."
+            i >= 37 ? "Stereo repeats, single echo or ping-pong. Sync uses beat division; host BPM "
+                      "falls back to manual if unavailable."
+            : i >= 34
+                ? "Default off. Final-output sample-peak limiting, not true-peak. Enable 0 is "
+                  "off; 1 is on."
             : i >= 30 ? "Flanger mix 0 is off. Signed feedback changes the comb character."
             : i >= 26 ? "Chorus mix 0 is off. Width 1 is neutral; 0 folds stereo to mono. "
                         "Wide settings can increase peaks; width is a no-op in mono."
@@ -143,7 +164,8 @@ DarkVoiceEditor::DarkVoiceEditor(DarkVoiceProcessor &p, juce::File root)
                           : i < 26 ? 4U
                           : i < 30 ? 5U
                           : i < 34 ? 6U
-                                   : 7U;
+                          : i < 37 ? 7U
+                                   : 8U;
         pages_[page].addAndMakeVisible(slider);
         labels_[i].setText(names[i], juce::dontSendNotification);
         labels_[i].setColour(juce::Label::textColourId, juce::Colour(0xffb5bdc7));
@@ -152,6 +174,22 @@ DarkVoiceEditor::DarkVoiceEditor(DarkVoiceProcessor &p, juce::File root)
         attachments_[i] = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
             p.parameters, ids[i], slider);
     }
+    // Discrete controls display musical choices rather than unexplained indices.
+    sliders_[37].textFromValueFunction = [](double value) {
+        constexpr const char *modes[]{"Stereo", "Single", "Ping-pong"};
+        return juce::String(modes[std::clamp(static_cast<int>(std::round(value)), 0, 2)]);
+    };
+    sliders_[43].textFromValueFunction = [](double value) {
+        constexpr const char *divisions[]{"1/16",        "1/8 triplet", "1/8",
+                                          "1/4 triplet", "Dotted 1/8",  "1/4"};
+        return juce::String(divisions[std::clamp(static_cast<int>(std::round(value)), 0, 5)]);
+    };
+    sliders_[37].setTextBoxStyle(juce::Slider::TextBoxRight, true, 110, 28);
+    sliders_[43].setTextBoxStyle(juce::Slider::TextBoxRight, true, 110, 28);
+    tempo_.setName("Stereo delay tempo status");
+    tempo_.setColour(juce::Label::textColourId, juce::Colour(0xffb5bdc7));
+    tempo_.setFont(juce::Font(juce::FontOptions(12.0f)));
+    pages_[8].addAndMakeVisible(tempo_);
     bypass_.setName("Bypass processing");
     addAndMakeVisible(bypass_);
     bypassAttachment_ = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(
@@ -347,7 +385,8 @@ void DarkVoiceEditor::resized() {
                           : i < 26 ? 4U
                           : i < 30 ? 5U
                           : i < 34 ? 6U
-                                   : 7U;
+                          : i < 37 ? 7U
+                                   : 8U;
         const auto row = i < 7    ? i
                          : i < 14 ? i - 7
                          : i < 20 ? i - 14
@@ -355,18 +394,30 @@ void DarkVoiceEditor::resized() {
                          : i < 26 ? i - 23
                          : i < 30 ? i - 26
                          : i < 34 ? i - 30
-                                  : i - 34;
-        const int rowHeight = (tabs_.getHeight() - 48) / 7;
+                         : i < 37 ? i - 34
+                                  : i - 37;
+        const int rowHeight = (tabs_.getHeight() - 48) / (page == 8 ? 9 : 7);
         const int y = 14 + static_cast<int>(row) * rowHeight;
         labels_[i].setBounds(16, y, 205, 24);
         sliders_[i].setBounds(228, y - 2, width - 258, 29);
         (void)page;
     }
+    tempo_.setBounds(16, tabs_.getHeight() - 66, width - 32, 24);
     bypass_.setBounds(28, getHeight() - 82, 200, 28);
     meter_.setBounds(240, getHeight() - 82, getWidth() - 268, 28);
     pitch_.setBounds(24, getHeight() - 56, getWidth() - 48, 22);
 }
 void DarkVoiceEditor::timerCallback() {
+    const auto actualBpm = processor_.hostTempoBpm();
+    const auto manualBpm = processor_.parameters.getRawParameterValue("stereoDelayBpm")->load();
+    const bool useHost =
+        processor_.parameters.getRawParameterValue("stereoDelayHostTempo")->load() >= .5f;
+    tempo_.setText(actualBpm > 0 ? "Host tempo available: " + juce::String(actualBpm, 1) +
+                                       " BPM / " + (useHost ? "host selected" : "manual selected")
+                                 : "Host tempo unavailable / manual fallback: " +
+                                       juce::String(manualBpm, 1) + " BPM",
+                   juce::dontSendNotification);
+
     const float frequency = processor_.dryPitchHz(), confidence = processor_.dryPitchConfidence();
     if (frequency > 0 && std::isfinite(frequency) && confidence >= 0.8f) {
         const double midi = 69.0 + 12.0 * std::log2(frequency / 440.0);

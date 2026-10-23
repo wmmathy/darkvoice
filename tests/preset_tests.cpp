@@ -35,7 +35,7 @@ struct TemporaryDirectory {
         file.deleteRecursively();
     }
 };
-juce::String jsonFor(const darkvoice::PresetValues &values, int version = 7,
+juce::String jsonFor(const darkvoice::PresetValues &values, int version = 8,
                      const juce::String &name = "Test preset") {
     juce::DynamicObject::Ptr parameters = new juce::DynamicObject();
     for (const auto &[id, value] : values)
@@ -62,7 +62,12 @@ void basicPersistence() {
                     preset.values.at("limiterReleaseMs") == 100,
                 "Factory limiter remains off with neutral defaults");
         good(darkvoice::PresetBank::validate(preset.values), "Factory values invalid");
-        require(preset.values.size() == 37 && !preset.values.contains("bypass"),
+        for (std::size_t i = 38; i < darkvoice::parameterSchema.size(); ++i) {
+            const auto &spec = darkvoice::parameterSchema[i];
+            require(preset.values.at(spec.id) == spec.defaultValue,
+                    "Existing factories keep new stereo delay neutral");
+        }
+        require(preset.values.size() == 45 && !preset.values.contains("bypass"),
                 "Preset excludes bypass");
         factorySnapshots.insert(jsonFor(preset.values).toStdString());
     }
@@ -85,6 +90,14 @@ void basicPersistence() {
     settings["limiterReleaseMs"] = 210;
     settings["chorusMix"] = .3f;
     settings["stereoWidth"] = 1.5f;
+    settings["stereoDelayMode"] = 2;
+    settings["stereoDelayMs"] = 420;
+    settings["stereoDelayFeedback"] = .6f;
+    settings["stereoDelayMix"] = .2f;
+    settings["stereoDelaySync"] = 1;
+    settings["stereoDelayBpm"] = 80;
+    settings["stereoDelayDivision"] = 3;
+    settings["stereoDelayHostTempo"] = 1;
     juce::String id;
     good(bank.saveAs("  My voice  ", settings, id), "Save user preset");
     require(id.length() == 32 && bank.find(id) != nullptr, "UUID save identifier");
@@ -106,7 +119,7 @@ void basicPersistence() {
     require(std::abs(restored.find(originalId)->values.at("eqMidGainDb") - 3.4f) < .00001f,
             "Parameter roundtrip");
     require(restored.search("renamed").size() == 1, "Name search");
-    require(restored.find(originalId)->values == settings, "Full v7 nondefault preset roundtrip");
+    require(restored.find(originalId)->values == settings, "Full v8 nondefault preset roundtrip");
     const auto exported = temp.file.getChildFile("export.json");
     good(restored.exportFile(originalId, exported), "Export user preset");
     const auto exportedBytes = exported.loadFileAsString();
@@ -189,7 +202,7 @@ void malformedAndMigration() {
     }
     const auto initial = bank.presets().size();
     for (const auto &data :
-         {juce::String("{}"), juce::String("[]"), juce::String("{broken"), jsonFor(settings, 8),
+         {juce::String("{}"), juce::String("[]"), juce::String("{broken"), jsonFor(settings, 9),
           jsonFor(settings).replace("\"inputDb\": 0.0", "\"inputDb\": true"),
           juce::String("{\"schemaVersion\":2,\"schemaVersion\":1}")}) {
         write(external, data);
@@ -200,7 +213,7 @@ void malformedAndMigration() {
     const auto cleanJson = jsonFor(settings);
     for (const auto &hostile :
          {cleanJson + " trailing-garbage", cleanJson + "{}",
-          cleanJson.replace("\"schemaVersion\": 7", "\"schemaVersion\": 4294967301"),
+          cleanJson.replace("\"schemaVersion\": 8", "\"schemaVersion\": 4294967301"),
           juce::String("{\"nested\":") + juce::String::repeatedString("[", 10000) + "0" +
               juce::String::repeatedString("]", 10000) + "}"}) {
         write(external, hostile);
@@ -225,6 +238,11 @@ void malformedAndMigration() {
     write(external, juce::String::repeatedString(" ", 1024 * 1024 + 1));
     require(bank.importFile(external, id).failed(), "Reject oversized JSON");
     auto v2 = darkvoice::PresetBank::defaults();
+    for (auto it = v2.begin(); it != v2.end();)
+        if (juce::String(it->first).startsWith("stereoDelay"))
+            it = v2.erase(it);
+        else
+            ++it;
     for (const auto *key : {"limiterEnabled", "limiterCeilingDb", "limiterReleaseMs"})
         v2.erase(key);
     for (const auto *key : {"flangerRateHz", "flangerDepthMs", "flangerFeedback", "flangerMix"})
@@ -246,6 +264,11 @@ void malformedAndMigration() {
             "V2 preset preserves effects and disables gate");
 
     auto v3 = darkvoice::PresetBank::defaults();
+    for (auto it = v3.begin(); it != v3.end();)
+        if (juce::String(it->first).startsWith("stereoDelay"))
+            it = v3.erase(it);
+        else
+            ++it;
     for (const auto *key : {"limiterEnabled", "limiterCeilingDb", "limiterReleaseMs"})
         v3.erase(key);
     for (const auto *key : {"flangerRateHz", "flangerDepthMs", "flangerFeedback", "flangerMix"})
@@ -264,6 +287,11 @@ void malformedAndMigration() {
                 bank.find(id)->values.at("gateRatio") == 4,
             "V3 preset retains gate and disables de-esser");
     auto v4 = darkvoice::PresetBank::defaults();
+    for (auto it = v4.begin(); it != v4.end();)
+        if (juce::String(it->first).startsWith("stereoDelay"))
+            it = v4.erase(it);
+        else
+            ++it;
     for (const auto *key : {"limiterEnabled", "limiterCeilingDb", "limiterReleaseMs"})
         v4.erase(key);
     for (const auto *key : {"flangerRateHz", "flangerDepthMs", "flangerFeedback", "flangerMix"})
@@ -280,6 +308,11 @@ void malformedAndMigration() {
                 bank.find(id)->values.at("deEssReductionDb") == 9,
             "V4 preset retains de-esser and neutral modulation");
     auto v5 = darkvoice::PresetBank::defaults();
+    for (auto it = v5.begin(); it != v5.end();)
+        if (juce::String(it->first).startsWith("stereoDelay"))
+            it = v5.erase(it);
+        else
+            ++it;
     for (const auto *key : {"limiterEnabled", "limiterCeilingDb", "limiterReleaseMs"})
         v5.erase(key);
     for (const auto *key : {"flangerRateHz", "flangerDepthMs", "flangerFeedback", "flangerMix"})
@@ -302,7 +335,7 @@ void malformedAndMigration() {
     legacy["drive"] = .3f;
     write(external, jsonFor(legacy, 1, "Legacy"));
     good(bank.importFile(external, id), "Migrate legacy preset");
-    require(bank.find(id)->values.size() == 37 && bank.find(id)->values.at("delayMix") == 0 &&
+    require(bank.find(id)->values.size() == 45 && bank.find(id)->values.at("delayMix") == 0 &&
                 bank.find(id)->values.at("drive") == .3f,
             "Migration preserves old controls and new defaults");
     {
@@ -321,7 +354,7 @@ void malformedAndMigration() {
             juce::String migratedId;
             good(migration.importFile(external, migratedId), "Migrate exact legacy preset into v7");
             const auto &migrated = migration.find(migratedId)->values;
-            require(migrated.size() == 37 && migrated.at("limiterEnabled") == 0 &&
+            require(migrated.size() == 45 && migrated.at("limiterEnabled") == 0 &&
                         migrated.at("limiterCeilingDb") == -1 &&
                         migrated.at("limiterReleaseMs") == 100 && migrated.at("inputDb") == 5,
                     "All legacy presets preserve old values and disable limiter");
@@ -348,6 +381,55 @@ void malformedAndMigration() {
             require(migration.importFile(external, created).failed() &&
                         migration.presets().size() == count,
                     "Invalid JSON limiter boolean rejected atomically");
+        }
+    }
+    {
+        darkvoice::PresetBank migrations(temp.file.getChildFile("stereo-delay-migration"));
+        for (int version = 1; version <= 7; ++version) {
+            darkvoice::PresetValues old;
+            for (std::size_t i = 0; i < darkvoice::parameterCountForVersion(version); ++i) {
+                const auto &spec = darkvoice::parameterSchema[i];
+                if (juce::String(spec.id) != "bypass")
+                    old[spec.id] = spec.defaultValue;
+            }
+            old["inputDb"] = 6;
+            if (version == 7)
+                old["limiterEnabled"] = 1;
+            write(external, jsonFor(old, version, "Delay migration"));
+            juce::String migrated;
+            good(migrations.importFile(external, migrated),
+                 "Import strict pre-stereo-delay preset");
+            const auto &result = migrations.find(migrated)->values;
+            require(result.size() == 45 && result.at("inputDb") == 6,
+                    "Legacy delay migration preserves prior fields");
+            for (std::size_t i = 38; i < darkvoice::parameterSchema.size(); ++i) {
+                const auto &spec = darkvoice::parameterSchema[i];
+                require(result.at(spec.id) == spec.defaultValue,
+                        "Every old preset initializes eight delay defaults");
+            }
+            if (version == 7)
+                require(result.at("limiterEnabled") == 1, "V7 migration retains limiter");
+        }
+        for (const auto *field : {"stereoDelaySync", "stereoDelayHostTempo", "stereoDelayMode",
+                                  "stereoDelayDivision"}) {
+            auto values = darkvoice::PresetBank::defaults();
+            values[field] = .5f;
+            require(darkvoice::PresetBank::validate(values).failed(),
+                    "Fractional delay choice/bool rejected in memory");
+            for (const auto *token : {"0.5", "1.00000001", "1e-500", "-1", "6", "true", "\"1\""}) {
+                auto parsed = juce::JSON::parse(jsonFor(darkvoice::PresetBank::defaults()));
+                parsed.getDynamicObject()
+                    ->getProperty("parameters")
+                    .getDynamicObject()
+                    ->setProperty(field, "invalid-delay-token");
+                write(external,
+                      juce::JSON::toString(parsed, true).replace("\"invalid-delay-token\"", token));
+                juce::String created;
+                const auto count = migrations.presets().size();
+                require(migrations.importFile(external, created).failed() &&
+                            migrations.presets().size() == count,
+                        "Raw delay Boolean/discrete JSON rejected before rounding");
+            }
         }
     }
     // Emit raw literals: JUCE's JSON writer can round very small doubles to zero.
