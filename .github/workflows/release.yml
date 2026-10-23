@@ -22,23 +22,32 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install --no-install-recommends libasound2-dev libx11-dev libxext-dev libxinerama-dev libxrandr-dev libxcursor-dev libfreetype6-dev libfontconfig1-dev libgl1-mesa-dev
+      - name: Prepare immutable JUCE source
+        shell: bash
+        run: |
+          mkdir -p build/juce-source
+          git -C build/juce-source init
+          git -C build/juce-source remote add origin https://github.com/juce-framework/JUCE.git
+          git -C build/juce-source fetch --depth 1 origin 51a8a6d7aeae7326956d747737ccf1575e61e209
+          git -C build/juce-source -c core.hooksPath=/dev/null checkout --detach 51a8a6d7aeae7326956d747737ccf1575e61e209
+      - name: Verify packaging regression tests
+        run: python3 -B -m unittest discover -s tests -p package_development_tests.py
       - name: Configure unsigned development products
-        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON -DDARKVOICE_BUILD_PRODUCTS=ON
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON -DDARKVOICE_BUILD_PRODUCTS=ON -DDARKVOICE_JUCE_SOURCE_DIR="$GITHUB_WORKSPACE/build/juce-source"
       - name: Build and test
         run: |
           cmake --build build --parallel 2
           ctest --test-dir build --output-on-failure --no-tests=error
-      - name: Package products, source, license and provenance
+          git rev-parse HEAD > build/DARKVOICE_BUILD_COMMIT.txt
+      - name: Package runtime products and complete corresponding source
         shell: bash
+        env:
+          ARTIFACT_PLATFORM: ${{ runner.os == 'macOS' && 'macos' || 'linux' }}
         run: |
-          mkdir -p build/artifacts
-          tar -czf build/artifacts/darkvoice-unsigned-products.tar.gz -C build DarkVoiceVocal_artefacts DarkVoiceMaster_artefacts DarkVoiceStudio_artefacts
-          git archive --format=tar.gz --prefix=darkvoice-source/ HEAD -o build/artifacts/darkvoice-source.tar.gz
-          git rev-parse HEAD > build/artifacts/COMMIT.txt
-          cp CHANGELOG.md LICENSE build/artifacts/
-          printf '%s\n' 'Unsigned development builds. No public release, code signing, notarization or DAW compatibility certification.' > build/artifacts/BUILD_STATUS.txt
-          cd build/artifacts
-          shasum -a 256 darkvoice-unsigned-products.tar.gz darkvoice-source.tar.gz > SHA256SUMS.txt
+          python3 tools/package-development.py --source "$GITHUB_WORKSPACE" \
+            --build "$GITHUB_WORKSPACE/build" --juce-source "$GITHUB_WORKSPACE/build/juce-source" \
+            --platform "$ARTIFACT_PLATFORM" --output "$GITHUB_WORKSPACE/build/artifacts" \
+            --expected-commit "$GITHUB_SHA"
       - name: Retain unsigned development artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:

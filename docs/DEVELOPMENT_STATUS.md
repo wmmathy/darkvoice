@@ -340,3 +340,30 @@ Move explicit CI/manual-artifact labels to macos-26 to try the current supported
 ARM image; keep all build/test/auval gates and timeouts. This supersedes the queued
 retry on source push, not a passing macOS15 result. No manual artifact workflow or
 release is dispatched. Native outcome on the new image remains pending.
+
+## Limiter integration merged — 2026-10-22
+
+Exact core5f79aaa native39840690725 all7jobs and quality39840690694 passed.
+Exact host82a3edd native39840737529 all7jobs and quality39840737603 passed,
+including macOS26 ARM products/unsigned auval and Linux product/GUI checks.
+Independent core, host, decimal-parser (4425case oracle) and runner-label QA
+approved. Rules rechecked protected=false/rules=[]/rulesets=[]. Normal expected-SHA
+merges: PR24 at5c0cd223; PR25 atd3d4ae20. No admin override or release.
+CLI retarget hit an obsolete Projects-classic GraphQL query; REST base edit worked.
+
+Pitch investigation preserved all original DSP and149checks/3failures;269streaming
+and464alignment pass. Optional180case diagnostics committedfa4af29 in draft PR26
+against experimental19, outside main. Broader retained61periodicity failures and
+best rejected prototype13 failures confirm more work; no threshold waiver.
+
+Unsigned developer packaging now has its contract and dedicated developer_artifacts
+agent in isolated feature/build/developer-artifacts; runtime bundles plus exact
+project/JUCE source/notices, provenance/checksums and failure tests. Lead owns
+quality-workflow test integration/status, agent owns packaging/manualworkflow/docs.
+No unsigned artifact workflow, signing, notarization or release has run yet.
+
+Packaging agent hit session capacity after writing script/workflow/docs and12tests;
+lead preserved its worktree, reviewed and completed networking guard/prerequisites/
+architecture metadata/guide refinements. Independent QA approved and reran12tests;
+lead also passed12tests. Manual build verification is next, with no release or
+signing authority. Code remains isolated pending normal repository checks.

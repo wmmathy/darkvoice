@@ -19,8 +19,10 @@ VST3_SDK/LICENSE.txt before integration. JUCE includes additional third-party
 notices (FreeType, HarfBuzz, image libraries, FLAC and others); retain the upstream
 license/notice tree when redistributing. JUCE modules' commercial alternative is
 not the selected route. VST marks have separate usage guidelines; no certification
-or endorsement is claimed. Final redistributable notice bundling remains a release
-gate, not a completed legal audit.
+or endorsement is claimed. Unsigned developer artifacts now retain the complete pinned JUCE source/notice
+tree beside the exact project source, runtime bundles and project license; see
+[DEVELOPER_BUILDS.md](DEVELOPER_BUILDS.md). Final redistribution compliance and
+notice review remain release gates, not a completed legal audit.
 
 Initial build disables JUCE browser/curl integration. There are no AI models,
 model downloads, cloud processing services or MP3 encoder dependencies. Codec,

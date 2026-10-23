@@ -397,3 +397,22 @@ scientific0/1 equivalents while rejecting tiny/high-precision fractions. Indepen
 Decimal-oracle comparison4425cases passed. Updated raw JSON/XML rejection and
 valid scientific-equivalent tests pass in targeted2/2 suites. Formatter/static
 checks pass; new native source run pending. Earlier double-only fix was incomplete.
+
+Native limiter final: core39840690725 and host39840737529 each passed all7jobs
+on5f79aaa/82a3edd, with corresponding source-quality39840690694/39840737603 passed.
+macOS26 ARM product builds, headless suites and both unsigned auval checks passed;
+Linux products/GUI and core sanitizer checks passed. PR24/25 normally merged.
+Actual GarageBand/Logic/listening remains unrun. Earlier macOS15 allocation failures
+are runner failures, not a successful platform result or waived DSP assertion.
+
+## Unsigned developer packaging — 2026-10-23
+
+Lead and independent QA each passed12real-temporary-Git packaging fixtures.
+Checks cover both runtime layouts, full pinned source/notice inclusion, checksums,
+wrong/dirty/untracked dependency, stale/missing build provenance, missing products,
+unsafe product/source symlinks and exclusive-output/partial-publication cleanup.
+Fixtures contain labelled fake binaries, not runnable products. Verified current
+project/JUCE pins have no gitlinks or archive attributes excluding tracked source.
+Archive commands disable lazy-fetch networking; Python3.11+ is documented. Builder
+architecture is identified as provenance, not universal/Intel qualification.
+Actual manual workflow/native packaging remains pending; no artifact-exists claim.
