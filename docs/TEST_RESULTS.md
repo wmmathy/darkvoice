@@ -451,3 +451,13 @@ Real virtual-X GUI smoke passes45attached controls, nine tabs and preset audio;
 /tmp/darkvoice-stereo-delay.png inspected. This is local automated evidence;
 native CI is pending, and user explicitly defers actual host/microphone/listening
 qualification until remaining feature implementation is complete.
+
+Stereo delay first native run39954039990: core jobs pass, macOS product suite
+failed the invalid-raw-enum regression's exact0.1f output assumption. Independent
+QA reproduced JUCE/FMA signed0dB snapping residual: fma(0.1f,240,-24) gives
+3.5762786865e-7dB, sufficient to change float output despite correct rejection.
+Replaced that assumption with a stronger paired-processor test of every sample
+against a held valid snapshot, injecting invalid mode/division plus observable
+valid gain changes, then requiring gain divergence after valid enum restoration.
+Both NaN and finite/out-of-range enums are covered; no production DSP or quality
+tolerance was relaxed. Local corrected plugin suite passes; native rerun pending.

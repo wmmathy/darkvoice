@@ -509,20 +509,55 @@ void stereoDelayAudioTests() {
     require(p.getTailLengthSeconds() == 240, "Audible musical delay needs extended tail");
     set(p, "stereoDelayMix", 0);
     require(p.getTailLengthSeconds() == 40, "Disabled delay tail did not restore");
-    set(p, "mix", 0);
-    set(p, "stereoDelayMode", 2);
-    set(p, "stereoDelayMix", .5f);
-    p.prepareToPlay(48000, 64);
-    juce::MidiBuffer midi;
-    juce::AudioBuffer<float> audio(2, 64);
-    for (float invalid :
-         {std::numeric_limits<float>::infinity(), std::numeric_limits<float>::max(), .5f, -1.f}) {
-        p.parameters.getRawParameterValue("stereoDelayMode")->store(invalid);
-        audio.clear();
-        audio.setSample(0, 0, .1f);
-        p.processBlock(audio, midi);
-        require(audio.getSample(0, 0) == .1f,
-                "Invalid raw enum must reject whole snapshot without unsafe cast");
+    // Compare against the held valid snapshot, not nominal exact 0dB: JUCE's
+    // start-relative .1dB snapping can leave a small residual under FMA.
+    for (const char *id : {"stereoDelayMode", "stereoDelayDivision"}) {
+        DarkVoiceProcessor subject, control;
+        for (auto *processor : {&subject, &control}) {
+            set(*processor, "mix", 0);
+            set(*processor, "stereoDelayMode", 2);
+            set(*processor, "stereoDelayDivision", 5);
+            set(*processor, "stereoDelayMix", .5f);
+            processor->prepareToPlay(48000, 64);
+        }
+        set(subject, "outputDb", 12);
+        juce::MidiBuffer midi;
+        juce::AudioBuffer<float> actual(2, 64), expected(2, 64);
+        const auto input = [&] {
+            for (int c = 0; c < 2; ++c)
+                for (int i = 0; i < 64; ++i) {
+                    const float value = .05f * (c + 1) + .001f * (i % 7);
+                    actual.setSample(c, i, value);
+                    expected.setSample(c, i, value);
+                }
+        };
+        for (float invalid :
+             {std::numeric_limits<float>::quiet_NaN(), std::numeric_limits<float>::infinity(),
+              std::numeric_limits<float>::max(), .5f, -1.f}) {
+            subject.parameters.getRawParameterValue(id)->store(invalid);
+            for (int block = 0; block < 3; ++block) {
+                input();
+                subject.processBlock(actual, midi);
+                control.processBlock(expected, midi);
+                for (int c = 0; c < 2; ++c)
+                    require(std::equal(actual.getReadPointer(c), actual.getReadPointer(c) + 64,
+                                       expected.getReadPointer(c)),
+                            "Invalid raw enum must hold entire valid snapshot");
+            }
+        }
+        subject.parameters.getRawParameterValue(id)->store(
+            juce::String(id) == "stereoDelayMode" ? 2.f : 5.f);
+        float difference = 0;
+        for (int block = 0; block < 32; ++block) {
+            input();
+            subject.processBlock(actual, midi);
+            control.processBlock(expected, midi);
+            for (int c = 0; c < 2; ++c)
+                for (int i = 0; i < 64; ++i)
+                    difference = std::max(
+                        difference, std::abs(actual.getSample(c, i) - expected.getSample(c, i)));
+        }
+        require(difference > .01f, "Valid enum must release the pending observable gain change");
     }
 }
 
