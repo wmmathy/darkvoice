@@ -1,5 +1,11 @@
 # Changelog
 
+## Double Tracked Rock factory
+
+- Add the fifteenth required factory sound using the actual simulated doubler and moderate rock tone.
+- Preserve the prior fourteen IDs and settings; derive the finite favorites cap from the factory count.
+- Retain pending listening qualification and five sounds dependent on correction/harmony DSP.
+
 ## Simulated double tracking
 
 - Add two independently wandering delayed copies with mono-compatible stereo weights.

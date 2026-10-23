@@ -862,6 +862,60 @@ void modulationAudioTests() {
     chorus.releaseResources();
 }
 
+void doubleTrackedRockAudioTests() {
+    const auto root = juce::File::getSpecialLocation(juce::File::tempDirectory)
+                          .getChildFile("darkvoice-double-tracked-rock-" + juce::Uuid().toString());
+    darkvoice::PresetBank bank(root);
+    const auto *preset = bank.find("factory-double-tracked-rock");
+    require(preset && preset->name == "Double Tracked Rock",
+            "Double Tracked Rock factory is available");
+    require(preset->values.at("doublerMix") > 0 && preset->values.at("doublerVariationMs") > 0,
+            "Factory must use both delayed mixing and variation");
+    for (double rate : {44100., 48000., 88200., 96000.})
+        for (int channels : {1, 2}) {
+            DarkVoiceProcessor actual, reference;
+            layout(actual, channels);
+            layout(reference, channels);
+            auto dry = preset->values;
+            dry["doublerMix"] = 0;
+            require(actual.applyPreset(preset->values) && reference.applyPreset(dry),
+                    "Factory and paired reference must apply");
+            actual.prepareToPlay(rate, 257);
+            reference.prepareToPlay(rate, 257);
+            juce::MidiBuffer midi;
+            double energy = 0, difference = 0;
+            int position = 0;
+            for (int block = 0; block < 80; ++block) {
+                const int frames = block % 2 ? 257 : 73;
+                juce::AudioBuffer<float> a(channels, frames), b(channels, frames);
+                for (int c = 0; c < channels; ++c)
+                    for (int i = 0; i < frames; ++i) {
+                        const double t = (position + i) / rate;
+                        const auto input = static_cast<float>(
+                            .2 * std::sin(2 * juce::MathConstants<double>::pi * 110 * t) +
+                            .08 * std::sin(2 * juce::MathConstants<double>::pi * 220 * t) +
+                            .03 * std::sin(2 * juce::MathConstants<double>::pi * 1900 * t));
+                        a.setSample(c, i, input);
+                        b.setSample(c, i, input);
+                    }
+                actual.processBlock(a, midi);
+                reference.processBlock(b, midi);
+                for (int c = 0; c < channels; ++c)
+                    for (int i = 0; i < frames; ++i) {
+                        const double wet = a.getSample(c, i), drySample = b.getSample(c, i);
+                        require(std::isfinite(wet) && std::isfinite(drySample),
+                                "Factory paired renders must remain finite");
+                        energy += drySample * drySample;
+                        difference += (wet - drySample) * (wet - drySample);
+                    }
+                position += frames;
+            }
+            require(energy > 1 && difference / energy > .005,
+                    "Real simulated double tracking must measurably change paired factory audio");
+        }
+    root.deleteRecursively();
+}
+
 void factoryAudioTests() {
     darkvoice::PresetBank bank(
         juce::File::getSpecialLocation(juce::File::tempDirectory)
@@ -961,6 +1015,7 @@ int main() {
         stateTests();
         renderingTests();
         factoryAudioTests();
+        doubleTrackedRockAudioTests();
         gateAudioTests();
         deEsserAudioTests();
         modulationAudioTests();

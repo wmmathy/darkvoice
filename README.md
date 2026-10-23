@@ -4,12 +4,12 @@ An AGPLv3, local-first vocal production project using C++20, JUCE and CMake.
 This is an early development build. It provides input/output gain, high-pass,
 warmth saturation, compression, low/high shelves and a parametric mid EQ,
 feedback delay, damped reverb, dry/wet, bypass and peak meters. The grouped editor
-has 30 real DSP controls and versioned host automation/state restoration.
+has 49 real sound controls plus global bypass and versioned host automation/state restoration.
 A stereo-linked downward expander provides threshold, ratio and release controls;
 ratio 1 disables attenuation. It follows compression and precedes EQ/delay/reverb.
 Older project states and presets load with neutral gate settings.
 
-The local preset bank offers six working factory sounds plus user save-as, rename,
+The local preset bank offers fifteen working factory sounds plus user save-as, rename,
 favorites, search and JSON import/export. Factories are read-only; imports/save-as
 create new UUID files and export refuses existing destinations. Presets preserve
 bypass; future pitch/harmony settings remain separate. On Linux XDG_CONFIG_HOME is

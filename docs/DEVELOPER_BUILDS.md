@@ -89,6 +89,6 @@ Check microphone monitoring, parameter automation, preset save/load and project
 state restoration at your supported device rates. For the limiter, enable it,
 set a ceiling, raise output gain and verify the plugin output peak stays at that
 sample ceiling; repeat at dry/wet zero, then confirm global bypass restores the
-original signal. Compare the fourteen presets using your own vocal material.
+original signal. Compare the fifteen presets using your own vocal material.
 Report host/OS/device rate, mono/stereo layout and exact build commit with results.
 AU validation on CI does not replace this host/listening test.
