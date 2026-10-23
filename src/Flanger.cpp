@@ -76,12 +76,11 @@ bool Flanger::process(std::span<float *> channels, std::size_t frames) noexcept 
         const double delay =
             (.0045 + .001 * current_.flangerDepthMs * std::sin(2 * std::numbers::pi * phase_)) *
             rate_;
-        double location = static_cast<double>(position_) - delay;
-        if (location < 0)
-            location += size;
-        const auto first = static_cast<std::size_t>(location);
-        const auto second = first + 1 == size ? 0 : first + 1;
-        const double fraction = location - first;
+        // Split before wrapping to keep near-integer taps inside the ring.
+        const auto whole = static_cast<std::size_t>(delay);
+        const double fraction = delay - whole;
+        const auto first = position_ >= whole ? position_ - whole : position_ + size - whole;
+        const auto second = first == 0 ? size - 1 : first - 1;
         for (std::size_t c = 0; c < channels_; ++c) {
             auto &ring = rings_[c];
             const double delayed =

@@ -452,6 +452,21 @@ Real virtual-X GUI smoke passes45attached controls, nine tabs and preset audio;
 native CI is pending, and user explicitly defers actual host/microphone/listening
 qualification until remaining feature implementation is complete.
 
+## Existing effect fractional-wrap regression — 2026-10-23
+
+Lead reproduced baseline ASan heap-buffer-overflow through public ToneEffects
+and Flanger APIs using actual source, not a private ring-only probe. ToneEffects:
+48kHz/reverbSize0.03125/reverbMix0.5; Flanger:48kHz/rate3.498542308807373/depth1/
+mix1, within21blocks of512samples. Negative epsilon plus ring length could round
+to the length. Integer/fraction-before-wrap reads remove the invalid index.
+
+New public impulse/reset/partition/isolation regressions cover four rates and
+mono/stereo. Existing tolerances were preserved. Strict optimized focused suites
+pass666effects and171flanger checks, including independent QA reproduction and
+approval. Focused ASan/UBSan passes without findings; integrated14sanitizer suites
+and17JUCEproduct suites pass (33.71sec/37.62sec). Native CI is pending. Manual
+host/listening tests remain deferred. No parameter/state/latency/API change.
+
 Stereo delay first native run39954039990: core jobs pass, macOS product suite
 failed the invalid-raw-enum regression's exact0.1f output assumption. Independent
 QA reproduced JUCE/FMA signed0dB snapping residual: fma(0.1f,240,-24) gives

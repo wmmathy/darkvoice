@@ -443,3 +443,19 @@ invalid warmed state, extremes/tiny audio and callback allocation probes. Host
 actual audio, fake playhead tempo/fallback, schema7 migration and schema8 Boolean
 roundtrip/rejection, GUI45controls/ninetabs, Release/sanitizers/nativeCI/review.
 Listening/actual host tests explicitly deferred until combined feature completion.
+
+## Fractional ring-wrap safety correction — 2026-10-23
+
+A public ToneEffects sanitizer probe confirms an out-of-bounds read at48kHz,
+reverbSize0.03125 and reverbMix0.5 after891samples. A nearly integral delay of
+891.00000000000011 can wrap a negative epsilon to the ring size. Correct ring
+reads by splitting integer delay/fraction before integer-index wrapping, keeping
+interpolation and fractional phase mathematically equivalent. Apply to the same
+unsafe Flanger read pattern with a public regression if reproducible. No API,
+parameter/state, signal routing, latency or dependency changes. Do not weaken
+existing effect/timing/partition tolerances. Acceptance: public near-integer
+impulse at four rates/mono/stereo, finite/causal bounded output, reset/partition,
+all existing core/product tests, ASan/UBSan, independent QA and native CI.
+DSP agent owns onlysrc/ToneEffects.cpp,src/Flanger.cpp,tests/effects_tests.cpp and
+tests/flanger_tests.cpp in isolated fractional-ring-wrap worktree. Lead owns docs,
+integration and reviewed normal merge. Manual qualification remains deferred.

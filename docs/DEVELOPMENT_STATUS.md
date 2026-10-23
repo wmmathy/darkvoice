@@ -400,3 +400,17 @@ Independent read-only QA approved core/engine/host/migration/UI source and
 separately reproduced388core and5839engine checks. Real GUI smoke passes45controls
 and all attachments; ninth-tab screenshot inspected. Preset suite passes1000checks.
 Native CI and normal PR integration remain pending; no actual DAW/listening claim.
+
+## Existing fractional ring-read correction — 2026-10-23
+
+A follow-up public sanitizer probe found a pre-existing rounding-dependent invalid
+ring index in ToneEffects reverb and Flanger. Lead reproduced both on baseline,
+corrected indexing with mathematically equivalent interpolation and added four-
+rate/layout regression fixtures. Local product17/17 and sanitizer14/14 pass;
+independent QA approved with focused666effects/171flanger passes. Native CI and
+normal integration remain pending. No architecture or parameter semantics change.
+
+Next bounded work: independently simulated dual-tap double tracking. Architecture
+agent proposed the slice; lead established Doubler v1/schema9 contract before
+assigning deesser_review core/header/tests and host engine/state/UI in isolated
+doubler-core/doubler-host worktrees. Pitch/formant blocker remains unresolved.

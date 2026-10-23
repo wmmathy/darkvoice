@@ -75,6 +75,9 @@ environment files, unrelated worktrees or untracked dependency additions.
 
 ## macOS manual testing
 
+Deferred by user until remaining features are implemented for combined
+verification. This checklist is preparation, not a request to test now.
+
 Use a test project and preserve any existing DarkVoice plugin bundles. GarageBand
 uses the AU `.component` bundles, not VST3. With the host closed, place the desired
 components in `~/Library/Audio/Plug-Ins/Components/`, enable Audio Units in the host

@@ -1,5 +1,11 @@
 # Changelog
 
+## Fractional delay ring safety
+
+- Correct near-integer fractional reads in the original delay/reverb and flanger.
+- Add public-parameter regression fixtures for a floating wrap that could read past the buffer.
+- Preserve interpolation, controls, routing and state schemas.
+
 ## Stereo musical delay
 
 - Add independent stereo repeats, single echo/slapback and ping-pong with smooth automation.
