@@ -92,3 +92,12 @@ neutral in existing presets and schema versions1–7 migrate to version8.
 The engine now has45 sound controls plus global bypass. The original delay/reverb
 remain available separately. Manual host/microphone/listening qualification is
 deferred until feature implementation is complete, as requested by the user.
+
+## Simulated doubler
+
+The Simulated Doubler group adds two independently wandering copies. Separation,
+variation, rate and mix control real bounded fractional-delay processing. It
+provides simulated double tracking, not pitch correction, harmony or a second
+recorded performance. Mono fold-down preserves the two voice weights, and silent
+channels stay silent. Existing presets migrate neutrally to schema9. The editor
+now uses a ten-group sidebar with49 sound controls plus global bypass.

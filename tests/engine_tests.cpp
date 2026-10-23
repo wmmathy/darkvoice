@@ -73,7 +73,7 @@ void snapshotsAndSmoothing() {
     p.mix = 0;
     p.outputDb = 12;
     check(engine.setParameters(p) && reference.setParameters(p), "valid parameter snapshot");
-    const std::array<float darkvoice::EngineParameters::*, 40> fields{
+    const std::array<float darkvoice::EngineParameters::*, 44> fields{
         &darkvoice::EngineParameters::inputDb,
         &darkvoice::EngineParameters::outputDb,
         &darkvoice::EngineParameters::highPassHz,
@@ -113,7 +113,11 @@ void snapshotsAndSmoothing() {
         &darkvoice::EngineParameters::stereoDelayMs,
         &darkvoice::EngineParameters::stereoDelayFeedback,
         &darkvoice::EngineParameters::stereoDelayMix,
-        &darkvoice::EngineParameters::stereoDelayBpm};
+        &darkvoice::EngineParameters::stereoDelayBpm,
+        &darkvoice::EngineParameters::doublerSeparationMs,
+        &darkvoice::EngineParameters::doublerVariationMs,
+        &darkvoice::EngineParameters::doublerRateHz,
+        &darkvoice::EngineParameters::doublerMix};
     for (int value : {-1, 3}) {
         auto invalid = p;
         invalid.stereoDelayMode = value;
@@ -445,6 +449,64 @@ void integratedFlanger(double rate) {
           "global dry mix preserves unprocessed flanger input");
 }
 
+void integratedDoubler(double rate) {
+    darkvoice::AudioEngine actual, reference, partition;
+    check(actual.prepare(rate, 257, 1) && reference.prepare(rate, 257, 1) &&
+              partition.prepare(rate, 257, 1),
+          "Integrated doubler prepare");
+    darkvoice::EngineParameters p;
+    p.doublerMix = .5f;
+    p.doublerVariationMs = 0;
+    check(actual.setParameters(p) && partition.setParameters(p), "Integrated doubler snapshot");
+    actual.reset();
+    partition.reset();
+    std::vector<float> wet(static_cast<std::size_t>(rate * .08), 0), dry = wet, other = wet;
+    wet[0] = dry[0] = other[0] = .8f;
+    check(run(actual, wet, 137) && run(reference, dry, 257) && run(partition, other, 257) &&
+              wet == other,
+          "Doubler integrated partition equivalence");
+    const auto tap = [&](std::size_t i, double seconds) {
+        const double delay = rate * seconds;
+        const auto integral = static_cast<std::size_t>(std::floor(delay));
+        const double fraction = delay - integral;
+        return (i >= integral ? (1 - fraction) * dry[i - integral] : 0) +
+               (i > integral ? fraction * dry[i - integral - 1] : 0);
+    };
+    double maxError = 0;
+    for (std::size_t i = 0; i < wet.size(); ++i)
+        maxError = std::max(
+            maxError, std::abs(wet[i] - (.5 * dry[i] + .25 * tap(i, .020) + .25 * tap(i, .031))));
+    check(maxError < 2e-7, "Integrated mono doubler matches independent two-tap dry/wet reference");
+    p.doublerVariationMs = 5;
+    p.doublerRateHz = 1.5f;
+    check(actual.setParameters(p), "Doubler varying snapshot");
+    actual.reset();
+    p.mix = 0;
+    check(actual.setParameters(p), "Doubler global dry snapshot");
+    actual.reset();
+    std::array<float, 257> sample{};
+    sample[0] = .123f;
+    std::array<float *, 1> channels{sample.data()};
+    check(actual.process(channels, 257) && sample[0] == .123f,
+          "Global dry ignores simulated doubler");
+    p.mix = 1;
+    p.bypass = true;
+    check(actual.setParameters(p), "Doubler bypass snapshot");
+    sample.fill(.456f);
+    check(actual.process(channels, 257) && sample[0] == .456f,
+          "Global bypass exact with simulated doubler");
+    p.bypass = false;
+    check(actual.setParameters(p), "Doubler callback snapshot");
+    actual.reset();
+    const auto before = allocations.load();
+    rejectAllocations.store(true);
+    const bool callback = actual.setParameters(p) && actual.process(channels, 137);
+    actual.reset();
+    rejectAllocations.store(false);
+    check(callback && allocations.load() == before,
+          "Doubler integrated callback/reset allocate nothing");
+}
+
 void integratedStereoDelay(double rate) {
     darkvoice::AudioEngine a, b;
     check(a.prepare(rate, 257, 1) && b.prepare(rate, 257, 1), "Musical delay engine prepare");
@@ -684,6 +746,7 @@ int main() {
         integratedFlanger(rate);
         integratedLimiter(rate);
         integratedStereoDelay(rate);
+        integratedDoubler(rate);
     }
     isolationBypassAndSafety();
     invalidBlocksAndAllocationFailure();

@@ -3,6 +3,16 @@
 #include <array>
 #include <juce_gui_basics/juce_gui_basics.h>
 #include <memory>
+class DarkVoiceLookAndFeel final : public juce::LookAndFeel_V4 {
+  public:
+    int getTabButtonBestWidth(juce::TabBarButton &, int) override {
+        return 42;
+    }
+    int getTabButtonOverlap(int) override {
+        return 0;
+    }
+    void drawTabButton(juce::TabBarButton &, juce::Graphics &, bool, bool) override;
+};
 class DarkVoiceEditor final : public juce::AudioProcessorEditor, private juce::Timer {
   public:
     explicit DarkVoiceEditor(DarkVoiceProcessor &, juce::File presetRoot = {});
@@ -19,12 +29,12 @@ class DarkVoiceEditor final : public juce::AudioProcessorEditor, private juce::T
     void chooseImport();
     void chooseExport();
     DarkVoiceProcessor &processor_;
-    juce::LookAndFeel_V4 look_;
-    juce::TabbedComponent tabs_{juce::TabbedButtonBar::TabsAtTop};
-    std::array<juce::Component, 9> pages_;
-    std::array<juce::Slider, 45> sliders_;
-    std::array<juce::Label, 45> labels_;
-    std::array<std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>, 45>
+    DarkVoiceLookAndFeel look_;
+    juce::TabbedComponent tabs_{juce::TabbedButtonBar::TabsAtLeft};
+    std::array<juce::Component, 10> pages_;
+    std::array<juce::Slider, 49> sliders_;
+    std::array<juce::Label, 49> labels_;
+    std::array<std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>, 49>
         attachments_;
     juce::ToggleButton bypass_{"Bypass processing"};
     std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> bypassAttachment_;

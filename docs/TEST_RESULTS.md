@@ -476,3 +476,20 @@ against a held valid snapshot, injecting invalid mode/division plus observable
 valid gain changes, then requiring gain divergence after valid enum restoration.
 Both NaN and finite/out-of-range enums are covered; no production DSP or quality
 tolerance was relaxed. Local corrected plugin suite passes; native rerun pending.
+
+## Simulated double tracking — 2026-10-23
+
+Local LinuxDebug products18/18 pass45.66sec, Releasecore15/15 pass3.34sec and
+ASan/UBSan core15/15 pass47.29sec with leak/halt enabled. NewDoubler381checks pass
+strict optimized and sanitizer standalone runs and independent optimized QA.
+Tests include independent absolute-history/random-knot oracle, fractional impulse
+weights,4rates/layouts, DC/convex peak/57ms tail, deterministicreset, activecontrol
+response and automated partition invariance, allocationfailure/callback allocation
+checks, invalid warmed state and hostilefloats. Preset suite1209checks passes.
+
+Actual host delay-copy timing, neutral/state migration and rawenum atomicity tests
+pass. Drymix uses exact pairedreference comparison rather than assuming nominal
+0dB normalizes exactly underFMA; globalbypass exactness remains asserted. GUI
+smoke passes49attachments/10sidebar groups and factoryaudio; inspected
+/tmp/darkvoice-doubler.png. Independent source/sidebar/test QA approved. NativeCI
+and actual host/listening remain separate, pending/deferred respectively.

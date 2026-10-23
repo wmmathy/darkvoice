@@ -1,5 +1,12 @@
 # Changelog
 
+## Simulated double tracking
+
+- Add two independently wandering delayed copies with mono-compatible stereo weights.
+- Append four hint-9 controls and strict schema-9 state/preset migration; existing factories remain neutral.
+- Add a tenth effects group and readable sidebar navigation at the minimum editor size.
+- This is simulated double tracking, not harmony generation or a second recorded performance.
+
 ## Fractional delay ring safety
 
 - Correct near-integer fractional reads in the original delay/reverb and flanger.

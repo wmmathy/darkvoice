@@ -459,3 +459,43 @@ all existing core/product tests, ASan/UBSan, independent QA and native CI.
 DSP agent owns onlysrc/ToneEffects.cpp,src/Flanger.cpp,tests/effects_tests.cpp and
 tests/flanger_tests.cpp in isolated fractional-ring-wrap worktree. Lead owns docs,
 integration and reviewed normal merge. Manual qualification remains deferred.
+
+## Doubler v1 / schema9 — 2026-10-23
+
+Separate dependency-free Doubler.hpp/.cpp provides simulated automatic double
+tracking, not harmony/pitch correction or another recorded performance. Lifecycle
+valid/prepare/setParameters/process/reset matches StereoDelay; four rates, one/two
+channels and1..65536maxFrames. Parameters aggregate order: separationMs20(default,
+10..40), variationMs2(0..6), rateHz0.4(0.1..2), mix0(0..0.5). Validate snapshots
+and buffers atomically, preallocate at most60ms+2samples per channel, no callback
+allocation/locking/I/O; invalid prepare unprepares.
+
+Read two fractional taps at separation+variation*wanderA and separation+11ms+
+variation*wanderB, using integer/fraction-before-wrap interpolation. Two independent
+seeded uint32 pseudorandom trajectories bounded[-1,1], smoothly interpolated between
+knots with cubic3t²-2t³. A runs at smoothed rate, B at1.173times that rate; fixed
+reset seeds and states for reproducibility. Smooth fourcontrols10ms per sample,
+settle targets/reset histories and generators on reset. No feedback. Mono wet=
+0.5A+0.5B; stereo Lwet=.75A_L+.25B_L, Rwet=.25A_R+.75B_R. No channel bleed;
+dual-mono fold-down matches mono within float rounding. Convex dry/wet mix, exact
+normal finite dry at mix0, sanitize nonfinite/true subnormal and protect finite
+float extremes. Effect tail at mostceil(.057*rate) samples; no algorithmic host
+latency (delayed copies are the effect).
+
+Insert after Flanger and before StereoDelay; final global mix/output/limiter
+unchanged. Append fourIDs to schema9/AU hint9: doublerSeparationMs10..40 step.1,
+doublerVariationMs0..6 step.1, doublerRateHz.1..2 step.01,doublerMix0...5 step.001.
+Defaults20/2/.4/0. Preserve old46IDs/hints and strict versions1..8 migration to
+neutral defaults. State50fields/presets49excluding onlybypass; ten editor tabs,
+newfourcontrols labeled simulated double tracking. Existing14factories neutral;
+no new factory until its actual DSP is qualified. Existing conservative tail
+reporting remains sufficient; no newtransport/BPM dependencies.
+
+Acceptance: independent variation0 impulse timing/weights (incl fractionalrates),
+causal bounded57ms tail, DC unity, historic-input convex peak bound, variation/rate
+measurably change audio, deterministic reset, active/automated partition
+invariance, dualmono fold-down/channel isolation, allrates/layouts, invalid warmed
+snapshots/buffers, allocation-failure/no callbackalloc, extremes/subnormals, strict
+Release/ASan. Host actualaudio, migration/preset/attachments/GUI and nativeCI.
+Independent QA and normal rules-respecting merge required. Actual manual host/
+listening qualification remains deferred by user; no perceptual certification.

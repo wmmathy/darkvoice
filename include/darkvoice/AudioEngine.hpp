@@ -2,6 +2,7 @@
 #include <array>
 #include <cstddef>
 #include <darkvoice/DeEsser.hpp>
+#include <darkvoice/Doubler.hpp>
 #include <darkvoice/Flanger.hpp>
 #include <darkvoice/ModulationEffects.hpp>
 #include <darkvoice/NoiseGate.hpp>
@@ -29,6 +30,7 @@ struct EngineParameters {
     float gateThresholdDb = -50.0f, gateRatio = 1.0f, gateReleaseMs = 120.0f;
     float deEssHz = 6000.0f, deEssThresholdDb = -24.0f, deEssReductionDb = 0.0f;
     float flangerRateHz = .3f, flangerDepthMs = 2, flangerFeedback = 0, flangerMix = 0;
+    float doublerSeparationMs = 20, doublerVariationMs = 2, doublerRateHz = .4f, doublerMix = 0;
     float stereoDelayMs = 100, stereoDelayFeedback = .25f, stereoDelayMix = 0, stereoDelayBpm = 120;
     int stereoDelayMode = 0, stereoDelayDivision = 5;
     bool stereoDelaySync = false;
@@ -64,6 +66,7 @@ class AudioEngine {
     DeEsser deEsser_;
     ModulationEffects modulation_;
     Flanger flanger_;
+    Doubler doubler_;
     StereoDelay stereoDelay_;
     VocalLimiter limiter_;
     std::array<std::vector<float>, 2> wet_;
