@@ -80,11 +80,12 @@ struct Ring {
         position = 0;
     }
     double read(double delay) const noexcept {
-        const double location = static_cast<double>(position) - delay;
-        const double wrapped = location < 0 ? location + samples.size() : location;
-        const auto first = static_cast<std::size_t>(wrapped);
-        const auto second = (first + 1) % samples.size();
-        const double fraction = wrapped - static_cast<double>(first);
+        // Keep fractional delay separate: adding a negative epsilon to the
+        // ring length can round to length and produce an invalid index.
+        const auto whole = static_cast<std::size_t>(delay);
+        const double fraction = delay - whole;
+        const auto first = position >= whole ? position - whole : position + samples.size() - whole;
+        const auto second = first == 0 ? samples.size() - 1 : first - 1;
         return samples[first] + fraction * (static_cast<double>(samples[second]) - samples[first]);
     }
     void write(double input) noexcept {

@@ -266,6 +266,46 @@ void stateAndSafety() {
     check(snapshot && processed && before == after,
           "no ordinary callback snapshot reset allocations");
 }
+// Public parameter regressions for a tap just above an integer. In the old
+// floating wrap, a negative epsilon could round up to the ring length.
+void fractionalWrapRegression() {
+    for (double rate : {44100., 48000., 88200., 96000.})
+        for (std::size_t count : {1U, 2U}) {
+            darkvoice::ToneEffects fx;
+            check(fx.prepare(rate, 512, count), "near-integer wrap preparation");
+            darkvoice::ToneEffectsParameters p;
+            p.reverbSize = .03125f;
+            p.reverbMix = .5f;
+            check(fx.setParameters(p), "near-integer public parameters");
+            constexpr std::size_t frames = 12000;
+            std::array<std::vector<float>, 2> first, second;
+            for (auto *pair : {&first, &second}) {
+                for (auto &channel : *pair)
+                    channel.assign(frames, 0);
+                (*pair)[0][0] = .5f;
+            }
+            const auto process = [&](auto &data, std::size_t block) {
+                fx.reset();
+                for (std::size_t offset = 0; offset < frames; offset += block) {
+                    std::array<float *, 2> channels{data[0].data() + offset,
+                                                    data[1].data() + offset};
+                    if (!fx.process(std::span<float *>(channels.data(), count),
+                                    std::min(block, frames - offset)))
+                        return false;
+                }
+                return true;
+            };
+            check(process(first, 512) && process(second, 113), "near-integer wrap renders");
+            check(first == second, "near-integer reset and partition invariant");
+            check(std::all_of(
+                      first[0].begin(), first[0].end(),
+                      [](float value) { return std::isfinite(value) && std::abs(value) <= .5f; }),
+                  "near-integer impulse finite and bounded");
+            check(std::all_of(first[1].begin(), first[1].end(),
+                              [](float value) { return value == 0; }),
+                  "near-integer wrap preserves silent channel");
+        }
+}
 } // namespace
 
 #if defined(__GNUC__) || defined(__clang__)
@@ -308,6 +348,7 @@ int main() {
         delayAndReverb(rate);
         stereoAtRate(rate);
     }
+    fractionalWrapRegression();
     stateAndSafety();
     std::printf("Effects checks: %d, failures: %d\n", checks, failures);
     return failures == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
