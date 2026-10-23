@@ -504,8 +504,8 @@ listening qualification remains deferred by user; no perceptual certification.
 
 With the actual Doubler numerically qualified, add the specification-required
 editable Double Tracked Rock factory preset using existing realDSP. Schema9 stays
-unchanged; old14IDs/settings remain unchanged. NewIDfactory.double-tracked-rock,
-generic nameDouble Tracked Rock, groupRock. Use moderate forward rock tone and
+unchanged; old14IDs/settings remain unchanged. NewIDfactory-double-tracked-rock,
+generic nameDouble Tracked Rock; rock is a descriptive genre, not a new API field. Use moderate forward rock tone and
 actual doubler mix>0/variation>0, retaining neutral correction/harmony independence.
 No actual second-performance or listening-quality claim; simulated ADT. Test15
 unique factories, complete valid49field maps, oldidentities/values unchanged,
