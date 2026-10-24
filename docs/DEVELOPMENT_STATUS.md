@@ -527,3 +527,45 @@ pendingnative; productcapability follows itsmergedrevision,not thislibraryalone.
 IndependentQA actuallyrebuilt strictO2suite4241/0 andran224ownimpulsetransform
 comparisons maxcomplexerror7.69278e-8<2e-7 plusstereoscaling. Approvedfinalcore;
 lead Release/ASan alreadycompleted above. Trackedsecret/dependencyscans pass.
+## Colour host integration verification — 2026-10-24
+
+Integrated frozen engine/host work under the versioned aligned-engine contract.
+Schema11 appends4fields,59state/58sound parameters,12groups. IndependentQA
+verified55prior definitions byte-identical, all15factories neutral in9Space/Colour
+fields, and no blocking source/test findings. IndependentO2boundaryprobe4588checks
+passed; independent transitionoracle8800samples matched exactly, including early
+56guard/128fade, Colour resets, gain/mix automation and interrupted transitions.
+
+Lead product build passes. Presets0.29sec pass; firstpluginCTest hitsold60sec
+budget without assertion output. Samebinary isolateddirect passes70.053secwall,
+75.713secuser, with allassertions retained. Increased only hostsuite runtimebudget
+to180sec for continuous8xColour andexpandedcases; not a DSPdeadline/numericwaiver.
+Integrated Debugengine15490checks pass25.258sec (old60sec budget unchanged).
+RealGUI58attachments/12groups passes; /tmp/darkvoice-colour.png inspected, all
+sidebarlabels/controlbounds fit900x780 and latency56samples visible. Packaging
+13fixtures andsecret-scanner selftest pass. FullsequentialRelease/ASan/product,
+format/static/scans/native/normalmerge gates stillpending atthischeckpoint.
+Manualhost/microphone/listening remains deferred/unrun peruserinstruction.
+
+Isolated integrated ASan/UBSan engine15490checks pass92.355secwall/91.975user,
+leak/halt enabled, without findings. Thus engine's former60sec CTest budget is
+alsoinsufficient for thisincrement's actualcontinuous8xworkload andexpandedoracle;
+increasedengine runtimebudget to180sec aftermeasurement, preservingassertions.
+Prior SpaceReverb60sec budget remains historical, not a currentresult. Fullsuite
+runs follow sequentially toavoid CPUcontention. Formatting/cppcheck/scans pass.
+
+Integratedfullproduct20/20passes118.62sec (host64.22sec withinmeasured180budget),
+Release17/17passes10.36sec. Sequentialfullsanitizersuite isrunning; independentQA
+approvedbothmeasuredtimeoutadjustments. No assertions/numericgates reduced.
+
+SequentialfullASan/UBSan17/17passes190.71sec withleak/halt enabled; everyfixture
+andnumericalgate retained. Finalformat/static/scans alreadypass onintegratedsource.
+ColourcorePR33 ismergedcd33a6a; appchanges hereawaitnativeCI/normalmerge. R3audit
+PR34 merged5395776 afterbb64e41 all7native40098123157 andquality40098123175 passed;
+its reproducedfailedqualitycriteria remain blocked, no productbackend introduced.
+
+Colour host PR35 merged daddba6 after exact41c2707 passed all seven native jobs
+40098919922 and source-quality40098919947. This tone-core branch now includes
+that merged base; current application schema11/58sound/12groups/fixed56 latency.
+The new tone library is still outside application routing until its own dependent
+host increment passes. All existing Colour tests and numerical gates are retained.

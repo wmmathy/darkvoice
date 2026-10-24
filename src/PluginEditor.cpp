@@ -2,7 +2,7 @@
 #include <cmath>
 namespace {
 const juce::Colour background{0xff111418}, panel{0xff1c2229}, accent{0xffe54b52}, text{0xffecedf0};
-constexpr std::array<const char *, 54> ids{"inputDb",
+constexpr std::array<const char *, 58> ids{"inputDb",
                                            "highPassHz",
                                            "drive",
                                            "thresholdDb",
@@ -55,8 +55,12 @@ constexpr std::array<const char *, 54> ids{"inputDb",
                                            "spaceDecay",
                                            "spaceToneHz",
                                            "spacePreDelayMs",
-                                           "spaceMix"};
-constexpr std::array<const char *, 54> names{"INPUT GAIN",
+                                           "spaceMix",
+                                           "colourModel",
+                                           "colourDrive",
+                                           "colourToneHz",
+                                           "colourMix"};
+constexpr std::array<const char *, 58> names{"INPUT GAIN",
                                              "HIGH-PASS",
                                              "WARMTH DRIVE",
                                              "COMPRESSOR THRESHOLD",
@@ -109,13 +113,17 @@ constexpr std::array<const char *, 54> names{"INPUT GAIN",
                                              "SPACE DECAY",
                                              "SPACE HF TONE",
                                              "SPACE PREDELAY",
-                                             "SPACE MIX"};
-constexpr std::array<const char *, 54> suffixes{
-    " dB", " Hz", "",    " dB", ":1",  "",    " dB", " Hz", " dB", " Hz",  " dB",
-    "",    " Hz", " dB", " ms", "",    "",    "",    "",    "",    " dB",  ":1",
-    " ms", " Hz", " dB", " dB", " Hz", " ms", "",    "",    " Hz", " ms",  "",
-    "",    "",    " dB", " ms", "",    " ms", "",    "",    "",    " BPM", "",
-    "",    " ms", " ms", " Hz", "",    "",    "",    " Hz", " ms", ""};
+                                             "SPACE MIX",
+                                             "COLOUR STYLE",
+                                             "COLOUR DRIVE",
+                                             "COLOUR HF TONE",
+                                             "COLOUR PARALLEL MIX"};
+constexpr std::array<const char *, 58> suffixes{
+    " dB", " Hz", "",    " dB", ":1",  "", " dB",  " Hz", " dB", " Hz", " dB", "",
+    " Hz", " dB", " ms", "",    "",    "", "",     "",    " dB", ":1",  " ms", " Hz",
+    " dB", " dB", " Hz", " ms", "",    "", " Hz",  " ms", "",    "",    "",    " dB",
+    " ms", "",    " ms", "",    "",    "", " BPM", "",    "",    " ms", " ms", " Hz",
+    "",    "",    "",    " Hz", " ms", "", "",     "",    " Hz", ""};
 juce::File presetDirectory(const juce::File &supplied) {
     if (supplied != juce::File{})
         return supplied;
@@ -173,6 +181,7 @@ DarkVoiceEditor::DarkVoiceEditor(DarkVoiceProcessor &p, juce::File root)
     tabs_.addTab("STEREO DELAY", panel, &pages_[8], false);
     tabs_.addTab("SIMULATED DOUBLER", panel, &pages_[9], false);
     tabs_.addTab("SPACE REVERB", panel, &pages_[10], false);
+    tabs_.addTab("COLOUR", panel, &pages_[11], false);
     addAndMakeVisible(tabs_);
     for (std::size_t i = 0; i < sliders_.size(); ++i) {
         auto &slider = sliders_[i];
@@ -182,8 +191,10 @@ DarkVoiceEditor::DarkVoiceEditor(DarkVoiceProcessor &p, juce::File root)
         slider.setName(names[i]);
         slider.setTitle(names[i]);
         slider.setTooltip(
-            i >= 49 ? "Distinct algorithmic Room / Hall / Plate networks. HF tone is output "
-                      "filtering; Decay is not an RT60 time."
+            i >= 54 ? "Tape/tube-style saturation with 8x oversampling, HF tone and parallel mix. "
+                      "Fixed 56-sample alignment."
+            : i >= 49 ? "Distinct algorithmic Room / Hall / Plate networks. HF tone is output "
+                        "filtering; Decay is not an RT60 time."
             : i >= 45
                 ? "Simulated double tracking: two independently wandering delayed copies; not "
                   "another performance or harmony."
@@ -211,7 +222,8 @@ DarkVoiceEditor::DarkVoiceEditor(DarkVoiceProcessor &p, juce::File root)
                           : i < 37 ? 7U
                           : i < 45 ? 8U
                           : i < 49 ? 9U
-                                   : 10U;
+                          : i < 54 ? 10U
+                                   : 11U;
         pages_[page].addAndMakeVisible(slider);
         labels_[i].setText(names[i], juce::dontSendNotification);
         labels_[i].setColour(juce::Label::textColourId, juce::Colour(0xffb5bdc7));
@@ -237,6 +249,10 @@ DarkVoiceEditor::DarkVoiceEditor(DarkVoiceProcessor &p, juce::File root)
         return juce::String(models[std::clamp(static_cast<int>(std::round(value)), 0, 2)]);
     };
     sliders_[49].setTextBoxStyle(juce::Slider::TextBoxRight, true, 110, 28);
+    sliders_[54].textFromValueFunction = [](double value) {
+        return juce::String(value < .5 ? "Tape" : "Tube");
+    };
+    sliders_[54].setTextBoxStyle(juce::Slider::TextBoxRight, true, 110, 28);
     tempo_.setName("Stereo delay tempo status");
     tempo_.setColour(juce::Label::textColourId, juce::Colour(0xffb5bdc7));
     tempo_.setFont(juce::Font(juce::FontOptions(12.0f)));
@@ -411,8 +427,10 @@ void DarkVoiceEditor::paint(juce::Graphics &g) {
     g.drawText("DEVELOPMENT BUILD  /  Real DSP / Local presets / Editable sound", 40, 55,
                getWidth() - 65, 24, juce::Justification::centredLeft);
     g.setFont(juce::Font(juce::FontOptions(12.0f)));
-    g.drawText("Peak meters, not LUFS / Pitch / AI / true-peak mastering pending", 24,
-               getHeight() - 30, getWidth() - 48, 22, juce::Justification::centredLeft);
+    g.drawText(
+        "Latency: " + juce::String(processor_.getLatencySamples()) +
+            " samples / Peak meters; LUFS, pitch correction, AI and true-peak mastering pending",
+        24, getHeight() - 30, getWidth() - 48, 22, juce::Justification::centredLeft);
 }
 void DarkVoiceEditor::resized() {
     const int width = getWidth() - 48;
@@ -440,7 +458,8 @@ void DarkVoiceEditor::resized() {
                           : i < 37 ? 7U
                           : i < 45 ? 8U
                           : i < 49 ? 9U
-                                   : 10U;
+                          : i < 54 ? 10U
+                                   : 11U;
         const auto row = i < 7    ? i
                          : i < 14 ? i - 7
                          : i < 20 ? i - 14
@@ -451,7 +470,8 @@ void DarkVoiceEditor::resized() {
                          : i < 37 ? i - 34
                          : i < 45 ? i - 37
                          : i < 49 ? i - 45
-                                  : i - 49;
+                         : i < 54 ? i - 49
+                                  : i - 54;
         const int rowHeight = (tabs_.getHeight() - 48) / (page == 8 ? 9 : 7);
         const int y = 14 + static_cast<int>(row) * rowHeight;
         labels_[i].setBounds(16, y, 205, 24);
