@@ -499,3 +499,18 @@ snapshots/buffers, allocation-failure/no callbackalloc, extremes/subnormals, str
 Release/ASan. Host actualaudio, migration/preset/attachments/GUI and nativeCI.
 Independent QA and normal rules-respecting merge required. Actual manual host/
 listening qualification remains deferred by user; no perceptual certification.
+
+## Double Tracked Rock factory sound — 2026-10-23
+
+With the actual Doubler numerically qualified, add the specification-required
+editable Double Tracked Rock factory preset using existing realDSP. Schema9 stays
+unchanged; old14IDs/settings remain unchanged. NewIDfactory-double-tracked-rock,
+generic nameDouble Tracked Rock; rock is a descriptive genre, not a new API field. Use moderate forward rock tone and
+actual doubler mix>0/variation>0, retaining neutral correction/harmony independence.
+No actual second-performance or listening-quality claim; simulated ADT. Test15
+unique factories, complete valid49field maps, oldidentities/values unchanged,
+actual host render difference against same settings with doublerMix0 and normal
+persistence/GUI/product coverage. Agent host owns onlysrc/PresetBank.cpp,
+tests/preset_tests.cpp,tests/plugin_tests.cpp in isolated double-tracked-rock
+worktree. Lead docs/integration/CI, independent QA. No publicrelease or manual
+listening gate (deferred byuser).

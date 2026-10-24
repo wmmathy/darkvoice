@@ -1,6 +1,8 @@
 #include "PresetBank.hpp"
 #include <atomic>
+#include <bit>
 #include <cmath>
+#include <cstdint>
 #include <darkvoice/ParameterSchema.hpp>
 #include <filesystem>
 #include <iostream>
@@ -49,11 +51,34 @@ juce::String jsonFor(const darkvoice::PresetValues &values, int version = 9,
 void write(const juce::File &file, const juce::String &text) {
     require(file.replaceWithText(text), "Cannot write fixture");
 }
+// Lock the prior catalogue's identities and every float setting to baseline
+// ea3ded9. Fixed little-endian float bytes avoid JSON/locale formatting effects.
+std::uint64_t factoryFingerprint(const darkvoice::Preset &preset) {
+    std::uint64_t hash = 1469598103934665603ULL;
+    const auto byte = [&](unsigned char value) {
+        hash ^= value;
+        hash *= 1099511628211ULL;
+    };
+    const auto text = [&](const std::string &value) {
+        for (unsigned char c : value)
+            byte(c);
+        byte(0);
+    };
+    text(preset.id.toStdString());
+    text(preset.name.toStdString());
+    for (const auto &[id, value] : preset.values) {
+        text(id);
+        const auto bits = std::bit_cast<std::uint32_t>(value);
+        for (int shift = 0; shift < 32; shift += 8)
+            byte(static_cast<unsigned char>((bits >> shift) & 255));
+    }
+    return hash;
+}
 void basicPersistence() {
     TemporaryDirectory temp;
     darkvoice::PresetBank bank(temp.file.getChildFile("library"));
     good(bank.refresh(), "Empty library refresh");
-    require(bank.presets().size() == 14, "Fourteen factory sounds expected");
+    require(bank.presets().size() == 15, "Fifteen factory sounds expected");
     std::set<std::string> factorySnapshots;
     for (const auto &preset : bank.presets()) {
         require(preset.factory && !preset.favorite, "Factory flags");
@@ -62,21 +87,50 @@ void basicPersistence() {
                     preset.values.at("limiterReleaseMs") == 100,
                 "Factory limiter remains off with neutral defaults");
         good(darkvoice::PresetBank::validate(preset.values), "Factory values invalid");
-        for (std::size_t i = 38; i < darkvoice::parameterSchema.size(); ++i) {
+        for (std::size_t i = 38; i < 46; ++i) {
             const auto &spec = darkvoice::parameterSchema[i];
             require(preset.values.at(spec.id) == spec.defaultValue,
                     "Existing factories keep new stereo delay neutral");
         }
         require(preset.values.size() == 49 && !preset.values.contains("bypass"),
                 "Preset excludes bypass");
-        for (std::size_t i = 46; i < darkvoice::parameterSchema.size(); ++i) {
-            const auto &spec = darkvoice::parameterSchema[i];
-            require(preset.values.at(spec.id) == spec.defaultValue,
-                    "Existing factories keep simulated doubler neutral");
-        }
+        if (preset.id != "factory-double-tracked-rock")
+            for (std::size_t i = 46; i < darkvoice::parameterSchema.size(); ++i) {
+                const auto &spec = darkvoice::parameterSchema[i];
+                require(preset.values.at(spec.id) == spec.defaultValue,
+                        "Existing factories keep simulated doubler neutral");
+            }
         factorySnapshots.insert(jsonFor(preset.values).toStdString());
     }
-    require(factorySnapshots.size() == 14, "Factory settings must actually differ");
+    require(factorySnapshots.size() == 15, "Factory settings must actually differ");
+    const std::map<std::string, std::uint64_t> priorFactoryFingerprints{
+        {"factory-dark-synth", 8960626116177314993ULL},
+        {"factory-industrial-bass", 11621749232851812955ULL},
+        {"factory-heavy-rock", 7871813731075746782ULL},
+        {"factory-clean-studio", 12085619434456688729ULL},
+        {"factory-gothic-bass", 11641356722098154743ULL},
+        {"factory-cinematic-bass", 5013901383243817466ULL},
+        {"factory-dark-wave", 1751362799623169572ULL},
+        {"factory-deep-narrator", 10543216408023329900ULL},
+        {"factory-industrial-whisper", 4518812483475202072ULL},
+        {"factory-grunge-baritone", 15545579731950925572ULL},
+        {"factory-acoustic-baritone", 8735270006636597024ULL},
+        {"factory-dark-melodic", 16943747349606405484ULL},
+        {"factory-industrial-power", 10686810074294856948ULL},
+        {"factory-natural-dark-baritone", 8944461555890222485ULL}};
+    std::set<std::string> identifiers;
+    for (const auto &preset : bank.presets())
+        require(identifiers.insert(preset.id.toStdString()).second, "Factory IDs must be unique");
+    for (const auto &[id, fingerprint] : priorFactoryFingerprints) {
+        const auto *preset = bank.find(id);
+        require(preset && factoryFingerprint(*preset) == fingerprint,
+                "Existing factory identity/name/all settings changed");
+    }
+    const auto *doubled = bank.find("factory-double-tracked-rock");
+    require(doubled && doubled->name == "Double Tracked Rock" &&
+                doubled->values.at("doublerMix") > 0 &&
+                doubled->values.at("doublerVariationMs") > 0,
+            "Double Tracked Rock uses real simulated ADT");
     const auto factory = bank.presets().front().id;
     require(bank.rename(factory, "Changed").failed(), "Cannot rename factory");
     good(bank.setFavorite(factory, true), "Favorite factory");
@@ -530,7 +584,7 @@ void malformedAndMigration() {
     const auto broken = temp.file.getChildFile("bank").getChildFile("broken.json");
     write(broken, "broken");
     require(bank.refresh().failed(), "Refresh reports malformed local file");
-    require(bank.find(id) != nullptr && bank.presets().size() == 19,
+    require(bank.find(id) != nullptr && bank.presets().size() == 20,
             "Refresh retains valid files and factories");
     require(broken.loadFileAsString() == "broken", "Malformed user file preserved");
     const auto favorites = temp.file.getChildFile("bank").getChildFile(".favorites.json");
@@ -571,7 +625,7 @@ void hostilePathsAndLimits() {
                                     userLink.getFullPathName().toStdString());
     require(bank.rename(uuid, "Changed").failed(), "Reject symlink user rename");
     require(bank.refresh().failed(), "Refresh reports symlink user file");
-    require(bank.presets().size() == 14, "Symlink preset not loaded");
+    require(bank.presets().size() == 15, "Symlink preset not loaded");
     const auto capped = temp.file.getChildFile("capped");
     good(capped.createDirectory(), "Cap fixture root");
     for (int i = 0; i < 512; ++i)
