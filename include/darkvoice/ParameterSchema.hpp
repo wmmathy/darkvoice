@@ -12,7 +12,7 @@ inline constexpr std::size_t legacyParameterCount = 8;
 inline constexpr std::size_t effectsParameterCount = 21;
 inline constexpr std::size_t gateParameterCount = 24;
 inline constexpr std::size_t deEsserParameterCount = 27;
-inline constexpr std::array<ParameterSpec, 50> parameterSchema{{
+inline constexpr std::array<ParameterSpec, 55> parameterSchema{{
     {"inputDb", "Input", -24.0f, 24.0f, 0.0f, 0.1f, 1.0f, false},
     {"outputDb", "Output", -24.0f, 24.0f, 0.0f, 0.1f, 1.0f, false},
     {"highPassHz", "High-pass", 20.0f, 400.0f, 20.0f, 1.0f, 0.5f, false},
@@ -63,19 +63,25 @@ inline constexpr std::array<ParameterSpec, 50> parameterSchema{{
     {"doublerVariationMs", "Doubler variation", 0, 6, 2, .1f, 1, false},
     {"doublerRateHz", "Doubler variation rate", .1f, 2, .4f, .01f, .5f, false},
     {"doublerMix", "Doubler mix", 0, .5f, 0, .001f, 1, false},
+    {"spaceModel", "Space model", 0, 2, 0, 1, 1, false},
+    {"spaceDecay", "Space decay", 0, 1, .5f, .001f, 1, false},
+    {"spaceToneHz", "Space HF tone", 1000, 16000, 8000, 1, .5f, false},
+    {"spacePreDelayMs", "Space predelay", 0, 100, 0, .1f, 1, false},
+    {"spaceMix", "Space mix", 0, .5f, 0, .001f, 1, false},
 }};
-inline constexpr int currentSchemaVersion = 9;
+inline constexpr int currentSchemaVersion = 10;
 constexpr std::size_t parameterCountForVersion(int version) noexcept {
-    return version == 1   ? legacyParameterCount
-           : version == 2 ? effectsParameterCount
-           : version == 3 ? gateParameterCount
-           : version == 4 ? deEsserParameterCount
-           : version == 5 ? 31
-           : version == 6 ? 35
-           : version == 7 ? 38
-           : version == 8 ? 46
-           : version == 9 ? parameterSchema.size()
-                          : 0;
+    return version == 1    ? legacyParameterCount
+           : version == 2  ? effectsParameterCount
+           : version == 3  ? gateParameterCount
+           : version == 4  ? deEsserParameterCount
+           : version == 5  ? 31
+           : version == 6  ? 35
+           : version == 7  ? 38
+           : version == 8  ? 46
+           : version == 9  ? 50
+           : version == 10 ? parameterSchema.size()
+                           : 0;
 }
 constexpr int parameterVersion(std::size_t index) noexcept {
     return index < legacyParameterCount    ? 1
@@ -86,6 +92,7 @@ constexpr int parameterVersion(std::size_t index) noexcept {
            : index < 35                    ? 6
            : index < 38                    ? 7
            : index < 46                    ? 8
-                                           : 9;
+           : index < 50                    ? 9
+                                           : 10;
 }
 } // namespace darkvoice

@@ -514,3 +514,78 @@ persistence/GUI/product coverage. Agent host owns onlysrc/PresetBank.cpp,
 tests/preset_tests.cpp,tests/plugin_tests.cpp in isolated double-tracked-rock
 worktree. Lead docs/integration/CI, independent QA. No publicrelease or manual
 listening gate (deferred byuser).
+
+## SpaceReverb v1 / schema10 — 2026-10-23
+
+A separate dependency-free SpaceReverb provides real distinct Room/Hall/Plate
+algorithmic networks, not physical room/plate emulation or sonic qualification.
+Legacy ToneEffects reverb unchanged. API valid/prepare/setParameters/process/reset
+matches Doubler; rates44.1/48/88.2/96kHz,mono/stereo,maxFrames1..65536. Parameter
+aggregate order int model0(0Room,1Hall,2Plate);float decay.5(0..1),toneHz8000
+(1000..16000),preDelayMs0(0..100),mix0(0...5). Invalid snapshot/buffers atomic;
+invalid prepare unprepares. All allocation duringprepare, no callback allocation/
+locks/I/O. Reset clears every model, settles parameters and selects target model.
+
+Fixed integer delay L(ms)=max(1,llround(rate*ms/1000)). Allpass AP(t,.5): read
+v atL(t),y=v-.5*x,write x+.5*y. Fixed feedback LP q=a*qold+(1-a)*d,
+a=exp(-2pi*cutoff/rate). Read all feedback taps before writing. Allmodels run
+continuously independently perchannel, receiving the same predelayedinput. No
+channelcrossfeed or artificialstereo claim. g=.25+.70*decay in[.25,.95].
+
+Room4FDN: times[29,37,43,53]ms;feedbackLP10000Hz. H4ij=(-1)^popcount(i&j)/2,
+b=[1,1,1,1]/2,c=[1,-1,1,-1]/2. Write w=(1-g)*b*x+g*H4*q,late=c dot d.
+EarlyFIR x times[3,5,8,12,17,23]ms weights[.30,.24,.18,.13,.09,.06].
+Roomoutput=.60*early+.40*late.
+
+Hall8FDN: times[43,53,61,71,79,89,101,113]ms;feedbackLP6000Hz.
+u=AP(7.3,.5)(AP(4.7,.5)(x));H8ij=(-1)^popcount(i&j)/sqrt8,
+b=allones/sqrt8,c=[1,-1,1,-1,-1,1,-1,1]/sqrt8.
+Write w=(1-g)*b*u+g*H8*q,late=c dot d. EarlyFIR receives x times
+[12,19,27,37]ms weights[.40,.30,.20,.10]. Halloutput=.20*early+.80*late.
+
+Plate2tank: u=AP(3.1,.5)(AP(1.7,.5)(x));tanktimes[23.9,31.3]ms read d0,d1;
+feedbackLP8000Hz q0,q1; a0=AP(7.7,.5)(q0),a1=AP(11.3,.5)(q1).
+Simultaneously write w0=(1-g)*u/sqrt2+g*a1,w1=(1-g)*u/sqrt2-g*a0.
+Plateoutput=(d0+d1)/sqrt2. No earlyreflection FIR.
+
+Predelayring ceil(.100*rate)+2: write sanitized currentinput BEFORE reading, so
+zero delay returns currentinput and fraction<1 blends current/previous. Correct
+integer/fraction-before-wrap reads. Modelweights convexonehot smoothing20ms;
+othercontrols10ms persample. Apply outputHFtone LP exp(-2pi*toneHz/rate) AFTER
+modelblend, then convexdry/wet. HFtone is not spectraldecay or exactdigital3dB
+claim; Decay has no seconds/RT60label. Mix0 exactnormalfinite dry, sanitize
+nonfinite/true subnormal and protectfinitefloat extremes. Globalbypassfreezesall.
+
+Stability: normalizedHadamard/signedswap norm1, fixed delays/allpasses/LP l2gain
+<=1; automatedfeedbackg<=.95 strictsmallgain. Not instantpeaklimiting. ActiveSpace
+reports60s hosttail (240s musicaldelay dominates;Spaceoffretainsold40s). Actual
+roundedlength weightedfeedbackbounds at exponent.4/second remain<1. Universal
+40s/-90dBclaim was corrected beforeintegration: automatedpredelay canrepeatinput
+energy. With zero initialstate/finiteinputenergy, prescribedlinearnetwork bound
+includes sqrt(Dmax+2) predelaySchurfactor; conservativewet60s bound<-127dB
+relativeinputl2, notexactsilence/inaudibility. Modelweights/tone preserve a
+pointwiseexponentialenvelope, notarbitrarytimevaryingfilterl2passivity. Static
+48k40staildiagnostic remainsuseful; nospecialdecayseconds/RT60 claim. NewDSP adds noalgorithmichostlatency; predelay is musical.
+
+Insert after StereoDelay before globalmix/output/limiter. Append AUhint10/schema10
+IDs spaceModel0..2 step1(default0),spaceDecay0..1 step.001(.5),spaceToneHz
+1000..16000 step1(8000),spacePreDelayMs0..100 step.1(0),spaceMix0...5 step.001(0).
+Preserve prior50IDs/hints; state55/preset54excludingonlybypass. Strictv1..9neutral
+migration; extend exactlexicalsmallintegerguards tospaceModel max2 inJSON/XML
+and safeinvalidenum sentinel beforecasts. Eleven readableeditor groups, five
+actualcontrols, realmodelnames. Existingfactorymaps neutral forSpaceReverb.
+
+Acceptance: public impulse withmix.5 recoverwet=2output-input; analytically
+accounttonepole. FirstrawarrivalRoom L3 coefficient.18,Hall L12 coefficient.08,
+Plate L23.9 coefficient(1-g)/8. AllRoom/Hall earlycoefficients beforeFDNarrival
+verifiedwithindependenttone recurrence; zero/integer/fractionalpredelay oracle;
+allrate/layout fingerprints/diffusion/earlyenergy asstructuralevidence only.
+Normalizeddecaycurves0/.5/1 (absoluteenergy mayfall asinputscaled1-g). Published
+matrix orthogonality/passivity/source review; long48kmaxdecaytail andactualrounded
+weightedfeedbackbounds. Reset,activeautomatedpartition,modelcrossfade,invalid
+warmedstate,allocationfailure/no callbackalloc,extremes/subnormals. StrictRelease/
+ASan/host/preset/GUI/nativeCI andindependentQA. Listening/DAWmanual testsdeferred.
+
+Agent deesser_review owns ONLYinclude/darkvoice/SpaceReverb.hpp,src/SpaceReverb.cpp,
+tests/space_reverb_tests.cpp inisolatedspace-reverb-core. Leadowns sharedcontracts,
+CMake/docs/integration; hostassignment follows thisfrozenAPI withisolatedownership.

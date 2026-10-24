@@ -1,5 +1,12 @@
 # Changelog
 
+## Space reverb
+
+- Add distinct Room, Hall and Plate algorithmic networks with decay, HF tone, predelay and mix.
+- Append five hint-10 parameters and strict schema-10 migration; keep all fifteen factories neutral.
+- Add an eleventh editor group and report a conservative 60-second active reverb tail.
+- Preserve the legacy reverb and musical-delay tail precedence; manual sonic qualification remains deferred.
+
 ## Double Tracked Rock factory
 
 - Add the fifteenth required factory sound using the actual simulated doubler and moderate rock tone.

@@ -73,7 +73,7 @@ void snapshotsAndSmoothing() {
     p.mix = 0;
     p.outputDb = 12;
     check(engine.setParameters(p) && reference.setParameters(p), "valid parameter snapshot");
-    const std::array<float darkvoice::EngineParameters::*, 44> fields{
+    const std::array<float darkvoice::EngineParameters::*, 48> fields{
         &darkvoice::EngineParameters::inputDb,
         &darkvoice::EngineParameters::outputDb,
         &darkvoice::EngineParameters::highPassHz,
@@ -117,7 +117,11 @@ void snapshotsAndSmoothing() {
         &darkvoice::EngineParameters::doublerSeparationMs,
         &darkvoice::EngineParameters::doublerVariationMs,
         &darkvoice::EngineParameters::doublerRateHz,
-        &darkvoice::EngineParameters::doublerMix};
+        &darkvoice::EngineParameters::doublerMix,
+        &darkvoice::EngineParameters::spaceDecay,
+        &darkvoice::EngineParameters::spaceToneHz,
+        &darkvoice::EngineParameters::spacePreDelayMs,
+        &darkvoice::EngineParameters::spaceMix};
     for (int value : {-1, 3}) {
         auto invalid = p;
         invalid.stereoDelayMode = value;
@@ -127,6 +131,12 @@ void snapshotsAndSmoothing() {
         auto invalid = p;
         invalid.stereoDelayDivision = value;
         check(!engine.setParameters(invalid), "Invalid stereo delay division rejected atomically");
+    }
+    for (int invalid : {-1, 3}) {
+        auto candidate = p;
+        candidate.spaceModel = invalid;
+        check(!engine.setParameters(candidate),
+              "Invalid Space model engine snapshot rejected atomically");
     }
     for (auto field : fields) {
         auto invalid = p;
@@ -449,6 +459,56 @@ void integratedFlanger(double rate) {
           "global dry mix preserves unprocessed flanger input");
 }
 
+void integratedSpaceReverb(double rate) {
+    darkvoice::AudioEngine actual, reference, partition;
+    check(actual.prepare(rate, 257, 1) && reference.prepare(rate, 257, 1) &&
+              partition.prepare(rate, 257, 1),
+          "Integrated Space Reverb prepare");
+    darkvoice::EngineParameters p;
+    p.spaceMix = .5f;
+    check(actual.setParameters(p) && partition.setParameters(p), "Integrated Space snapshot");
+    actual.reset();
+    partition.reset();
+    std::vector<float> wet(static_cast<std::size_t>(rate * .08), 0), dry = wet, other = wet;
+    wet[0] = dry[0] = other[0] = .8f;
+    check(run(actual, wet, 137) && run(reference, dry, 257) && run(partition, other, 257) &&
+              wet == other,
+          "Space engine partition invariant");
+    const auto first = static_cast<std::size_t>(std::llround(rate * .003));
+    for (std::size_t i = 0; i < first; ++i)
+        check(std::abs(2 * wet[i] - dry[i]) < 1e-7,
+              "Zero predelay Space must wait only for Room network arrival");
+    const double expected = .18 * (1 - std::exp(-2 * std::numbers::pi * 8000 / rate)) * dry[0];
+    check(std::abs(2 * wet[first] - dry[first] - expected) < 2e-7,
+          "Integrated Room first arrival matches independent coefficient");
+    p.mix = 0;
+    check(actual.setParameters(p), "Space global dry snapshot");
+    actual.reset();
+    std::array<float, 257> data{};
+    data[0] = .123f;
+    std::array<float *, 1> channels{data.data()};
+    check(actual.process(channels, 257) && data[0] == .123f,
+          "Global dry excludes Space wet output");
+    p.mix = 1;
+    p.bypass = true;
+    check(actual.setParameters(p), "Space bypass snapshot");
+    data.fill(.456f);
+    check(actual.process(channels, 257) && data[0] == .456f,
+          "Global bypass remains exact with Space active");
+    p.bypass = false;
+    p.spaceModel = 2;
+    p.spacePreDelayMs = 2.5f;
+    check(actual.setParameters(p), "Space model/predelay snapshot");
+    actual.reset();
+    const auto before = allocations.load();
+    rejectAllocations.store(true);
+    const bool callback = actual.setParameters(p) && actual.process(channels, 137);
+    actual.reset();
+    rejectAllocations.store(false);
+    check(callback && allocations.load() == before,
+          "Space integrated callback/reset allocate nothing");
+}
+
 void integratedDoubler(double rate) {
     darkvoice::AudioEngine actual, reference, partition;
     check(actual.prepare(rate, 257, 1) && reference.prepare(rate, 257, 1) &&
@@ -747,6 +807,7 @@ int main() {
         integratedLimiter(rate);
         integratedStereoDelay(rate);
         integratedDoubler(rate);
+        integratedSpaceReverb(rate);
     }
     isolationBypassAndSafety();
     invalidBlocksAndAllocationFailure();

@@ -442,3 +442,33 @@ finite527cap. Native CI/normal merge pending. Manual audition remains deferred.
 StereoDelayPR28 merged04a0b404 after exact8b3befe all7native39955609604 and
 quality39955609594 passed. RingfixPR29 merged0598ce915 after13a2a7a all7native
 39955678027 andquality39955678063 passed. DoublerPR30 remains pendingnative.
+
+## Space Reverb integration — 2026-10-24
+
+Lead integrated frozen core by space_core_finish and host by space_host_finish;
+space_qa independently approved source/routing/schema10/54controls/11groups and
+reproduced697strict optimized core checks. Sourceimplements4lineRoom/8lineHall
+normalizedHadamard FDNs andcrosscoupledallpassPlate, independentperchannel.
+EquivalentFWHT butterflies reduce matrixwork, without changing analytic gates.
+47prepareallocationfailures, earlycoefficients/predelay/tone/crossfade/continuous
+history/normalizeddecay/weightedbounds/extremes/partition checks pass.
+
+Lead product19/19 passes87.10sec, engine6770checks, presets1515checks, plugin43.93sec
+under existing60sec limit. RealGUI54attachments/11sidebar groups passes and
+/tmp/darkvoice-space-reverb.png inspected. ASan initialconcurrentrun hitengine
+60sec timeout; identicalbinary alonepasses6770checks45.62sec. Sequentialfull
+16/16ASan/UBSan passes110.11sec withleak/halt enabled; no timeout/numerical gate
+was changed. Release/static/format/secrets/nativegates recorded ascompleted below.
+
+IndependentmathQA corrected universal40sec tailassumption beforeintegration: moving
+predelay canrevisitinputenergy. ActiveSpace reports60sec (musicaldelay240 dominates,
+neutral40); fixedlinefeedbackweightedloopmax.99393549<1. Mathematicalenvelopes
+assumezero initialstate/finiteinputenergy and linearnetwork; no exactsilence,
+physicalemulation, CPUdeadline, actualhost or listeningapproval claim.
+
+PR30Doubler merged e61efc138 after b0a72d2 native39956237974/quality39956237975;
+PR31factory merged d67a64c2 after04ab976 native39957411538/quality39957411558.
+Both all7nativejobs passed. Manualqualification remains explicitlydeferred.
+
+IntegratedRelease16/16passes5.58sec; formatting/cppcheck pass. NewSpacecoreis
+697checks,engine6770,presets1515. Nativechecks/normalPRmerge arenext.
