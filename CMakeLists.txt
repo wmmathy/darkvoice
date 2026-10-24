@@ -97,7 +97,9 @@ if(BUILD_TESTING)
     set_target_properties(darkvoice_engine_tests PROPERTIES CXX_EXTENSIONS OFF)
     darkvoice_strict_warnings(darkvoice_engine_tests)
     add_test(NAME engine.regression COMMAND darkvoice_engine_tests)
-    set_tests_properties(engine.regression PROPERTIES TIMEOUT 60)
+    # Fixed-latency Colour routing and full transition oracles measured 25s
+    # Debug and 92s ASan/UBSan in isolated runs; retain every numeric gate.
+    set_tests_properties(engine.regression PROPERTIES TIMEOUT 180)
 
     add_executable(darkvoice_effects_tests tests/effects_tests.cpp)
     target_link_libraries(darkvoice_effects_tests PRIVATE DarkVoice::Engine)
@@ -241,7 +243,10 @@ if(DARKVOICE_BUILD_PRODUCTS)
         target_compile_features(darkvoice_gui_smoke PRIVATE cxx_std_20)
         target_compile_definitions(darkvoice_gui_smoke PRIVATE JUCE_GLOBAL_MODULE_SETTINGS_INCLUDED=1)
         add_test(NAME plugin.state_and_audio COMMAND darkvoice_plugin_tests)
-        set_tests_properties(plugin.state_and_audio PROPERTIES TIMEOUT 60
+        # Continuous 8x Colour processing plus the expanded alignment/audio fixtures
+        # measured 70s in an isolated cloud Debug run. This is a test runtime
+        # budget, not a real-time performance requirement or a numerical waiver.
+        set_tests_properties(plugin.state_and_audio PROPERTIES TIMEOUT 180
             FAIL_REGULAR_EXPRESSION "JUCE Assertion failure;Leaked objects detected")
     endif()
 endif()

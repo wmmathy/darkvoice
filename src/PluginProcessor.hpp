@@ -15,6 +15,7 @@ class DarkVoiceProcessor final : public juce::AudioProcessor {
     void releaseResources() override;
     bool isBusesLayoutSupported(const BusesLayout &) const override;
     void processBlock(juce::AudioBuffer<float> &, juce::MidiBuffer &) override;
+    void processBlockBypassed(juce::AudioBuffer<float> &, juce::MidiBuffer &) override;
     juce::AudioProcessorEditor *createEditor() override;
     bool hasEditor() const override {
         return true;
@@ -74,6 +75,7 @@ class DarkVoiceProcessor final : public juce::AudioProcessor {
   private:
     static juce::AudioProcessorValueTreeState::ParameterLayout createParameters();
     void updateHostTempo() noexcept;
+    void processAudio(juce::AudioBuffer<float> &, bool forceBypass);
     darkvoice::EngineParameters snapshot() const noexcept;
     darkvoice::AudioEngine engine_;
     darkvoice::DryPitchAnalyzer dryAnalysis_;

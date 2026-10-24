@@ -652,3 +652,160 @@ no CPUdeadline/listening/DAWclaim. Manualqualificationdeferred.
 Agent space_core_finish owns ONLYinclude/darkvoice/Colour.hpp,src/Colour.cpp,
 src/ColourOversampling.hpp,tests/colour_tests.cpp inisolatedcolour-coreworktree.
 No shared/CMake/docs/commit/push;leadownsqualification/integration.
+
+## Aligned AudioEngine v2 / Colour host schema11 — 2026-10-24
+
+Dependency: Colour core is qualified and merged at cd33a6a (PR33), after478
+checks, independent QA and native40075994215 all7jobs/quality40075994126. This
+contract deliberately replaces immediate zero-latency output with fixed56-sample
+alignment. Preserve prior55 parameter IDs/hints and all15 factory settings.
+
+Append EngineParameters fields int colourModel=0; float colourDrive=.25f,
+colourToneHz=16000,colourMix=0. Append schema11/AU hint11 IDs colourModel[0,1]
+step1/default0 (Tape/Tube); colourDrive[0,1] step.001/default.25; colourToneHz
+[1000,20000] step1/skew.5/default16000; colourMix[0,1] step.001/default0. Total
+59state/58preset fields excluding onlybypass; strict v1..10 migration to neutral
+Colour defaults. All15 factories add neutraldefaults. Retain original14factory
+fingerprints on original49 fields; separately assert nine Space/Colour defaults.
+Exact raw JSON/XML small-integer guards include colourModel max1, before numeric
+rounding. Validate raw discrete values before any float-to-int cast.
+
+New engine API: process(span<float*>,frames), processBypassed(same), release()
+noexcept, latencySamples() noexcept. Both process methods share one implementation;
+effective bypass ONLY target.bypass||forceBypass. Forced host bypass never changes
+parameter state. Successful prepare reports56; failed prepare/release reports0.
+Reset clears histories/rawqueue/counters and settles parameters, with normal
+active startup rather than a synthetic resume. Entire buffer validation precedes
+all history writes. Empty calls do not advance queues/counters/smoothing/bypass
+state. Supported rates/layout/frame limits unchanged. All storage is prepared;
+callback processing/reset-on-resume allocates/locks nothing.
+
+Engine owns one continuously advancing56-sample ORIGINAL RAW alignment queue per
+channel. Store uint32 float bits, preserving signedzero/subnormals/Inf/NaNpayload
+on actual bypass; initial/reset fill is zero bits. This queue advances on both
+normal and bypassed audio. Sanitize processed branches, not raw bypass.
+Enabled route: legacywet -> SpaceReverb -> Colour -> aligned globaldry/wet ->
+outputgain -> limiter -> outputmeters. Module colourMix0 returns the old wet
+chain delayed56, without added filter coloration. Globaldry is the rawqueue's
+sanitized delayed input. Here sanitization clears only nonfinite/true-float-
+subnormal values, preserving ALL normal finite amplitudes before final gain.
+Do not move the old1e-20 final cleanup ahead of possible positive output gain:
+9e-22 at+24dB must survive the final threshold. Existing inputgain/HP/compressor/FX processing remains
+at input-frame time; finalglobalmix/outputgain automation remains at output-frame
+time. Do not simply delay the complete old automated output.
+
+True bypass immediately emits bit-exact delayedraw, skips gain/limiter and freezes
+all effect histories/smoothing; only raw alignment and meters advance. Inputpeak
+uses current original input; outputpeak uses emitted delayed audio. Ignore
+nonfinite values in meters, while preserving their raw output bits.
+
+On actual bypass exit, reset Colour ONLY to accepted target parameters, keeping
+legacy effect histories frozen until processing resumes. Resume upstream/Colour
+processing immediately. For first56 unbypassed samples replace the PRE-GAIN
+global blend with sanitized aligneddry. For next128 samples fade at weights
+k/128,k=1..128 from sanitized aligneddry to the aligned globaldry/wet blend.
+Then use the full blend. Re-entry interrupts and a later exit restarts reset/
+guard/fade. These counters span calls/chunks and ignore empty calls.
+CRITICAL: guard is NOT effective bypass. Every actual-unbypassed sample, including
+guard/fade, resumes outputgain smoothing and passes through the enabled FINAL
+limiter. No unlimited guard exception. Exactraw applies only actual bypass;
+processed dry is exact only with neutral gain/limiting and applicable sanitization.
+This defined transition avoids stale Colour FIR/IIR history, not a click-free claim.
+
+Processor overrides float processBlockBypassed through the same chunked helper/
+engine queue as processBlock. Preserve existing JUCE wrapper bypass-ID behavior;
+do NOT add getBypassParameter override in this increment. prepare/release update
+JUCE latency56/0 outside callbacks; automation never changes it. releaseResources
+calls engine.release. Dry analysis still receives current original input before
+alignment in both paths. Host oversized-buffer chunking is retained.
+
+Editor adds four real controls/12th Colour group (Tape/Tube, drive, HF tone,
+parallelmix),58soundcontrols plusbypass. Keep900x780 minimum; use fitting horizontal
+sidebar buttons (derive height from availablebarheight/count, about38px for12).
+Alllabels/controlbounds must fit; report actual56sample latency in meaningful
+user-facing status, without pretending physical emulation or full Master features.
+
+Test migration must retain old numeric tolerances and signal intent. Static legacy
+fixtures use explicit56shift/startupzero/tailflush or a dedicated STATIC aligned
+render helper. Never globally add zero-flush/cropping to streaming/automation
+helpers: that changes histories/control timing. Delayed legacy-output oracle is
+valid only for static final controls; automated finalmix/gain need explicit
+aligned-source/control-envelope oracle. Keep every prior cutoff/gain/dynamics/
+preset assertion, shifted measurement windows rather than widened tolerances.
+
+Acceptance: exactraw56 queue incl floatbit edgecases; allrates/layouts/call
+partitions/empty/invalid calls; forced/APVTS bypass interleaving without mutation;
+Colour-only reset and full56guard/128fade/legacy-frozen-history independent oracle;
+first actual-unbypassed delayed input above ceiling with positivegain ALWAYS
+limited, including guard. Test normal startup/neutral56 impulse and unchanged
+latency through allautomation, release/failure0. Coloured FIR has pre-ringing:56
+is common groupdelay, not a claim no activewet response before sample56. Actual
+Colour hostaudio, strict migration/roundtrip/tokens, originalfactorypreservation,
+58attachments/12readablegroups, callbackallocation, Release/ASan/native/independent
+QA. Measure uncontended test/runtime; no gate changes without actual evidence.
+Manual host/microphone/listening qualification remains deferred by user.
+
+Engine writer owns ONLY include/darkvoice/AudioEngine.hpp,src/AudioEngine.cpp,
+tests/engine_tests.cpp in colour-engine isolated worktree. Host writer owns ONLY
+include/darkvoice/ParameterSchema.hpp,src/PluginProcessor.hpp/.cpp,
+src/PluginEditor.hpp/.cpp,src/PresetBank.cpp,tests/plugin_tests.cpp,
+tests/preset_tests.cpp,tests/gui_smoke.cpp in colour-host isolated worktree.
+Lead owns sharedcontract/CMake/docs/integration/runtime/native gates. CoreColour
+files stay frozen unless a concrete reviewed core defect requires coordination.
+
+## VoiceSculptor tone core v1 — 2026-10-24
+
+Next independent increment, core only. Pitch/formant quality remains blocked;
+this module supplies three explicit tonal operations, not pitch lowering or
+anatomical/AI inference. No external dependency. Host integration follows Colour
+schema11 and requires its own dependent contract before changing shared files.
+
+Public include/darkvoice/VoiceSculptor.hpp: VoiceSculptorParameters fields float
+bodyDb=0,warmthDb=0,presenceDb=0, each finite [-6,6]. VoiceSculptor constructor
+noexcept, destructor, deleted copy; bool prepare(double rate,size_t maxFrames,
+size_t channels) noexcept; static bool valid(const parameters&) noexcept;
+bool setParameters(const parameters&) noexcept; bool process(span<float*>,size_t)
+noexcept; void reset() noexcept; size_t latencySamples() const noexcept always0.
+Pimpl allocation only prepare; same4rates/mono-stereo/maxFrames1..65536 as Colour.
+Failed prepare leaves unprepared. Invalid snapshots/calls change no targets,
+history or output; validate all channels before mutation. Empty calls advance
+nothing. Reject null/nonempty and duplicate channel pointers. reset clears state
+and settles accepted targets. No callback allocation/lock/I/O; independent channels.
+Sanitize nonfinite/true float subnormal input to0; preserve normal finite neutral
+samples exactly, including signedzero. Double histories cleared for nonfinite/
+true double subnormal; finite output clamp float bounds; nonfinite output ->0.
+After float conversion clear only true float-subnormal output; preserve signed
+zero and normal neutral samples. Active cuts must not emit persistent denormals.
+
+Cascade Body -> Warmth -> Presence, fixed coefficients at prepare. Body/presence
+are constant-peak RBJ bandpasses at180Hz/Q.85 and3000Hz/Q.7 respectively: with
+w=2*pi*f/rate,alpha=sin(w)/(2Q), normalize coefficients
+b0=alpha/(1+alpha),b1=0,b2=-b0,a1=-2cos(w)/(1+alpha),
+a2=(1-alpha)/(1+alpha). Track each filter continuously at neutral. Stage output
+x+(G-1)*BP(x), G=10^(gainDb/20). Warmth uses complementary bilinear first-order
+LP450: K=tan(pi*450/rate),b0=b1=K/(1+K),a1=(K-1)/(K+1),
+y=b*x+(a-b)*LP(x), a=10^(warmthDb/40), b=10^(-warmthDb/40).
+Positive warmth maximum means+3dB DC/-3dB Nyquist. Store/smooth independent
+weights body=(Gbody-1),presence=(Gpresence-1),warmA=a,warmB=b in double with
+coefficient1-exp(-1/(.010*rate)), once each sample BEFORE channel processing.
+Target weights computed only on accepted setParameters, reset settles exactly.
+No epsilon snap; test exact envelope. Only true double-subnormal/nonfinite
+smoothing states are cleared after recurrence, matching filter denormal handling.
+Neutral weights0/1 produce exact input,
+while states keep running. Guard explicit neutral operations if signedzero would
+otherwise be lost. No added delay; no time-varying poles. Static whole-cascade
+magnitude bounded+15dB, not a time-domain peak/automation bound. Retain final
+engine limiter in eventual integration.
+
+Acceptance: independent complex-transfer oracle for all4rates/layouts, isolated
+endpoint/intermediate controls and combined extremes; settled sine fitting within
+.02dB of analytic response, exact center gains and asymptotic tilt endpoints;
+prove controls spectrally distinct. Neutral identity incl floatbit edges, channel
+isolation, superposition, reset reproducibility/zero-delay, explicit sample-weight
+automation oracle (isolated and combined), irregular partition invariance,
+invalid-atomicity/empty/nonfinite/subnormal/finiteextremes, allocationfailures and
+callback guard; strict Release/ASan and independent QA. No product controls yet.
+Core writer owns only new header/src/voice_sculptor_tests.cpp in isolated worktree;
+lead owns CMake/docs/integration. Future planned routing after de-esser and before
+ToneEffects, adding only body/warmth/presence controls. Depth/resonance/breathiness/
+character remain outstanding; do not silently equate them to these three bands.
