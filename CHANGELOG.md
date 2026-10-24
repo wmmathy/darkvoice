@@ -1,5 +1,11 @@
 # Changelog
 
+## Voice Sculptor tone core
+
+- Add independent body, warmth tilt and presence processing with fixed filter poles and smooth gain weights.
+- Qualify frequency response and automation against independent analytic and state-variable references.
+- Keep the core outside application routing and controls until its dependent host integration is validated.
+
 ## Oversampled colour core qualification
 
 - Add an independent 8× tape/tube-style colour core with real parallel mix and fixed 56-sample latency.

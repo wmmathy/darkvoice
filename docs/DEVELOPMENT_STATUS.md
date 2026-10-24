@@ -500,3 +500,30 @@ retainenabledlimiterprotection on EVERYunbypassed sample,includingresume guard.
 Read-only hostdesign corrected an initialunlimitedguardproposal beforecode.
 Rawbypassbitpreservation/frozenlegacyhistories/Colourresetandexplicitguard/fade
 require dedicatedoracles. Manualqualification remainsdeferred.
+
+## VoiceSculptor tone core qualification — 2026-10-24
+
+New independentcore supplies Body180Hz/Q.85bell, Warmth450Hzcomplementarytilt,
+Presence3000Hz/Q.7bell, eachgain[-6,6]neutral0. Fixedpoles;10msdoubleweights;
+normalneutralbits/signedzeroexact whilefilterhistoriescontinue. Noaddedlatency,
+externaldependency, hostcontrols orpitch/formantclaim. Coreonly; dependentengine/
+schema12/UIintegration requires separatecontract andgates. Other tonalparameters
+remainoutstanding ratherthanbeing relabeledasthesecontrols.
+
+StrictO2writer4241checks0failures; leadCMakeRelease1/1passes.82sec andASan/UBSan
+1/1passes8.61sec withleak/halt enabled. Independentcomplexanalogtransfer,
+trapezoidalstatevariable/closedexponentialautomationoracles, all4rates/layouts,
+21settings×7frequencies, combinedextremes/densefrequencybound, signedzero/normal
+extremes/reset/partition/invalidatomicity/allocation checks retained. Spectral
+errorgate.02dB,complex2e-5,automation2e-7. Static+15dBfrequencybound isnot apeak/
+automationguarantee. Truefloatoutputsubnormals anddoublesubnormalhistories/weights
+clearwithout arbitraryepsilons. Negativecontrols removingonlyweightcleanup fail8
+longdecaychecks; removingonlyoutputflush fails16activecut±FLTminchecks, while
+priorchecks pass. Meaningfuldenormalregressions. Formatting/cppcheck pass.
+IndependentreadonlysourceQAapproved; separateexecution/native/normalmergepending.
+Manualqualification remainsdeferred/unrun. Atthischeckpoint ColourhostPR35 is
+pendingnative; productcapability follows itsmergedrevision,not thislibraryalone.
+
+IndependentQA actuallyrebuilt strictO2suite4241/0 andran224ownimpulsetransform
+comparisons maxcomplexerror7.69278e-8<2e-7 plusstereoscaling. Approvedfinalcore;
+lead Release/ASan alreadycompleted above. Trackedsecret/dependencyscans pass.
