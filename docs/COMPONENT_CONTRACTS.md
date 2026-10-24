@@ -752,3 +752,56 @@ src/PluginEditor.hpp/.cpp,src/PresetBank.cpp,tests/plugin_tests.cpp,
 tests/preset_tests.cpp,tests/gui_smoke.cpp in colour-host isolated worktree.
 Lead owns sharedcontract/CMake/docs/integration/runtime/native gates. CoreColour
 files stay frozen unless a concrete reviewed core defect requires coordination.
+
+## VoiceSculptor tone core v1 — 2026-10-24
+
+Next independent increment, core only. Pitch/formant quality remains blocked;
+this module supplies three explicit tonal operations, not pitch lowering or
+anatomical/AI inference. No external dependency. Host integration follows Colour
+schema11 and requires its own dependent contract before changing shared files.
+
+Public include/darkvoice/VoiceSculptor.hpp: VoiceSculptorParameters fields float
+bodyDb=0,warmthDb=0,presenceDb=0, each finite [-6,6]. VoiceSculptor constructor
+noexcept, destructor, deleted copy; bool prepare(double rate,size_t maxFrames,
+size_t channels) noexcept; static bool valid(const parameters&) noexcept;
+bool setParameters(const parameters&) noexcept; bool process(span<float*>,size_t)
+noexcept; void reset() noexcept; size_t latencySamples() const noexcept always0.
+Pimpl allocation only prepare; same4rates/mono-stereo/maxFrames1..65536 as Colour.
+Failed prepare leaves unprepared. Invalid snapshots/calls change no targets,
+history or output; validate all channels before mutation. Empty calls advance
+nothing. Reject null/nonempty and duplicate channel pointers. reset clears state
+and settles accepted targets. No callback allocation/lock/I/O; independent channels.
+Sanitize nonfinite/true float subnormal input to0; preserve normal finite neutral
+samples exactly, including signedzero. Double histories cleared for nonfinite/
+true double subnormal; finite output clamp float bounds; nonfinite output ->0.
+
+Cascade Body -> Warmth -> Presence, fixed coefficients at prepare. Body/presence
+are constant-peak RBJ bandpasses at180Hz/Q.85 and3000Hz/Q.7 respectively: with
+w=2*pi*f/rate,alpha=sin(w)/(2Q), normalize coefficients
+b0=alpha/(1+alpha),b1=0,b2=-b0,a1=-2cos(w)/(1+alpha),
+a2=(1-alpha)/(1+alpha). Track each filter continuously at neutral. Stage output
+x+(G-1)*BP(x), G=10^(gainDb/20). Warmth uses complementary bilinear first-order
+LP450: K=tan(pi*450/rate),b0=b1=K/(1+K),a1=(K-1)/(K+1),
+y=b*x+(a-b)*LP(x), a=10^(warmthDb/40), b=10^(-warmthDb/40).
+Positive warmth maximum means+3dB DC/-3dB Nyquist. Store/smooth independent
+weights body=(Gbody-1),presence=(Gpresence-1),warmA=a,warmB=b in double with
+coefficient1-exp(-1/(.010*rate)), once each sample BEFORE channel processing.
+Target weights computed only on accepted setParameters, reset settles exactly.
+No epsilon snap; test exact envelope. Neutral weights0/1 produce exact input,
+while states keep running. Guard explicit neutral operations if signedzero would
+otherwise be lost. No added delay; no time-varying poles. Static whole-cascade
+magnitude bounded+15dB, not a time-domain peak/automation bound. Retain final
+engine limiter in eventual integration.
+
+Acceptance: independent complex-transfer oracle for all4rates/layouts, isolated
+endpoint/intermediate controls and combined extremes; settled sine fitting within
+.02dB of analytic response, exact center gains and asymptotic tilt endpoints;
+prove controls spectrally distinct. Neutral identity incl floatbit edges, channel
+isolation, superposition, reset reproducibility/zero-delay, explicit sample-weight
+automation oracle (isolated and combined), irregular partition invariance,
+invalid-atomicity/empty/nonfinite/subnormal/finiteextremes, allocationfailures and
+callback guard; strict Release/ASan and independent QA. No product controls yet.
+Core writer owns only new header/src/voice_sculptor_tests.cpp in isolated worktree;
+lead owns CMake/docs/integration. Future planned routing after de-esser and before
+ToneEffects, adding only body/warmth/presence controls. Depth/resonance/breathiness/
+character remain outstanding; do not silently equate them to these three bands.
