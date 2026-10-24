@@ -530,3 +530,22 @@ reverb remains unchanged andall15factorymaps newfieldsneutral.
 Release16/16passes5.58sec ontheintegratedsource. Formatting and cppcheck pass.
 The original60sec engine timeout remains unchanged; independentQA approved
 sequentialresource-isolated verification. No source/numericgate workaround.
+
+## Colour core qualification — 2026-10-24
+
+478strictRelease/ASan standalonechecks pass; independentstrictRelease478passes.
+LeadCMakeReleaseeffects.colour passes2.53s,ASan/UBSanpasses58.65s(leak/halt).
+48predeclaredfixtures:4096coherentframes after4096warmup;bins719/1597 andtwo-tone
+683+1129,amplitudes.15/.5,bothstyles,drive1,tone16000,fourrates. Independent32x
+reference recomputeskernel andgenericzero-insert/convolution (notproduction
+polyphase),latency62vs56 aligned6. Worstresidual-63.664dB/inputRMS<fixed-55gate,
+minimumimprovement50.118dB>fixed20gate vs1x. No fixture/thresholdchanges.
+
+Filterresponseerror.000164014<.0002,stopband-75.267dB<-75. Identity/DC/groupdelay,
+exactneutral56delay ofnormal±floatextremes andsanitization,partialmixalignment,
+TapeHFcompression/memory,Tubeevenharmonics/DCsettling,reset/partition/automation/
+stereoisolation andcallbackallocation/invalidlifecycle checks pass. TapeHFlevel
+compressionratio.2881 vsLF.3968;TubeH2.07037 vsTape~7e-15 onrecordedfixture.
+Theseestablish numericalcharacter/alias evidence,not physicalemulation or sonic
+approval. Existingapplication routing/controls/latency unchanged inthiscore-only
+increment. FullcombinednativeCIpending;actualmanualqualificationdeferred.

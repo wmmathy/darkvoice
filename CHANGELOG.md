@@ -1,5 +1,11 @@
 # Changelog
 
+## Oversampled colour core qualification
+
+- Add an independent 8× tape/tube-style colour core with real parallel mix and fixed 56-sample latency.
+- Qualify filter response and nonlinear aliasing against an independent 32× reference.
+- Keep it outside the application routing and controls until host alignment integration is complete.
+
 ## Space reverb
 
 - Add distinct Room, Hall and Plate algorithmic networks with decay, HF tone, predelay and mix.

@@ -87,3 +87,9 @@ not listening approval; manual combined qualification remains deferred.
 
 DoublerPR30 and DoubleTrackedRockPR31 are now merged (e61efc138/d67a64c2), after
 all7nativejobs andqualitychecks passed on their respective exactsourceheads.
+
+Colour core: actual Tape/Tube-style saturation and parallelmix nowpass478local
+corechecks plusindependentreview andpredeclaredaliasgates. Hostintegrationstill
+pending: fixed56sample alignedglobaldry/bypass,forcedhostbypass,explicitresume
+transition,latencyreporting,schema11/realcontrols andalloldtestsemanticmigration.
+No newColourcontrols enterproducts beforequalification/alignmentgates.
