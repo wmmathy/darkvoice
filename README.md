@@ -4,7 +4,7 @@ An AGPLv3, local-first vocal production project using C++20, JUCE and CMake.
 This is an early development build. It provides input/output gain, high-pass,
 warmth saturation, compression, low/high shelves and a parametric mid EQ,
 feedback delay, damped reverb, dry/wet, bypass and peak meters. The grouped editor
-has 49 real sound controls plus global bypass and versioned host automation/state restoration.
+has 54 real sound controls plus global bypass and versioned host automation/state restoration.
 A stereo-linked downward expander provides threshold, ratio and release controls;
 ratio 1 disables attenuation. It follows compression and precedes EQ/delay/reverb.
 Older project states and presets load with neutral gate settings.
@@ -89,7 +89,7 @@ falls back to the manual BPM when unavailable. Sync sets repeat spacing, not
 transport phase. Synchronized spacing is capped at 3 seconds. New controls are
 neutral in existing presets and schema versions1–7 migrate to version8.
 
-The engine now has45 sound controls plus global bypass. The original delay/reverb
+Stereo delay introduced eight sound controls alongside global bypass. The original delay/reverb
 remain available separately. Manual host/microphone/listening qualification is
 deferred until feature implementation is complete, as requested by the user.
 
@@ -100,4 +100,17 @@ variation, rate and mix control real bounded fractional-delay processing. It
 provides simulated double tracking, not pitch correction, harmony or a second
 recorded performance. Mono fold-down preserves the two voice weights, and silent
 channels stay silent. Existing presets migrate neutrally to schema9. The editor
-now uses a ten-group sidebar with49 sound controls plus global bypass.
+uses a sidebar; the current editor includes eleven groups and54 sound controls plus global bypass.
+
+## Room, hall and plate reverb
+
+Space Reverb offers three distinct algorithmic networks alongside the legacy
+reverb: Room early reflections/four-line feedback network, Hall input diffusion/
+eight-line network, and a cross-coupled allpass Plate tank. Decay, HF tone,
+predelay and mix control actual processing. These are algorithmic effects; no
+physical-room dimensions, exact RT60 or listening approval is claimed.
+
+Schema10 preserves earlier IDs and migrates versions1–9 with Space mix0; all
+fifteen factory sounds remain unchanged. An active Space effect reports a
+conservative60-second tail; active musical delay still reports240seconds.
+Manual listening and DAW qualification remain deferred for combined verification.

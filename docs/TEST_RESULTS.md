@@ -502,3 +502,31 @@ persistence, then isolate actual DoubleTrackedRock audio against identical
 settings withdoublerMix0 atfourrates/mono/stereo. Independent QA approved; native
 checks remain pending. No perceptual/actualsecondperformer claim, manualaudition
 deferred. StereoDelay andringfix native results/merges recorded in status.
+
+## Space Reverb — 2026-10-24
+
+Standalone strictRelease and ASan/UBSan697checks0failures; independently reproduced
+strictoptimized697.47allocation-failure paths; independent analytic early/Fdn/
+Plate/tone/predelay oracles, allrates/layouts, crossfade/history andpartition,
+normalizeddecay andweightedfeedback/passivity gates pass. Initial testdevelopment
+replaced an arbitrary uncontracted25percent densityguess with actualstructural
+echo/lateenergy measures; no publishednetwork/analyticgate was changed. Room
+is structurally sparse; no dense/physical-room/perceptualquality claim.
+
+Lead19/19JUCEproduct suites87.10sec, engine6770checks21.04sec, plugin43.93sec,
+preset1515checks pass. GUI54attachments/11groups passes and screenshot inspected.
+ASan firstconcurrent16suite run timed out engine at60.04sec, not anassertion or
+sanitizer finding. Identicalengine alone passes45.62sec; unchanged60sec limit.
+Sequential16/16ASan/UBSan run110.11sec passes (leak/halt enabled). NativeCI pending;
+actualmanualDAW/listening/microphone qualification explicitlydeferred.
+
+Static48k40sec late35sec energy ratios: Room8.77e-39,Hall1.61e-21,Plate5.81e-32.
+These measuredstatic fixtures are not universalautomation proof. Independent
+roundedlength weightedloopnorm maxima atalpha.4/s remain<1 (Hall.99393549).
+A conservative movingpredelay Schurfactor explains60sec hosttail choice; bounds
+are relative tofiniteinputl2, notpeak/inaudibility/exactsilence. Existinglegacy
+reverb remains unchanged andall15factorymaps newfieldsneutral.
+
+Release16/16passes5.58sec ontheintegratedsource. Formatting and cppcheck pass.
+The original60sec engine timeout remains unchanged; independentQA approved
+sequentialresource-isolated verification. No source/numericgate workaround.

@@ -29,7 +29,7 @@ Source-quality run39740257019 passed. This is not a passing overall build result
 | Priority / tracking | Pending implementation | Dependency / acceptance |
 | --- | --- | --- |
 | P1 Sculptor, #3/#18 | Qualified independent pitch/formant shifting and formant preservation; depth/body/warmth/presence/resonance/breathiness/character controls; real quality modes | Resolve combined-periodicity failures, broader F0/transient/unvoiced material, listening/CPU; integrate delayed dry/mix/bypass and host latency only after qualification |
-| P1 Effects, #3 | Plate/hall/room choices, tape/tube saturation and parallel distortion | Versioned real controls, routing, DSP evidence, safe automation, state/preset migration, GUI and native validation; existing starter effects are partial coverage |
+| P1 Effects, #3 | Tape/tube saturation and parallel distortion | Versioned real controls, routing, DSP evidence, safe automation, state/preset migration, GUI and native validation; existing starter effects are partial coverage |
 | P1 Integration, #14/#16/#18 | Review/integrate eventual qualified Sculptor and remaining effects; de-esser/chorus/flanger now merged | Required repository checks/review; no automatic bypass or release; preserve stacked bases until dependencies integrate |
 | P2 Presets, #3 | Complete all20 required vocal factory sounds, audition/tune them and preserve correction/harmony independence | Underlying DSP must exist; fifteen sounds now use existing DSP; five correction/choir/octave sounds remain pending; do not add presets implying unavailable correction/choir features |
 | P2 Track-aware correction, #4 | Reference WAV/AIFF/FLAC/MP3 import where available/licensed, key/scale/BPM/chord timeline/confidence and manual edits; manual/chromatic/custom correction, musical transitions/humanization/vibrato/drift; graphical tracking | Qualified shift backend and real-time pitch tracker; versioned analysis/timeline/transport contracts, preanalysis, offsets and GarageBand manual/standalone fallbacks |
@@ -79,3 +79,11 @@ Double Tracked Rock now uses actual simulated double tracking and passes local
 preset/host audio/persistence tests plus independent review. The remaining five
 factory sounds require correction/choir/octave features. Manual preset audition
 remains deferred; this addition awaits native CI/normal merge after the Doubler.
+
+Space Reverb: distinct Room/Hall/Plate networks and schema10 are implemented;
+local19product/16sanitizer suites and54-control GUI plus independent core/source
+review pass. Native CI/normal merge remain pending. Static/analytic evidence is
+not listening approval; manual combined qualification remains deferred.
+
+DoublerPR30 and DoubleTrackedRockPR31 are now merged (e61efc138/d67a64c2), after
+all7nativejobs andqualitychecks passed on their respective exactsourceheads.

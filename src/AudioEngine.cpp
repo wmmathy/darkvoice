@@ -42,6 +42,16 @@ DoublerParameters doublerParameters(const EngineParameters &p) noexcept {
     return result;
 }
 
+SpaceReverbParameters spaceParameters(const EngineParameters &p) noexcept {
+    SpaceReverbParameters result;
+    result.model = p.spaceModel;
+    result.decay = p.spaceDecay;
+    result.toneHz = p.spaceToneHz;
+    result.preDelayMs = p.spacePreDelayMs;
+    result.mix = p.spaceMix;
+    return result;
+}
+
 } // namespace
 
 bool AudioEngine::prepare(double sampleRate, std::size_t maxFrames, std::size_t channels) noexcept {
@@ -66,6 +76,7 @@ bool AudioEngine::prepare(double sampleRate, std::size_t maxFrames, std::size_t 
         !flanger_.prepare(sampleRate, maxFrames, channels) ||
         !doubler_.prepare(sampleRate, maxFrames, channels) ||
         !stereoDelay_.prepare(sampleRate, maxFrames, channels) ||
+        !spaceReverb_.prepare(sampleRate, maxFrames, channels) ||
         !limiter_.prepare(sampleRate, maxFrames, channels))
         return false;
     rate_ = sampleRate;
@@ -86,7 +97,8 @@ bool AudioEngine::setParameters(const EngineParameters &p) noexcept {
         !ModulationEffects::valid({p.chorusRateHz, p.chorusDepthMs, p.chorusMix, p.stereoWidth}) ||
         !Flanger::valid({p.flangerRateHz, p.flangerDepthMs, p.flangerFeedback, p.flangerMix}) ||
         !VocalLimiter::valid({p.limiterCeilingDb, p.limiterReleaseMs}) ||
-        !StereoDelay::valid(stereoDelayParameters(p)) || !Doubler::valid(doublerParameters(p)))
+        !StereoDelay::valid(stereoDelayParameters(p)) || !Doubler::valid(doublerParameters(p)) ||
+        !SpaceReverb::valid(spaceParameters(p)))
         return false;
     // All snapshots are fully validated before any target is replaced.
     if (!effects_.setParameters(toneParameters(p)))
@@ -96,6 +108,7 @@ bool AudioEngine::setParameters(const EngineParameters &p) noexcept {
     (void)modulation_.setParameters({p.chorusRateHz, p.chorusDepthMs, p.chorusMix, p.stereoWidth});
     (void)flanger_.setParameters(
         {p.flangerRateHz, p.flangerDepthMs, p.flangerFeedback, p.flangerMix});
+    (void)spaceReverb_.setParameters(spaceParameters(p));
     (void)doubler_.setParameters(doublerParameters(p));
     (void)stereoDelay_.setParameters(stereoDelayParameters(p));
     (void)limiter_.setParameters({p.limiterCeilingDb, p.limiterReleaseMs});
@@ -118,6 +131,7 @@ void AudioEngine::reset() noexcept {
     flanger_.reset();
     doubler_.reset();
     stereoDelay_.reset();
+    spaceReverb_.reset();
     limiter_.reset();
 }
 
@@ -181,7 +195,8 @@ bool AudioEngine::process(std::span<float *> channels, std::size_t frames) noexc
         !modulation_.process(std::span<float *>(wetChannels.data(), channels_), frames) ||
         !flanger_.process(std::span<float *>(wetChannels.data(), channels_), frames) ||
         !doubler_.process(std::span<float *>(wetChannels.data(), channels_), frames) ||
-        !stereoDelay_.process(std::span<float *>(wetChannels.data(), channels_), frames))
+        !stereoDelay_.process(std::span<float *>(wetChannels.data(), channels_), frames) ||
+        !spaceReverb_.process(std::span<float *>(wetChannels.data(), channels_), frames))
         return false; // Prepared capacities/layout have already been validated.
     for (std::size_t i = 0; i < frames; ++i) {
         smooth(current_.outputDb, target_.outputDb);

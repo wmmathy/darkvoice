@@ -2,7 +2,7 @@
 #include <cmath>
 namespace {
 const juce::Colour background{0xff111418}, panel{0xff1c2229}, accent{0xffe54b52}, text{0xffecedf0};
-constexpr std::array<const char *, 49> ids{"inputDb",
+constexpr std::array<const char *, 54> ids{"inputDb",
                                            "highPassHz",
                                            "drive",
                                            "thresholdDb",
@@ -50,8 +50,13 @@ constexpr std::array<const char *, 49> ids{"inputDb",
                                            "doublerSeparationMs",
                                            "doublerVariationMs",
                                            "doublerRateHz",
-                                           "doublerMix"};
-constexpr std::array<const char *, 49> names{"INPUT GAIN",
+                                           "doublerMix",
+                                           "spaceModel",
+                                           "spaceDecay",
+                                           "spaceToneHz",
+                                           "spacePreDelayMs",
+                                           "spaceMix"};
+constexpr std::array<const char *, 54> names{"INPUT GAIN",
                                              "HIGH-PASS",
                                              "WARMTH DRIVE",
                                              "COMPRESSOR THRESHOLD",
@@ -99,12 +104,18 @@ constexpr std::array<const char *, 49> names{"INPUT GAIN",
                                              "DOUBLER SEPARATION",
                                              "DOUBLER VARIATION",
                                              "DOUBLER RATE",
-                                             "DOUBLER MIX"};
-constexpr std::array<const char *, 49> suffixes{
-    " dB", " Hz", "", " dB",  ":1",  "",    " dB", " Hz", " dB", " Hz", " dB", "",    " Hz",
-    " dB", " ms", "", "",     "",    "",    "",    " dB", ":1",  " ms", " Hz", " dB", " dB",
-    " Hz", " ms", "", "",     " Hz", " ms", "",    "",    "",    " dB", " ms", "",    " ms",
-    "",    "",    "", " BPM", "",    "",    " ms", " ms", " Hz", ""};
+                                             "DOUBLER MIX",
+                                             "SPACE MODEL",
+                                             "SPACE DECAY",
+                                             "SPACE HF TONE",
+                                             "SPACE PREDELAY",
+                                             "SPACE MIX"};
+constexpr std::array<const char *, 54> suffixes{
+    " dB", " Hz", "",    " dB", ":1",  "",    " dB", " Hz", " dB", " Hz",  " dB",
+    "",    " Hz", " dB", " ms", "",    "",    "",    "",    "",    " dB",  ":1",
+    " ms", " Hz", " dB", " dB", " Hz", " ms", "",    "",    " Hz", " ms",  "",
+    "",    "",    " dB", " ms", "",    " ms", "",    "",    "",    " BPM", "",
+    "",    " ms", " ms", " Hz", "",    "",    "",    " Hz", " ms", ""};
 juce::File presetDirectory(const juce::File &supplied) {
     if (supplied != juce::File{})
         return supplied;
@@ -161,6 +172,7 @@ DarkVoiceEditor::DarkVoiceEditor(DarkVoiceProcessor &p, juce::File root)
     tabs_.addTab("LIMITER", panel, &pages_[7], false);
     tabs_.addTab("STEREO DELAY", panel, &pages_[8], false);
     tabs_.addTab("SIMULATED DOUBLER", panel, &pages_[9], false);
+    tabs_.addTab("SPACE REVERB", panel, &pages_[10], false);
     addAndMakeVisible(tabs_);
     for (std::size_t i = 0; i < sliders_.size(); ++i) {
         auto &slider = sliders_[i];
@@ -170,8 +182,11 @@ DarkVoiceEditor::DarkVoiceEditor(DarkVoiceProcessor &p, juce::File root)
         slider.setName(names[i]);
         slider.setTitle(names[i]);
         slider.setTooltip(
-            i >= 45 ? "Simulated double tracking: two independently wandering delayed copies; not "
-                      "another performance or harmony."
+            i >= 49 ? "Distinct algorithmic Room / Hall / Plate networks. HF tone is output "
+                      "filtering; Decay is not an RT60 time."
+            : i >= 45
+                ? "Simulated double tracking: two independently wandering delayed copies; not "
+                  "another performance or harmony."
             : i >= 37
                 ? "Stereo repeats, single echo or ping-pong. Sync uses beat division; host BPM "
                   "falls back to manual if unavailable."
@@ -195,7 +210,8 @@ DarkVoiceEditor::DarkVoiceEditor(DarkVoiceProcessor &p, juce::File root)
                           : i < 34 ? 6U
                           : i < 37 ? 7U
                           : i < 45 ? 8U
-                                   : 9U;
+                          : i < 49 ? 9U
+                                   : 10U;
         pages_[page].addAndMakeVisible(slider);
         labels_[i].setText(names[i], juce::dontSendNotification);
         labels_[i].setColour(juce::Label::textColourId, juce::Colour(0xffb5bdc7));
@@ -216,6 +232,11 @@ DarkVoiceEditor::DarkVoiceEditor(DarkVoiceProcessor &p, juce::File root)
     };
     sliders_[37].setTextBoxStyle(juce::Slider::TextBoxRight, true, 110, 28);
     sliders_[43].setTextBoxStyle(juce::Slider::TextBoxRight, true, 110, 28);
+    sliders_[49].textFromValueFunction = [](double value) {
+        constexpr const char *models[]{"Room", "Hall", "Plate"};
+        return juce::String(models[std::clamp(static_cast<int>(std::round(value)), 0, 2)]);
+    };
+    sliders_[49].setTextBoxStyle(juce::Slider::TextBoxRight, true, 110, 28);
     tempo_.setName("Stereo delay tempo status");
     tempo_.setColour(juce::Label::textColourId, juce::Colour(0xffb5bdc7));
     tempo_.setFont(juce::Font(juce::FontOptions(12.0f)));
@@ -418,7 +439,8 @@ void DarkVoiceEditor::resized() {
                           : i < 34 ? 6U
                           : i < 37 ? 7U
                           : i < 45 ? 8U
-                                   : 9U;
+                          : i < 49 ? 9U
+                                   : 10U;
         const auto row = i < 7    ? i
                          : i < 14 ? i - 7
                          : i < 20 ? i - 14
@@ -428,7 +450,8 @@ void DarkVoiceEditor::resized() {
                          : i < 34 ? i - 30
                          : i < 37 ? i - 34
                          : i < 45 ? i - 37
-                                  : i - 45;
+                         : i < 49 ? i - 45
+                                  : i - 49;
         const int rowHeight = (tabs_.getHeight() - 48) / (page == 8 ? 9 : 7);
         const int y = 14 + static_cast<int>(row) * rowHeight;
         labels_[i].setBounds(16, y, 205, 24);
