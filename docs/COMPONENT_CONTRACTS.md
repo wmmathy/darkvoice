@@ -845,3 +845,66 @@ worktrees. Leadowns CMake/docs/integration; qualifiedtonecorefilesremainfrozen.
 Release/ASan/product/GUI/independentQA/nativechecks before normalmerge. Existing
 measured180secengine/host testbudgets retained; no numericrelaxation. Manualtests
 remain deferred. This incrementdoesnotcomplete depth/resonance/breathiness/character.
+
+## Breathiness texture core v1 — 2026-10-24
+
+Interpretation: synthetic center-vocal aspiration texture, independently adjustable;
+this is no physiological measurement or claim of naturalness. Core only; no new
+product control until separate engine/host integration. Own local DSP, no dependency.
+
+New Breathiness.hpp/.cpp: BreathinessParameters {float amount=0;}; Breathiness
+constructor noexcept/destructor/deleted copy; prepare(rate,maxFrames,channels),
+static valid(params), setParameters(params), process(span<float*>,frames), reset,
+latencySamples() all existing lifecycle signatures/noexcept. Amount finite[0,1].
+Four usual rates, mono/stereo,maxFrames1..65536. Failed prepare unprepares; invalid
+snapshots/buffers atomic, entire validation before mutation; empty advances nothing.
+No callback allocation/lock/I/O. All storage allocated during prepare. Input/output
+nonfinite and true float subnormals clear; normal neutral bits and signedzero exact.
+Float output clamps finite bounds; clear only emitted float subnormals after cast.
+
+For sanitized input M=mono or .5*double(L)+.5*double(R), maintain exact finite20ms
+RMS window N=rate*.020 (882/960/1764/1920). Use a preallocated nonnegative sum tree:
+power-of-two leaves>=N, one ring leaf=M*M replaced/sample, recompute ancestors
+from child sums. Unused leaves zero. This bounded<=11-level update avoids rolling
+subtract cancellation after huge->quiet input and gives exact0 when window empty.
+Envelope e=sqrt(root/N). Gate t=clamp((e-10^(-90/20))/(10^(-70/20)-10^(-90/20)),0,1),
+g=t*t*(3-2*t). Fixed thresholds are full-scale RMS, not a vocal-health judgment.
+Smooth amount once/frame BEFORE excitation using double coefficient
+1-exp(-1/(.010*rate)), reset settles target; clear only true double subnormal/
+nonfinite state after recurrence, no epsilon snap.
+
+One deterministic shared xorshift32: seed0x4e4f4953; per frame xor<<13,xor>>17,
+xor<<5 with uint32 wrap. u=((word>>8)+.5)/8388608.-1 (24-bit midpoint uniform),
+exact variance (1-2^-48)/3. Advance every valid nonempty frame even at amount0.
+Excitation v=.1*smoothedAmount*e*g*u. Filter excitation AFTER this multiplication
+with a fixed129tap symmetric Blackman-windowed ideal2k..10k bandpass:
+k=n-64, window=.42-.5cos(2pi*n/128)+.08cos(4pi*n/128), ideal(k0)=2*(10000-2000)/rate,
+otherwise (sin(2pi*10000*k/rate)-sin(2pi*2000*k/rate))/(pi*k).
+Subtract sum of initial taps from center tap for DC correction, then divide taps
+by sqrt(variance(u)*sum(tap*tap)), normalizing stationary noise RMS to1. Fixed
+coefficient preparation only. Use a preallocated129-double excitation ring and
+bounded direct convolution; clear true double subnormal/nonfinite histories.
+Add same filtered b to mono or both stereo dry channels. Dry has no added delay;
+texture FIR groupdelay64 is generation timing, not host alignment latency. API
+latency0, eventual engine remains56. Reset clears tree/rings, resets seed and weight.
+
+Stereo intent: center-driven addition, dry Side preserved within float rounding;
+pure antiphase input generates none after finite old-history tail. A silent channel
+can receive center texture from the other channel: intentional crossfeed, not
+channel isolation. Mono fold compares to processing M within declared rounding.
+Initial silence exact; after zero-M input, by N+128 zero frames addition exactly0.
+Do not claim instantaneous zero after active audio or a physically recovered breath.
+FIR l1<=8.20 at all rates => added peak<=.820*recent peak over N+128 history frames
+at amount1. This is not a limiter; eventual final limiter remains necessary.
+
+Acceptance: independent brute-force finite RMS+PRNG vectors+generic convolution
+oracle for amount/gate/filter/automation all rates/layouts; irregular partition and
+reset exactness. Stationary2s M=.1 amount1 additionRMS .01 within5%; amount.5 half
+RMS after settling. Independent coefficient/complex-transfer/denseFFT oracle,
+DC<=1e-10, >=99.9% stationary excitation power1..12k, <=.02% below1k, l1<=8.20.
+This is declared digital noise color, not an analog source aliasing claim. Full
+silence tail bound incl huge->quiet recovery, exact neutral float edges, Side/
+antiphase/centerfeed/fold tests, finite extremes/invalidatomicity/allocationfailure/
+callbackguards, Release/ASan/independentQA/native. Listening remains deferred.
+Writer owns ONLY new include/darkvoice/Breathiness.hpp,src/Breathiness.cpp,
+tests/breathiness_tests.cpp; lead owns CMake/docs/integration. No host edits here.
