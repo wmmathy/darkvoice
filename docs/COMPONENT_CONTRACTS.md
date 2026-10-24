@@ -652,3 +652,100 @@ no CPUdeadline/listening/DAWclaim. Manualqualificationdeferred.
 Agent space_core_finish owns ONLYinclude/darkvoice/Colour.hpp,src/Colour.cpp,
 src/ColourOversampling.hpp,tests/colour_tests.cpp inisolatedcolour-coreworktree.
 No shared/CMake/docs/commit/push;leadownsqualification/integration.
+
+## Aligned AudioEngine v2 / Colour host schema11 — 2026-10-24
+
+Dependency: Colour core is qualified and merged at cd33a6a (PR33), after478
+checks, independent QA and native40075994215 all7jobs/quality40075994126. This
+contract deliberately replaces immediate zero-latency output with fixed56-sample
+alignment. Preserve prior55 parameter IDs/hints and all15 factory settings.
+
+Append EngineParameters fields int colourModel=0; float colourDrive=.25f,
+colourToneHz=16000,colourMix=0. Append schema11/AU hint11 IDs colourModel[0,1]
+step1/default0 (Tape/Tube); colourDrive[0,1] step.001/default.25; colourToneHz
+[1000,20000] step1/skew.5/default16000; colourMix[0,1] step.001/default0. Total
+59state/58preset fields excluding onlybypass; strict v1..10 migration to neutral
+Colour defaults. All15 factories add neutraldefaults. Retain original14factory
+fingerprints on original49 fields; separately assert nine Space/Colour defaults.
+Exact raw JSON/XML small-integer guards include colourModel max1, before numeric
+rounding. Validate raw discrete values before any float-to-int cast.
+
+New engine API: process(span<float*>,frames), processBypassed(same), release()
+noexcept, latencySamples() noexcept. Both process methods share one implementation;
+effective bypass ONLY target.bypass||forceBypass. Forced host bypass never changes
+parameter state. Successful prepare reports56; failed prepare/release reports0.
+Reset clears histories/rawqueue/counters and settles parameters, with normal
+active startup rather than a synthetic resume. Entire buffer validation precedes
+all history writes. Empty calls do not advance queues/counters/smoothing/bypass
+state. Supported rates/layout/frame limits unchanged. All storage is prepared;
+callback processing/reset-on-resume allocates/locks nothing.
+
+Engine owns one continuously advancing56-sample ORIGINAL RAW alignment queue per
+channel. Store uint32 float bits, preserving signedzero/subnormals/Inf/NaNpayload
+on actual bypass; initial/reset fill is zero bits. This queue advances on both
+normal and bypassed audio. Sanitize processed branches, not raw bypass.
+Enabled route: legacywet -> SpaceReverb -> Colour -> aligned globaldry/wet ->
+outputgain -> limiter -> outputmeters. Module colourMix0 returns the old wet
+chain delayed56, without added filter coloration. Globaldry is the rawqueue's
+sanitized delayed input. Existing inputgain/HP/compressor/FX processing remains
+at input-frame time; finalglobalmix/outputgain automation remains at output-frame
+time. Do not simply delay the complete old automated output.
+
+True bypass immediately emits bit-exact delayedraw, skips gain/limiter and freezes
+all effect histories/smoothing; only raw alignment and meters advance. Inputpeak
+uses current original input; outputpeak uses emitted delayed audio. Ignore
+nonfinite values in meters, while preserving their raw output bits.
+
+On actual bypass exit, reset Colour ONLY to accepted target parameters, keeping
+legacy effect histories frozen until processing resumes. Resume upstream/Colour
+processing immediately. For first56 unbypassed samples replace the PRE-GAIN
+global blend with sanitized aligneddry. For next128 samples fade at weights
+k/128,k=1..128 from sanitized aligneddry to the aligned globaldry/wet blend.
+Then use the full blend. Re-entry interrupts and a later exit restarts reset/
+guard/fade. These counters span calls/chunks and ignore empty calls.
+CRITICAL: guard is NOT effective bypass. Every actual-unbypassed sample, including
+guard/fade, resumes outputgain smoothing and passes through the enabled FINAL
+limiter. No unlimited guard exception. Exactraw applies only actual bypass;
+processed dry is exact only with neutral gain/limiting and applicable sanitization.
+This defined transition avoids stale Colour FIR/IIR history, not a click-free claim.
+
+Processor overrides float processBlockBypassed through the same chunked helper/
+engine queue as processBlock. Preserve existing JUCE wrapper bypass-ID behavior;
+do NOT add getBypassParameter override in this increment. prepare/release update
+JUCE latency56/0 outside callbacks; automation never changes it. releaseResources
+calls engine.release. Dry analysis still receives current original input before
+alignment in both paths. Host oversized-buffer chunking is retained.
+
+Editor adds four real controls/12th Colour group (Tape/Tube, drive, HF tone,
+parallelmix),58soundcontrols plusbypass. Keep900x780 minimum; use fitting horizontal
+sidebar buttons (derive height from availablebarheight/count, about38px for12).
+Alllabels/controlbounds must fit; report actual56sample latency in meaningful
+user-facing status, without pretending physical emulation or full Master features.
+
+Test migration must retain old numeric tolerances and signal intent. Static legacy
+fixtures use explicit56shift/startupzero/tailflush or a dedicated STATIC aligned
+render helper. Never globally add zero-flush/cropping to streaming/automation
+helpers: that changes histories/control timing. Delayed legacy-output oracle is
+valid only for static final controls; automated finalmix/gain need explicit
+aligned-source/control-envelope oracle. Keep every prior cutoff/gain/dynamics/
+preset assertion, shifted measurement windows rather than widened tolerances.
+
+Acceptance: exactraw56 queue incl floatbit edgecases; allrates/layouts/call
+partitions/empty/invalid calls; forced/APVTS bypass interleaving without mutation;
+Colour-only reset and full56guard/128fade/legacy-frozen-history independent oracle;
+first actual-unbypassed delayed input above ceiling with positivegain ALWAYS
+limited, including guard. Test normal startup/neutral56 impulse and unchanged
+latency through allautomation, release/failure0. Coloured FIR has pre-ringing:56
+is common groupdelay, not a claim no activewet response before sample56. Actual
+Colour hostaudio, strict migration/roundtrip/tokens, originalfactorypreservation,
+58attachments/12readablegroups, callbackallocation, Release/ASan/native/independent
+QA. Measure uncontended test/runtime; no gate changes without actual evidence.
+Manual host/microphone/listening qualification remains deferred by user.
+
+Engine writer owns ONLY include/darkvoice/AudioEngine.hpp,src/AudioEngine.cpp,
+tests/engine_tests.cpp in colour-engine isolated worktree. Host writer owns ONLY
+include/darkvoice/ParameterSchema.hpp,src/PluginProcessor.hpp/.cpp,
+src/PluginEditor.hpp/.cpp,src/PresetBank.cpp,tests/plugin_tests.cpp,
+tests/preset_tests.cpp,tests/gui_smoke.cpp in colour-host isolated worktree.
+Lead owns sharedcontract/CMake/docs/integration/runtime/native gates. CoreColour
+files stay frozen unless a concrete reviewed core defect requires coordination.
