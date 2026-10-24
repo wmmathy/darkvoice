@@ -6,6 +6,11 @@
 - Resume through a defined dry guard and fade while retaining final gain and enabled limiter protection.
 - Append four hint-11 controls, strict schema-11 migrations and a twelfth editor group.
 - Preserve prior parameter definitions and factory values; report fixed host latency and clear it on release.
+## Voice Sculptor tone core
+
+- Add independent body, warmth tilt and presence processing with fixed filter poles and smooth gain weights.
+- Qualify frequency response and automation against independent analytic and state-variable references.
+- Keep the core outside application routing and controls until its dependent host integration is validated.
 
 ## Oversampled colour core qualification
 

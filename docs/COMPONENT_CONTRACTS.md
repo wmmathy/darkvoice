@@ -809,3 +809,39 @@ Core writer owns only new header/src/voice_sculptor_tests.cpp in isolated worktr
 lead owns CMake/docs/integration. Future planned routing after de-esser and before
 ToneEffects, adding only body/warmth/presence controls. Depth/resonance/breathiness/
 character remain outstanding; do not silently equate them to these three bands.
+
+## VoiceSculptor tone host v1 / schema12 — 2026-10-24
+
+Dependencies: qualified VoiceSculptor core and Colour aligned-engine/schema11.
+Append EngineParameters float sculptBodyDb=0,sculptWarmthDb=0,sculptPresenceDb=0.
+AudioEngine validates allthree atomically with VoiceSculptor::valid, prepares/
+sets/resets module with existinglegacy effects. Route after DeEsser before
+ToneEffects. Actualbypass freezes histories/weights; Colour-only reset onresume
+mustnotreset VoiceSculptor. Engine/host latency remains fixed56, release/failure0.
+No change to rawalignment/guard/fade/finalgain/limiter or input/outputautomation.
+All prior signal/gate/latency/bypass tests retained. New independentlycomposed
+routingoracle mustexercise tonecontrols, frozenhistories throughbypass and full
+resume, continuousneutralhistory and finalenabledlimiter under combinedboost.
+Allrates/layout/partitions, invalidsnapshotatomicity, allocationguard required.
+
+Append schema12/AUhint12 IDs sculptBodyDb,sculptWarmthDb,sculptPresenceDb inthatorder,
+range[-6,6],step.1,default0,linear. Total62state/61preset excludingonlyglobalbypass.
+Strictv1..11migration zerosnewfields; v12roundtrip; rawfinite/ranges exactexisting
+parserguards unchanged. Preserve all59priorIDs/hints/ranges/defaults and15factory
+priorvalues; allnewtonefieldsneutralin everyfactory. Original14hashes continue
+coveringoriginal49fields, assert all12Space/Colour/tone neutralfields separately.
+
+Add13th VoiceSculptor editorgroup with3real controls BODY180Hz, WARMTH TILT,
+PRESENCE3kHz; dB units, clearwarmthtooltip +6span means+3dB low/-3dB high; no pitch/
+anatomicalclaim. 61soundattachments plusbypass, fit900x780sidebar13labels (derive
+height fromavailablebar/count), preserveColouractualstatus56samples. Teststrict
+state/presetmigrations/invalidfloats, actualhosttoneaudio andpairedneutralrouting,
+allpriorfactoryvalues,13visiblegroups/controls. Neverexpose pitch/formant knobs.
+
+Enginewriter owns ONLY AudioEngine.hpp/.cpp and tests/engine_tests.cpp. Hostwriter
+owns ONLY ParameterSchema.hpp,PluginProcessor.hpp/.cpp,PluginEditor.hpp/.cpp,
+PresetBank.cpp,tests/plugin_tests.cpp,preset_tests.cpp,gui_smoke.cpp inisolated
+worktrees. Leadowns CMake/docs/integration; qualifiedtonecorefilesremainfrozen.
+Release/ASan/product/GUI/independentQA/nativechecks before normalmerge. Existing
+measured180secengine/host testbudgets retained; no numericrelaxation. Manualtests
+remain deferred. This incrementdoesnotcomplete depth/resonance/breathiness/character.
