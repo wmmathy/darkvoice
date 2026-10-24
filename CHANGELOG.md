@@ -1,5 +1,12 @@
 # Changelog
 
+## Colour host integration
+
+- Route Colour after Space Reverb and align global dry and actual bypass by 56 samples.
+- Resume through a defined dry guard and fade while retaining final gain and enabled limiter protection.
+- Append four hint-11 controls, strict schema-11 migrations and a twelfth editor group.
+- Preserve prior parameter definitions and factory values; report fixed host latency and clear it on release.
+
 ## Oversampled colour core qualification
 
 - Add an independent 8× tape/tube-style colour core with real parallel mix and fixed 56-sample latency.

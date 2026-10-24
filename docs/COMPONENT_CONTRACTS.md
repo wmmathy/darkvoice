@@ -774,6 +774,8 @@ and settles accepted targets. No callback allocation/lock/I/O; independent chann
 Sanitize nonfinite/true float subnormal input to0; preserve normal finite neutral
 samples exactly, including signedzero. Double histories cleared for nonfinite/
 true double subnormal; finite output clamp float bounds; nonfinite output ->0.
+After float conversion clear only true float-subnormal output; preserve signed
+zero and normal neutral samples. Active cuts must not emit persistent denormals.
 
 Cascade Body -> Warmth -> Presence, fixed coefficients at prepare. Body/presence
 are constant-peak RBJ bandpasses at180Hz/Q.85 and3000Hz/Q.7 respectively: with
@@ -787,7 +789,9 @@ Positive warmth maximum means+3dB DC/-3dB Nyquist. Store/smooth independent
 weights body=(Gbody-1),presence=(Gpresence-1),warmA=a,warmB=b in double with
 coefficient1-exp(-1/(.010*rate)), once each sample BEFORE channel processing.
 Target weights computed only on accepted setParameters, reset settles exactly.
-No epsilon snap; test exact envelope. Neutral weights0/1 produce exact input,
+No epsilon snap; test exact envelope. Only true double-subnormal/nonfinite
+smoothing states are cleared after recurrence, matching filter denormal handling.
+Neutral weights0/1 produce exact input,
 while states keep running. Guard explicit neutral operations if signedzero would
 otherwise be lost. No added delay; no time-varying poles. Static whole-cascade
 magnitude bounded+15dB, not a time-domain peak/automation bound. Retain final

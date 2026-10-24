@@ -1,4 +1,4 @@
-# Pending development — 2026-10-22
+# Pending development — 2026-10-24
 
 Scope: authoritative PRODUCT_SPECIFICATION.md. This is an implementation backlog,
 not a claim that the complete suite is delivered. Check DEVELOPMENT_STATUS.md and
@@ -10,7 +10,9 @@ must not pause independent development or be misreported as passed.
 ## Current foundation and review queue
 
 Implemented: JUCE Vocal/Master/Studio shells; gain/HP/compression/starter saturation,
-three-band EQ, delay/reverb, gate/expander; worker dry-pitch telemetry; real controls,
+three-band EQ, legacy delay/reverb, gate/expander, de-esser, chorus/width, flanger,
+final sample-peak limiter, stereo musical delay, simulated doubler and distinct
+Room/Hall/Plate reverb; worker dry-pitch telemetry; real controls,
 versioned state/presets and fifteen factory sounds. Preset search, favorites,
 import/export, rename and save-as already work; they are not pending features.
 
@@ -29,7 +31,7 @@ Source-quality run39740257019 passed. This is not a passing overall build result
 | Priority / tracking | Pending implementation | Dependency / acceptance |
 | --- | --- | --- |
 | P1 Sculptor, #3/#18 | Qualified independent pitch/formant shifting and formant preservation; depth/body/warmth/presence/resonance/breathiness/character controls; real quality modes | Resolve combined-periodicity failures, broader F0/transient/unvoiced material, listening/CPU; integrate delayed dry/mix/bypass and host latency only after qualification |
-| P1 Effects, #3 | Tape/tube saturation and parallel distortion | Versioned real controls, routing, DSP evidence, safe automation, state/preset migration, GUI and native validation; existing starter effects are partial coverage |
+| P1 Effects, #3 | Integrate qualified Tape/Tube Colour core and parallel mix into engine/host | Fixed 56-sample aligned dry/bypass, safe resume and final limiter, schema11 migration, real controls, automated/native/independent review; core alone is merged, host work remains in progress |
 | P1 Integration, #14/#16/#18 | Review/integrate eventual qualified Sculptor and remaining effects; de-esser/chorus/flanger now merged | Required repository checks/review; no automatic bypass or release; preserve stacked bases until dependencies integrate |
 | P2 Presets, #3 | Complete all20 required vocal factory sounds, audition/tune them and preserve correction/harmony independence | Underlying DSP must exist; fifteen sounds now use existing DSP; five correction/choir/octave sounds remain pending; do not add presets implying unavailable correction/choir features |
 | P2 Track-aware correction, #4 | Reference WAV/AIFF/FLAC/MP3 import where available/licensed, key/scale/BPM/chord timeline/confidence and manual edits; manual/chromatic/custom correction, musical transitions/humanization/vibrato/drift; graphical tracking | Qualified shift backend and real-time pitch tracker; versioned analysis/timeline/transport contracts, preanalysis, offsets and GarageBand manual/standalone fallbacks |
@@ -44,52 +46,32 @@ Source-quality run39740257019 passed. This is not a passing overall build result
 
 ## Current integration and next work
 
-De-esser merged at2f9e33d, chorus/width at9917fb1 and flanger at938aa83. Flanger
-workflow39818430357 passes all7 Linux/macOS15 core/sanitizer/product jobs, including
-both unsigned auval validations; source-quality39818430358 passed. Its exact-zero
-signed-feedback correction preserves existing migration assertions. Main now has
-34 working sound controls and schema6 migration. This is not full M2 completion.
+Merged effects and factory increments include StereoDelay PR28 (04a0b404),
+fractional-ring safety PR29 (0598ce915), Doubler PR30 (e61efc138), Double Tracked
+Rock PR31 (d67a64c2), SpaceReverb PR32 (cc49c99) and Colour core PR33 (cd33a6a).
+Each passed all seven native jobs and source-quality checks on its reviewed head;
+exact run IDs and local evidence are in DEVELOPMENT_STATUS.md and TEST_RESULTS.md.
 
-PR #19 remains draft/blocked by three combined-periodicity failures. A separate
-Rubber Band v4 pinned-source audit improves periodicity on those fixtures but
-still fails one preserved-envelope case; see RUBBERBAND_AUDIT.md. No replacement
-backend is integrated. Continue effects and measured backend qualification with
-versioned contracts and normal reviewed/tested automatic merges.
+At cd33a6a the application uses schema10, 54 sound controls plus global bypass,
+11 editor groups and zero algorithmic engine latency. Colour is a qualified
+standalone DSP core with 56-sample group delay, still outside application routing.
+Do not describe its pending controls or host latency integration as delivered.
+The active integration contract defines schema11, 58 sound controls, 12 groups,
+aligned raw bypass and a guarded resume that retains final limiter protection.
 
-Automatic commits/normal merges are explicitly authorized. No unattended scheduler
-or perpetual development agent is configured; GitHub CI and active session work
-are distinct. Actual DAW/microphone/listening and release qualification remain open.
+PR19 remains draft/blocked by three combined-periodicity failures; its optional
+540-case diagnostic has 61 periodicity failures. Rubber Band LiveShifter audit
+also fails one preserved-envelope case. No qualified pitch/formant replacement
+is integrated. Backend evaluation must distinguish true octave-down results from
+unchanged signals that also correlate at a multiple of their original period.
+Independent tone shaping can proceed without claiming pitch/formant completion.
 
-Limiter continuation: a linked zero-latency sample-peak core and default-off
-final-output host integration now pass local product/sanitizer/GUI validation.
-Core PR24 and host PR25 are merged after all native/quality checks and independent QA.
-This does not cover the oversampled mastering true-peak limiter. Historical401
-authentication failure resolved on retry without a repository change.
+Five required factory sounds still depend on correction/choir/octave processing.
+The fifteen implemented sounds and their persistence operations are available;
+manual audition/tuning remains deferred together with host/microphone/listening
+qualification until the other features are implemented, as requested by the user.
 
-Stereo delay continuation: stereo/single-echo/slapback/ping-pong with manual or
-validated host BPM sync is implemented and passes local core/product/sanitizer/GUI
-and independent source review. Native checks and normal merge are pending.
-
-Doubler continuation: independently wandering dual-tap simulated double tracking,
-not pitch/harmony, is implemented and passes local18product/15core/15sanitizer
-suites and49control GUI/independent QA. Native CI and normal merge remain pending.
-The actual second-performance/listening qualification is not claimed.
-
-Double Tracked Rock now uses actual simulated double tracking and passes local
-preset/host audio/persistence tests plus independent review. The remaining five
-factory sounds require correction/choir/octave features. Manual preset audition
-remains deferred; this addition awaits native CI/normal merge after the Doubler.
-
-Space Reverb: distinct Room/Hall/Plate networks and schema10 are implemented;
-local19product/16sanitizer suites and54-control GUI plus independent core/source
-review pass. Native CI/normal merge remain pending. Static/analytic evidence is
-not listening approval; manual combined qualification remains deferred.
-
-DoublerPR30 and DoubleTrackedRockPR31 are now merged (e61efc138/d67a64c2), after
-all7nativejobs andqualitychecks passed on their respective exactsourceheads.
-
-Colour core: actual Tape/Tube-style saturation and parallelmix nowpass478local
-corechecks plusindependentreview andpredeclaredaliasgates. Hostintegrationstill
-pending: fixed56sample alignedglobaldry/bypass,forcedhostbypass,explicitresume
-transition,latencyreporting,schema11/realcontrols andalloldtestsemanticmigration.
-No newColourcontrols enterproducts beforequalification/alignmentgates.
+Automatic commits and normal merges are explicitly authorized. No unattended
+scheduler or perpetual development agent is configured; GitHub CI and active
+session work are distinct. Manual qualification remains unrun; public release,
+signing and notarization are separate from development integration.

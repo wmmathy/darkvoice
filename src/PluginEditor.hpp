@@ -1,12 +1,14 @@
 #pragma once
 #include "PluginProcessor.hpp"
+#include <algorithm>
 #include <array>
 #include <juce_gui_basics/juce_gui_basics.h>
 #include <memory>
 class DarkVoiceLookAndFeel final : public juce::LookAndFeel_V4 {
   public:
-    int getTabButtonBestWidth(juce::TabBarButton &, int) override {
-        return 42;
+    int getTabButtonBestWidth(juce::TabBarButton &button, int) override {
+        const auto &bar = button.getTabbedButtonBar();
+        return std::clamp(bar.getHeight() / std::max(1, bar.getNumTabs()), 28, 42);
     }
     int getTabButtonOverlap(int) override {
         return 0;
@@ -31,10 +33,10 @@ class DarkVoiceEditor final : public juce::AudioProcessorEditor, private juce::T
     DarkVoiceProcessor &processor_;
     DarkVoiceLookAndFeel look_;
     juce::TabbedComponent tabs_{juce::TabbedButtonBar::TabsAtLeft};
-    std::array<juce::Component, 11> pages_;
-    std::array<juce::Slider, 54> sliders_;
-    std::array<juce::Label, 54> labels_;
-    std::array<std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>, 54>
+    std::array<juce::Component, 12> pages_;
+    std::array<juce::Slider, 58> sliders_;
+    std::array<juce::Label, 58> labels_;
+    std::array<std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>, 58>
         attachments_;
     juce::ToggleButton bypass_{"Bypass processing"};
     std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> bypassAttachment_;
