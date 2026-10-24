@@ -589,3 +589,66 @@ ASan/host/preset/GUI/nativeCI andindependentQA. Listening/DAWmanual testsdeferre
 Agent deesser_review owns ONLYinclude/darkvoice/SpaceReverb.hpp,src/SpaceReverb.cpp,
 tests/space_reverb_tests.cpp inisolatedspace-reverb-core. Leadowns sharedcontracts,
 CMake/docs/integration; hostassignment follows thisfrozenAPI withisolatedownership.
+
+## Colour core v1 qualification contract — 2026-10-24
+
+Independent dependency-free tape/tube-style saturation and actualparallel wetmix.
+Not physical tapehysteresis/circuit emulation. Legacydrive unchanged. COREONLY
+qualification first; no hostcontrols/schema/latencybehavior entersproducts until
+allnewgates pass andlead establishes preciseenginealignment/bypasscontract.
+Planned futureplacementafterSpaceReverb beforeglobalmix/output/limiter processes
+effecttails; planned schema11 hint11 adds4fields afterSpace55 (59state/58preset).
+Do not change oldzero-latency engine inthis assignment.
+
+Colour.hpp/.cpp lifecyclevalid/prepare/setParameters/process/reset asDoubler.
+ColourParameters aggregateorder:int model0(0Tape,1Tube);float drive.25(0..1),
+toneHz16000(1000..20000),mix0(0..1). Allfourrates/mono/stereo/maxFrames1..65536;
+invalidsnapshot/buffersatomic,invalidprepareunprepares; preparepreallocates,
+callbacknoallocation/locking/I/O;resetclearshistories/settlesparameters.
+latencySamples() returns56whenprepared,otherwise0. Puremodulemix0 exactly
+sanitizednormaldry delayed56samples, withzero startupfill. No hostintegration
+claim. Nonfinite/truefloatsubnormal sanitize0;finitefloatextremes remainfinite.
+
+Fixed8xoversampling:3cascaded2xstages,each65tap symmetricBlackmanhalfband.
+n0..64,m=n-32,w=.42-.5cos(2pi*n/64)+.08cos(4pi*n/64); hcenter=.5,
+hother=sin(pi*m/2)/(pi*m)*w, exactzero fornonzeroevenm. Normalizeallh bysum.
+Upsampleinsertzero/gain2,downsamplefilter/gain1 andselectevenphase starting0.
+CommonFIRgroupdelay56native;allrate/model/mixindependent. Privateinternalheader
+src/ColourOversampling.hpp mayexpose detailhelpers torealunittests; no public
+test-onlyprocessingmode. Identityresampler impulse/DC/symmetry/groupdelay56,
+perstagepassbanderror<.0002 through.4nativeFs andstopband<-75dB from.6nativeFs.
+Thesearefiltergates,notnonlinearaliasclaims. Useboundedpolyphase/halfband
+implementationwherehelpful, mathematicallyequivalentcoefficients.
+
+Nativecontrol smoothing10ms drive/tone/mix and20ms styleweightt (targetmodel0/1),
+snaptolerance1e-7. d=1+5drive,k=.5*(1-t). Nativepreemphasis: a=exp(-2pi1500/rate),
+p=a*p+(1-a)*x,v=x+k*(x-p). Upsamplev,at8xcompute
+Tape=tanh(d*v)/tanh(d);Tube=(tanh(d*(v+.12))-tanh(.12*d))/tanh(d);
+blend(1-t)*Tape+t*Tube,downsample. Nativecomplementarydeemphasis:
+y=(s-a*sprev+(1+k)*a*yprev)/(1+k*a). Thenfixed10HzDCblock
+z=y-yprevDC+r*zprev,r=exp(-2pi10/rate);thenHFtoneonepoleexp(-2pi*toneHz/rate).
+Wetblendwith exact56sampledelayeddry, mix0exactpath. AllDSPstates continuous
+initially; no uncontractedneutralfastpath/reset policy. Allprecisioninternal
+double;publicfloatbound/sanitization. Styleinterpolation isdefinedalgorithm,
+not claimcircuitinterpolation. Tapehasfiltermemory/frequencydependentcompression,
+Tubeasymmetry/evenharmonics/DCrejection,parallelmix isrealprocessedblend.
+
+Predeclared nonlinearqualification: compare settledcoherent tone/twotonerenders
+against independent32xreference (5stages,samepublishedkernel, commonlatency62;
+align6). Nativepre/postfilters identicalsemanticstoisolateantialiasquality.
+Relativeinbandresidual RMS < -55dB/inputRMS and >=20dB improvement over1x at
+maxdrive and representativeamplitudes. Choose/recordboundedfixturematrix before
+runs, include highbands/twotones andbothstyles; do not tune thresholds toresult.
+Ifgatefails investigate/report,donotrelax or exposecontrols. Referencealgorithm
+mustindependentlycomputezero-insert/convolution,notcallproductionresampler.
+
+Othergates: tangibleTapeleveldependentHFcompression/memory,Tubeevenharmonics
+andDCsettling/stylesdifferent;allrates/layoutsreset/partition/automation,
+invalidwarmedstate/no callbackalloc/allocationfailure/extremes/subnormals;
+exactdelayedneutral and impulsealignment atpartialmixes. StrictRelease/ASan,
+independentQA andactualnativeCIbeforequalifiedcoremerge. Measurecosthonestly;
+no CPUdeadline/listening/DAWclaim. Manualqualificationdeferred.
+
+Agent space_core_finish owns ONLYinclude/darkvoice/Colour.hpp,src/Colour.cpp,
+src/ColourOversampling.hpp,tests/colour_tests.cpp inisolatedcolour-coreworktree.
+No shared/CMake/docs/commit/push;leadownsqualification/integration.

@@ -472,3 +472,31 @@ Both all7nativejobs passed. Manualqualification remains explicitlydeferred.
 
 IntegratedRelease16/16passes5.58sec; formatting/cppcheck pass. NewSpacecoreis
 697checks,engine6770,presets1515. Nativechecks/normalPRmerge arenext.
+
+## Colour core qualification — 2026-10-24
+
+SpaceReverbPR32 mergedcc49c99 after20bafa6 native40074665236 all7jobs andquality
+40074665179 passed. Currentapplication remains schema10/54soundcontrols/zero
+algorithmiclatency; musicaldelays areeffects. NewColourcore is separate andNOT
+usedbyAudioEngine yet. No fakecontrols or hostlatencychange inthis increment.
+
+Lead recorded Colourcorecontract9ba6b85 beforeassignment. space_core_finish owns
+fourcore/header/privateoversampling/tests files; space_qa independently approved
+source and reproduced478strictRelease checks. Fixed8xpolyphase65tapBlackman
+halfbands give56nativegroupdelay; Tapeemphasis/deemphasismemory, Tubeasymmetry/
+DCblock and realdelayedparallelmix implemented. All48declared coherent aliascases
+pass againstindependent32xzero-insert/convolution reference: worstresidual
+-63.664dBinput (gate-55),minimum1ximprovement50.118dB(gate20),unchanged.
+Kernelpassbandmaxerror.000164014(gate.0002),stop-75.267dB(gate-75).
+
+Standalone478checks passRelease2.47s/ASan23.43s. LeadCMakeReleaseColor1/1passes
+2.53s andASan/UBSanColor1/1passes58.65s,leak/halt enabled. Existing16core/19product
+source unchanged; fullnew17core/20productnativeCI remainsrequired. Measured
+fullywetstereooneaudiosecond48k.0627-.0648wallsec,96k.1275-.1306onthiscloudhost;
+not a targetmachine/deadlineclaim. No hostschema/latencyintegration yet.
+
+Nextdependentenginecontract mustalign globaldry/truebypasswith56samples and
+retainenabledlimiterprotection on EVERYunbypassed sample,includingresume guard.
+Read-only hostdesign corrected an initialunlimitedguardproposal beforecode.
+Rawbypassbitpreservation/frozenlegacyhistories/Colourresetandexplicitguard/fade
+require dedicatedoracles. Manualqualification remainsdeferred.
