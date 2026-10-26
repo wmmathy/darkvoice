@@ -569,3 +569,14 @@ Colour host PR35 merged daddba6 after exact41c2707 passed all seven native jobs
 that merged base; current application schema11/58sound/12groups/fixed56 latency.
 The new tone library is still outside application routing until its own dependent
 host increment passes. All existing Colour tests and numerical gates are retained.
+
+## Planned Depth/Resonance core task — 2026-10-26
+
+Lead recorded the v2 contract before delegation. Task depth_resonance owns only
+VoiceSculptor.hpp/.cpp and voice_sculptor_tests.cpp in
+/workspace/worktrees/depth-resonance-core, branch feature/sculptor/depth-resonance-core.
+Dependencies are the qualified v1 core; no Breathiness or host source mutation.
+Acceptance includes all original4241 gates, independent transfer/automation,
+32combined endpoints and same-platform v1 bitwise compatibility. Test with strict
+C++20 O2/Werror standalone source/test compile; lead schedules Release/ASan/native
+and read-only QA after freeze. No product controls yet; manual tests deferred.

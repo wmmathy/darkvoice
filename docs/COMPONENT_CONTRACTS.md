@@ -845,3 +845,49 @@ worktrees. Leadowns CMake/docs/integration; qualifiedtonecorefilesremainfrozen.
 Release/ASan/product/GUI/independentQA/nativechecks before normalmerge. Existing
 measured180secengine/host testbudgets retained; no numericrelaxation. Manualtests
 remain deferred. This incrementdoesnotcomplete depth/resonance/breathiness/character.
+
+## VoiceSculptor tone core v2: Depth and Resonance — 2026-10-26
+
+Interpretation: independently adjustable tonal operations, not pitch lowering or
+anatomical/formant retuning. Dedicated EQ stages do not overwrite existing EQ.
+Core only, no new product control until dependent engine/host integration.
+
+Append float depthDb=0,resonanceDb=0 AFTER the existing three VoiceSculptorParameters
+fields. Each finite[-6,6]; preserve all existing API/lifecycle/rate/layout/capacity/
+validation/sanitization/latency semantics. Three-value aggregate initialization
+continues assigning Body/Warmth/Presence; defaults make new stages neutral.
+Keep original filter indices0..2 and weight indices0..3 unchanged; append LP90
+and BP700/Q1.6 filters and two gain-contribution weights. All histories continue
+at neutral, target weights computed only on accepted snapshots, same10ms double
+smoothing/true-subnormal cleanup. Cascade Depth -> Body -> Warmth -> Resonance ->
+Presence, with exact-neutral guards preserving old processing and signedzero.
+
+Depth uses fixed bilinear first-order LP90, K=tan(pi*90/rate), b0=b1=K/(1+K),
+a1=(K-1)/(K+1). Stage y=x+(G-1)*LP90(x), G=10^(depthDb/20). Requested dB is
+LOW-FREQUENCY ENDPOINT gain;90Hz is the LP pole, not the shelf half-gain point.
+At+6 setting the90Hz response is about+3.963dB, at-6 about-2.037dB. Resonance is
+fixed unity-peak RBJ bandpass700Hz/Q1.6 using the existing contract's coefficient
+formula and y=x+(G-1)*BP(x), G=10^(resonanceDb/20). Exact center gain follows.
+Neither stage adds a pure alignment delay. Preserve old+15dB static bound for
+new controls0; conservative five-stage static bound27dB, not a peak/automation
+bound. Eventual final engine gain/limiter remain necessary.
+
+Acceptance retains every original4241 assertion and numerical gate. Add independent
+complex-transfer and closed-envelope/state-variable automation oracles, isolated
+endpoints/intermediate values and all32 combined endpoint configurations across
+four rates/mono-stereo. Preserve .02dB/2e-5 spectral and2e-7 automation gates.
+Check Depth DC/high-frequency endpoints and Resonance700 center, distinct spectra,
+neutral continuous tracking, reset/partition/isolation/invalid atomicity/allocation/
+finite extremes/output cleanup and long-decay denormal behavior. Independently
+compare v1 source from the pinned pre-change git revision against v2 on the same
+platform/compiler with new fields0, including old-control automation and reset;
+require bitwise output equality. Do not introduce portable fixed audio hashes.
+Release/ASan/independentQA/native required; manual qualification deferred.
+
+Writer owns ONLY include/darkvoice/VoiceSculptor.hpp,src/VoiceSculptor.cpp,
+tests/voice_sculptor_tests.cpp in isolated depth-resonance-core worktree. Lead owns
+CMake/docs/integration. Qualified existing tone/noise files in other branches stay
+frozen. Future host schema14 depends on schema13: append sculptDepthDb and
+sculptResonanceDb with hint14,±6/.1/default0 and zero-centered snapping,65state/
+64sound fields; preserve prior63 definitions/factories and13 groups. That dependent
+host contract will be established before any engine/host writers start.
