@@ -143,6 +143,7 @@ darkvoice::EngineParameters DarkVoiceProcessor::snapshot() const noexcept {
     p.sculptBodyDb = raw_[59]->load(std::memory_order_relaxed);
     p.sculptWarmthDb = raw_[60]->load(std::memory_order_relaxed);
     p.sculptPresenceDb = raw_[61]->load(std::memory_order_relaxed);
+    p.sculptBreathiness = raw_[62]->load(std::memory_order_relaxed);
     return p;
 }
 void DarkVoiceProcessor::prepareToPlay(double rate, int maxFrames) {
@@ -249,7 +250,7 @@ void DarkVoiceProcessor::setStateInformation(const void *data, int bytes) {
     const auto version = xml->getStringAttribute("schemaVersion");
     if (version != "1" && version != "2" && version != "3" && version != "4" && version != "5" &&
         version != "6" && version != "7" && version != "8" && version != "9" && version != "10" &&
-        version != "11" && version != "12")
+        version != "11" && version != "12" && version != "13")
         return;
     const auto count = darkvoice::parameterCountForVersion(version.getIntValue());
     const auto state = juce::ValueTree::fromXml(*xml);

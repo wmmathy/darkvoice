@@ -12,7 +12,7 @@ inline constexpr std::size_t legacyParameterCount = 8;
 inline constexpr std::size_t effectsParameterCount = 21;
 inline constexpr std::size_t gateParameterCount = 24;
 inline constexpr std::size_t deEsserParameterCount = 27;
-inline constexpr std::array<ParameterSpec, 62> parameterSchema{{
+inline constexpr std::array<ParameterSpec, 63> parameterSchema{{
     {"inputDb", "Input", -24.0f, 24.0f, 0.0f, 0.1f, 1.0f, false},
     {"outputDb", "Output", -24.0f, 24.0f, 0.0f, 0.1f, 1.0f, false},
     {"highPassHz", "High-pass", 20.0f, 400.0f, 20.0f, 1.0f, 0.5f, false},
@@ -75,8 +75,9 @@ inline constexpr std::array<ParameterSpec, 62> parameterSchema{{
     {"sculptBodyDb", "Body 180 Hz", -6, 6, 0, .1f, 1, false},
     {"sculptWarmthDb", "Warmth tilt", -6, 6, 0, .1f, 1, false},
     {"sculptPresenceDb", "Presence 3 kHz", -6, 6, 0, .1f, 1, false},
+    {"sculptBreathiness", "Breath texture", 0, 1, 0, .001f, 1, false},
 }};
-inline constexpr int currentSchemaVersion = 12;
+inline constexpr int currentSchemaVersion = 13;
 constexpr std::size_t parameterCountForVersion(int version) noexcept {
     return version == 1    ? legacyParameterCount
            : version == 2  ? effectsParameterCount
@@ -89,7 +90,8 @@ constexpr std::size_t parameterCountForVersion(int version) noexcept {
            : version == 9  ? 50
            : version == 10 ? 55
            : version == 11 ? 59
-           : version == 12 ? parameterSchema.size()
+           : version == 12 ? 62
+           : version == 13 ? parameterSchema.size()
                            : 0;
 }
 constexpr int parameterVersion(std::size_t index) noexcept {
@@ -104,6 +106,7 @@ constexpr int parameterVersion(std::size_t index) noexcept {
            : index < 50                    ? 9
            : index < 55                    ? 10
            : index < 59                    ? 11
-                                           : 12;
+           : index < 62                    ? 12
+                                           : 13;
 }
 } // namespace darkvoice

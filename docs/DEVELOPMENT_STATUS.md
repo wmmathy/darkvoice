@@ -662,3 +662,52 @@ Production source did not change for those negative controls. Formatting/static/
 tracked scans and native validation remain required before normal merge. Core
 only: no new product parameter or host routing is delivered in this increment.
 Manual host/microphone/listening qualification remains deferred.
+
+## Breath texture dependent work packages — 2026-10-26
+
+Launch plan: engine task breath_engine owns only AudioEngine.hpp/.cpp and
+engine_tests.cpp on feature/sculptor/breathiness-engine in its matching isolated
+worktree. Host task breath_host owns only ParameterSchema, PluginProcessor/Editor,
+PresetBank and plugin/preset/gui tests on feature/sculptor/breathiness-host.
+Both depend on the qualified7fc6fe6 core and schema12 tone integration bd5d452;
+the merged base and exact schema13 contract are recorded in COMPONENT_CONTRACTS.
+Lead owns CMake/docs/integration. No core source changes during host work.
+
+Acceptance: neutral identity, deterministic active texture, all rates/layouts,
+frozen histories through bypass/resume, unchanged56sample alignment and limiter,
+strict v1..12 migrations, prior62 definitions/factories unchanged,62 sound controls
+in13 groups. Engine uses strictO2 standalone regression linked with engine sources;
+lead runs cmake --build build/products --parallel2 then ctest with
+--output-on-failure --no-tests=error, sequential Release/ASan and real GUI checks.
+Read-only QA independently reviews and executes probes after writers freeze.
+These are finite session tasks, not a persistent scheduler. Manual tests deferred.
+
+## Breath texture host qualification — 2026-10-26
+
+Engine/host integration is implemented under schema13:63 state/62 sound fields,
+13 groups. Independent QA rebuilt16642 strictO2 engine checks, all eight new
+composed routes and eight prior tone routes matched exactly. All62 prior schema
+definitions remain unchanged; actual/forced bypass freezes RMS/FIR/PRNG and
+resume resets only Colour. Final gain and enabled limiter cover every unbypassed
+sample. Core files remain frozen; factories retain all prior settings and new0.
+
+Initial fullproduct run passed21/22, including host129.21sec, but one positive
+preset fixture mislabeled62 sound fields as schema12. Production correctly
+rejected that map. Changed only helper default to currentSchemaVersion and future
+rejection fixture to current+1; explicit legacy fixtures, parser and numeric gates
+unchanged. QA reviewed the repair. Targeted preset rerun passes0.33sec; all22
+product tests are therefore covered across the full run and repaired target.
+A misplaced Colour comment was corrected without changing audio-test statements.
+
+Current Release19/19 passes15.83sec; ASan/UBSan19/19 passes219.14sec with leak/halt
+enabled. Existing180sec per-engine/host budgets retained. GUI62 attachments/13
+groups passed, /tmp/darkvoice-breath-texture.png inspected and all controls fit.
+Formatting/cppcheck/whitespace checks pass; tracked scans and native CI/normal
+merge follow. Manual host/microphone/listening tests remain deferred/unrun.
+
+PR38 native40361692487 passed all four Linux jobs; three macOS ARM jobs failed
+before starting because GitHub reported 'The job was not acquired by Runner of
+type hosted even after multiple attempts' and ARM capacity constraints. One
+failed-job retry was requested. PR37 diagnostic native40361362105 had the same
+infrastructure failure and was retried once. No platform gate was waived or
+successful native result inferred from Linux. Development continues independently.
