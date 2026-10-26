@@ -1,5 +1,6 @@
 # Exact audited revisions. Upstream CMake is intentionally not executed: it
 # defaults to platform backends and fetches Linear through a mutable tag.
+option(DARKVOICE_EXPERIMENT_PHASE_DECOUPLING "Developer-only phase/amplitude separation; unqualified" OFF)
 include(FetchContent)
 FetchContent_Declare(darkvoice_stretch
     GIT_REPOSITORY https://github.com/Signalsmith-Audio/signalsmith-stretch.git
@@ -54,5 +55,8 @@ string(REPLACE "${darkvoice_envelope_original}" "\t\t\t${darkvoice_envelope_repl
     darkvoice_stretch_header "${darkvoice_stretch_header}")
 file(WRITE "${darkvoice_stretch_private}/signalsmith-stretch.h" "${darkvoice_stretch_header}")
 darkvoice_verify_file("${darkvoice_stretch_private}/signalsmith-stretch.h" 7003842b8347ba10710f280c33dba494cd3466a54b240cef76cfbbe32a9a93b8)
+if(DARKVOICE_EXPERIMENT_PHASE_DECOUPLING)
+    include("${CMAKE_CURRENT_LIST_DIR}/SignalsmithPhaseDecoupling.cmake")
+endif()
 configure_file("${darkvoice_linear_SOURCE_DIR}/stft.h" "${darkvoice_stretch_private}/signalsmith-linear/stft.h" COPYONLY)
 configure_file("${darkvoice_linear_SOURCE_DIR}/fft.h" "${darkvoice_stretch_private}/signalsmith-linear/fft.h" COPYONLY)
