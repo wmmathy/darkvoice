@@ -1,5 +1,11 @@
 # Changelog
 
+## Breath texture core
+
+- Add a center-driven aspiration texture with a finite RMS envelope, deterministic excitation and a fixed noise-color filter.
+- Preserve neutral dry samples and bound the generated texture tail; avoid cancellation errors after large signals.
+- Keep this library outside application controls until its dependent host integration is validated.
+
 ## Voice Sculptor tone core
 
 - Add independent body, warmth tilt and presence processing with fixed filter poles and smooth gain weights.
