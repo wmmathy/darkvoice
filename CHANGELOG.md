@@ -1,5 +1,10 @@
 # Changelog
 
+## Voice Sculptor tone core
+
+- Add independent body, warmth tilt and presence processing with fixed filter poles and smooth gain weights.
+- Qualify frequency response and automation against independent analytic and state-variable references.
+- Keep the core outside application routing and controls until its dependent host integration is validated.
 ## Colour host integration
 
 - Route Colour after Space Reverb and align global dry and actual bypass by 56 samples.

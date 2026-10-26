@@ -550,6 +550,32 @@ Theseestablish numericalcharacter/alias evidence,not physicalemulation or sonic
 approval. Existingapplication routing/controls/latency unchanged inthiscore-only
 increment. FullcombinednativeCIpending;actualmanualqualificationdeferred.
 
+## VoiceSculptor tone core qualification — 2026-10-24
+
+New independentcore supplies Body180Hz/Q.85bell, Warmth450Hzcomplementarytilt,
+Presence3000Hz/Q.7bell, eachgain[-6,6]neutral0. Fixedpoles;10msdoubleweights;
+normalneutralbits/signedzeroexact whilefilterhistoriescontinue. Noaddedlatency,
+externaldependency, hostcontrols orpitch/formantclaim. Coreonly; dependentengine/
+schema12/UIintegration requires separatecontract andgates. Other tonalparameters
+remainoutstanding ratherthanbeing relabeledasthesecontrols.
+
+StrictO2writer4241checks0failures; leadCMakeRelease1/1passes.82sec andASan/UBSan
+1/1passes8.61sec withleak/halt enabled. Independentcomplexanalogtransfer,
+trapezoidalstatevariable/closedexponentialautomationoracles, all4rates/layouts,
+21settings×7frequencies, combinedextremes/densefrequencybound, signedzero/normal
+extremes/reset/partition/invalidatomicity/allocation checks retained. Spectral
+errorgate.02dB,complex2e-5,automation2e-7. Static+15dBfrequencybound isnot apeak/
+automationguarantee. Truefloatoutputsubnormals anddoublesubnormalhistories/weights
+clearwithout arbitraryepsilons. Negativecontrols removingonlyweightcleanup fail8
+longdecaychecks; removingonlyoutputflush fails16activecut±FLTminchecks, while
+priorchecks pass. Meaningfuldenormalregressions. Formatting/cppcheck pass.
+IndependentreadonlysourceQAapproved; separateexecution/native/normalmergepending.
+Manualqualification remainsdeferred/unrun. Atthischeckpoint ColourhostPR35 is
+pendingnative; productcapability follows itsmergedrevision,not thislibraryalone.
+
+IndependentQA actuallyrebuilt strictO2suite4241/0 andran224ownimpulsetransform
+comparisons maxcomplexerror7.69278e-8<2e-7 plusstereoscaling. Approvedfinalcore;
+lead Release/ASan alreadycompleted above. Trackedsecret/dependencyscans pass.
 ## Colour host integration verification — 2026-10-24
 
 Integrated frozen engine/host work under the versioned aligned-engine contract.
@@ -586,3 +612,9 @@ andnumericalgate retained. Finalformat/static/scans alreadypass onintegratedsour
 ColourcorePR33 ismergedcd33a6a; appchanges hereawaitnativeCI/normalmerge. R3audit
 PR34 merged5395776 afterbb64e41 all7native40098123157 andquality40098123175 passed;
 its reproducedfailedqualitycriteria remain blocked, no productbackend introduced.
+
+Colour host PR35 merged daddba6 after exact41c2707 passed all seven native jobs
+40098919922 and source-quality40098919947. This tone-core branch now includes
+that merged base; current application schema11/58sound/12groups/fixed56 latency.
+The new tone library is still outside application routing until its own dependent
+host increment passes. All existing Colour tests and numerical gates are retained.
