@@ -654,3 +654,11 @@ Current complete product rerun:21/21 passed217.34sec, host125.71sec within exist
 Release and18/18ASan results remain the corresponding completed October24 runs;
 GUI61controls/13groups and independent16104engine checks were already verified.
 No manual qualification is claimed. Commit/native CI and normal merge follow.
+
+Historical core integration checkpoint:
+
+Colour host PR35 merged daddba6 after exact41c2707 passed all seven native jobs
+40098919922 and source-quality40098919947. This tone-core branch now includes
+that merged base; current application schema11/58sound/12groups/fixed56 latency.
+The new tone library is still outside application routing until its own dependent
+host increment passes. All existing Colour tests and numerical gates are retained.
