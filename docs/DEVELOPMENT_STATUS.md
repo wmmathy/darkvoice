@@ -563,3 +563,64 @@ pendingnative; productcapability follows itsmergedrevision,not thislibraryalone.
 IndependentQA actuallyrebuilt strictO2suite4241/0 andran224ownimpulsetransform
 comparisons maxcomplexerror7.69278e-8<2e-7 plusstereoscaling. Approvedfinalcore;
 lead Release/ASan alreadycompleted above. Trackedsecret/dependencyscans pass.
+
+## Active finite tone integration assignments — 2026-10-24
+
+Leadestablishedtonecorecontractd759e74 anddependenthostcontract25f7f93; basea5bb182
+combinesColour41c270andqualifiedtonecore. Actualengineagentcolour_engine_finish
+worksfeature/sculptor/tone-engine in/workspace/worktrees/sculptor-tone-engine,
+exclusiveAudioEngine.hpp/.cpp,tests/engine_tests.cpp. Actualhostagent
+colour_host_finish worksfeature/sculptor/tone-host in/workspace/worktrees/
+sculptor-tone-host, exclusiveParameterSchema,PluginProcessor/Editor,PresetBank,
+plugin/preset/gui tests. Exactownership/acceptance islastCOMPONENT_CONTRACTSsection.
+Engineheaderpublishedbeforehostsnapshotwork. Readonlycolour_qa independently
+qualifiedcore4241tests+224transforms; leadowns CMake/docs/integration/nativegates.
+StrictO2testcommands link correspondingengine/sourcestandalonetests; fulllead
+product/Release/ASan suites runsequentially afterfreeze. No perpetualscheduler.
+
+Separatelypitch_failure_design runsbounded developer-only couplingdiagnostics
+in/workspace/worktrees/pitch-coupling-audit (basefa4af29), newqualificationtools/
+reportonly. Existingfailedbackend/tests remainunchanged. Neither diagnosticnor
+finiteagents imply functionalpitchcorrection ormanualhost/listeningqualification.
+
+## VoiceSculptor tone host verification — 2026-10-24
+
+Integrated frozen engine/host files under schema12 contract. Independent QA
+rebuilt strictO2 engine:16104checks/0, all eight composed rate/layout oracles
+maxerror0. Host retains all59prior definitions, appends3tonefields; exactzero-
+centered conversion/snapping onlynewfields prevents FMA residual atnominalzero.
+Core remains qualified; application uses62state/61sound fields and13groups here.
+
+First fullproductrun passed20/21, failed new steady-state tone transfer fixture
+at48kmono180Hz/body+6: error2.84806e-5 above retained2e-5 gate. Fixed2048sample
+preroll was insufficient for mandatory20HzHP startup. Replaced onlyfixturepreroll
+with ceil(.2*rate), kept2048fit/allcases/callbacks/2e-5 gate. IndependentQA reviewed
+analytic decay andchange. FreshhostCTest passes81.07sec; previousother20tests
+unchanged/pass. Earlytransients remain covered byall-sampleengineoracle.
+
+GUI61attachments/13groups passes and /tmp/darkvoice-sculptor-tone.png inspected;
+all labels fit900x780 and actual56samplelatency visible. Formatting/cppcheck/
+whitespace pass. FullRelease/ASan, scans/native/normalmerge pending. Manualhost/
+microphone/listening qualification remains deferred/unrun. ColourPR35 ismerged
+daddba6 after41c270 native40098919922 all7jobs/quality40098919947; tonecorePR36
+remains draft. No pitch/formant backend qualifies from this increment.
+
+## Tone integration evidence recovery — 2026-10-26
+
+Resumed workspace preserves completed CTest logs despite temporary output logs
+being gone. build/flanger/Testing/Temporary/LastTest.log records18passed/0failed;
+build/flanger-sanitized/Testing/Temporary/LastTest.log likewise18passed/0failed,
+including VoiceSculptor4241 and engine16104 checks. Those runs finished on
+October24; this is recovered evidence, not newly executed sanitizer validation.
+The product suite is rerunning now for a complete current21-test report.
+
+TonecorePR36 merged49ecce6 after exact925f1ea native40099826216 all7jobs and
+quality40099826232 passed. Currentmain remains schema11/58soundcontrols/56sample
+latency because dependenttonehost integration remainslocal pendingcommit/native.
+Allmanualhost/microphone/listening qualification remains explicitlydeferred.
+
+Current complete product rerun:21/21 passed217.34sec, host125.71sec within existing
+180sec runtimebudget. No code/threshold adjustment was needed. Recovered18/18
+Release and18/18ASan results remain the corresponding completed October24 runs;
+GUI61controls/13groups and independent16104engine checks were already verified.
+No manual qualification is claimed. Commit/native CI and normal merge follow.

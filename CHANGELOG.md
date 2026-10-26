@@ -1,5 +1,12 @@
 # Changelog
 
+## Voice Sculptor tone controls
+
+- Route body, warmth tilt and presence after de-essing and before EQ/time effects.
+- Append three hint-12 controls and strict schema-12 migrations with exact neutral values.
+- Preserve fixed56-sample latency, frozen bypass histories and final limiter protection.
+- Add a thirteenth editor group while preserving all prior parameter definitions and factory values.
+
 ## Colour host integration
 
 - Route Colour after Space Reverb and align global dry and actual bypass by 56 samples.

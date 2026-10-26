@@ -825,7 +825,11 @@ resume, continuousneutralhistory and finalenabledlimiter under combinedboost.
 Allrates/layout/partitions, invalidsnapshotatomicity, allocationguard required.
 
 Append schema12/AUhint12 IDs sculptBodyDb,sculptWarmthDb,sculptPresenceDb inthatorder,
-range[-6,6],step.1,default0,linear. Total62state/61preset excludingonlyglobalbypass.
+range[-6,6],step.1,default0,linear. Reuse the existing flangerFeedback zero-centered
+custom conversion/snapping ONLY for these three new tone IDs: ordinary start-
+relative .1f snapping can leave8.9406967e-8 at nominalzero underFMA. Exactneutral
+default/migration/control/preset loading must remain0; preserve all59old behavior.
+Total62state/61preset excludingonlyglobalbypass.
 Strictv1..11migration zerosnewfields; v12roundtrip; rawfinite/ranges exactexisting
 parserguards unchanged. Preserve all59priorIDs/hints/ranges/defaults and15factory
 priorvalues; allnewtonefieldsneutralin everyfactory. Original14hashes continue
