@@ -40,8 +40,8 @@ complex warp response and level scaling. Known-filter reconstruction relativeRMS
 gate. No threshold relaxation if conditioning fails. No iterative root search.
 
 Then keep exactly the original three48k/2s/80-harmonic float-accumulated fixtures:
-100Hz/F1600 pitch+12/formant0;70Hz/F1600 pitch-12/formant0;
-180Hz/F11200 pitch+12/formant+7. Here F1 denotes envelope center, not source F0.
+F0=100Hz/envelope600Hz pitch+12/formant0; F0=70Hz/envelope600Hz pitch-12/formant0;
+F0=180Hz/envelope1200Hz pitch+12/formant+7. Envelope center is distinct from F0.
 Use existing Offline8192/1024 settings, seed/reset,512sample public calls and final
 48000sample measurement without hidden flush/crop. Existing shift backend runs
 preservationfalse/formant0 on residual; resynthesis applies the desired source
