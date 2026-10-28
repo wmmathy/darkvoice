@@ -961,3 +961,76 @@ Engine writer owns ONLY AudioEngine.hpp/.cpp and tests/engine_tests.cpp. Host
 writer owns ONLY ParameterSchema.hpp, PluginProcessor.hpp/.cpp, PluginEditor.hpp/
 .cpp, PresetBank.cpp, tests/plugin_tests.cpp, preset_tests.cpp, gui_smoke.cpp in
 separate worktrees. Lead owns contracts/CMake/docs/integration; core files frozen.
+
+## Bandlimited Colour / actual quality profiles v1 — 2026-10-28
+
+User priority is finalized VoiceSculptor Character, qualified pitch/formant,
+quality modes and stronger Colour alias suppression. Independent32-case audit
+confirmed off-mask folded energy as high as-22.947dB/inputRMS in legacy Colour.
+Historical8vs32 comparison remains valid agreement with a shared-final-filter
+reference, not an absolute bound. Keep legacy Colour/header/helper/tests frozen.
+Do not add wet-only minimum-phase LP8 filters: their phase creates major parallel
+mix cancellation. New component uses sharper LINEAR-PHASE boundary filters and
+reports the real additional latency. It stays outside AudioEngine until a separate
+aligned-host contract is implemented and checked.
+
+New include/darkvoice/QualityMode.hpp: enum class QualityMode:int {Live=0,Studio=1,
+Offline=2}; constexpr validQualityMode(QualityMode) noexcept. New BandlimitedColour
+API reuses existing ColourParameters (same4fields/ranges/defaults), constructor
+noexcept/destructor/deleted copy; prepare(double,size_t,size_t,QualityMode=Live)
+noexcept; static valid(params),setParameters,process(span<float*>,size_t),reset,
+latencySamples all existing signatures/noexcept. Add qualityMode() returning
+optional<QualityMode> (none unprepared), static constexpr maximumLatencySamples=352
+and latencyForQuality(mode) returning120/176/352 or0invalid. Four rates,mono/stereo,
+maxFrames1..65536; failed prepare unprepares, invalid snapshots/buffers atomic,
+empty advances nothing. Prepare resets defaults; reset settles accepted targets.
+No callback allocation/locks/I/O. Quality is immutable until prepare, not a
+per-block sound parameter.
+
+Predeclared profiles (native-boundary taps / higher-stage taps / native latency):
+Live193/65/120, Studio257/129/176, Offline513/257/352. Fixed8x, three cascaded2x
+stages. Sharpen FIRST interpolator and LAST decimator with boundary kernel; other
+four banks use higher-stage kernel. Each kernel is the existing normalized
+Blackman-window halfband design, with exact structural zero taps and independent
+reference recalculation. Group delay L=(boundaryTaps-1)/2+3*(higherTaps-1)/8.
+New private BandlimitedColourOversampling.hpp may reuse frozen primitives or use
+explicit-size templates; do not mutate ColourOversampling.hpp. Ensure explicit
+stateful processing order; shaper callbacks stateless. Compare generic reference
+with explicit zero insertion/convolution rather than production polyphase.
+
+Port the exact existing Tape/Tube/pre-emphasis/de-emphasis/DC/HF-tone/mix equations
+and10ms/20ms smoothing, changing only FIR profile/dry alignment. Native dry queue
+uses selected L. Mix0 returns old sanitized NORMAL input bits delayed L, without
+filter coloration; all wet histories remain active at mix0. Nonfinite/true float
+subnormal handling and finite clamping remain as legacy. L is buffered/FIR group
+delay, not a claim no active-wet pre-ringing or no IIR phase. Native controls keep
+their existing timing; no arbitrary output normalization or gain-floor changes.
+
+Acceptance per mode preserves all legacy core numerical intents/gates: neutral
+identity/delay/extremes, partial mix with independent reference, Tape HF memory/
+compression, Tube H2/DC, stereo isolation, variable partitions/automation/reset,
+invalid atomicity/allocation failures/callback guards. Retain all48 declared
+reference-comparison fixtures:4096coherent frames after4096warm, bins719/1597 and
+two-tone683+1129, amps.15/.5, styles0/1, drive1,tone16000. Independent32x reference
+uses the same profile kernels but generic convolution and recalculates constants;
+its latency is boundaryM/2+15*higherM/32, i.e126/188/376 (crop6/12/24 vs8x).
+Residual normalized to inputRMS<-55dB and>=20dB improvement vs1x, unchanged.
+Label these as reference agreement, not absolute alias suppression.
+
+Separately require all32 pure-tone absolute-mask fixtures PER MODE <=-55dB/inputRMS:
+four rates,styles0/1,amps.15/.5,bins719/1597,N4096,drive1,tone16000,mix1,
+warm ceil(rate/N)*N>=1sec. Rectangular FFT: only true integer harmonics below
+Nyquist allowed; DC excluded, Nyquist weighted separately. Verify actual input
+single-bin power and nominalRMS as well as finite/exact output, not a shared-filter
+comparison. No multitone/universal alias claim. Allcases and thresholds fixed;
+report failures rather than tuning fixtures. Measure mode latency/filter responses
+and Release CPU without calling cloud results deadline/target-machine validation.
+IndependentQA/Release/ASan/native required; manual testing deferred.
+
+Writer owns ONLY new QualityMode.hpp,BandlimitedColour.hpp,
+src/BandlimitedColour.cpp,src/BandlimitedColourOversampling.hpp,
+tests/bandlimited_colour_tests.cpp. Lead owns CMake/docs/integration. Existing
+Color/engine/host/core tests stay frozen. Test executable may accept --quality
+live/studio/offline for separate CTest budgets, default all3; no hidden skipped
+empty suite. Future host uses prepared-mode latency, raw alignment and full resume
+oracles; lifecycle-safe global quality selection is separate from sound presets.
