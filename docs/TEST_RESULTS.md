@@ -765,3 +765,21 @@ JUCE builds and actual unsigned AU validation. OS coverage changes, architecture
 and quality gates do not. No main/feature integration until the corresponding
 new head passes actual native/source-quality checks and normal review/rules.
 Manual host/microphone/listening qualification remains deferred.
+
+## Depth/resonance engine and schema14 host — 2026-10-28
+
+Engine strict O2 and independent QA each passed17342 checks, retaining16642 prior
+checks; all24 combined routing comparisons exact zero error. All63 prior parameter
+definitions unchanged; two neutral ±6dB fields append schema14 (65state/64sound).
+Initial full22-product suite passed21: plugin suite stopped at stale unsupported
+version14 fixture, now a valid version. Repair uses currentSchemaVersion+1 and
+retains malformed-version/atomic rejection. Preset overflow fixture derives current
+version too. Targeted preset+plugin rerun2/2 passed159.59sec (plugin159.12,preset.47).
+Thus every product suite passed across initial run and affected rerun; no failed
+production behavior was hidden. Full Release19/19 passed18.01sec; full ASan/UBSan
+19/19 passed276.88sec with leak/halt enabled and unchanged budgets. Persistent
+build/flanger{,-sanitized}/Testing/Temporary/LastTest.log retains suite evidence.
+GUI smoke64 controls/13groups passed; lead inspected build/verification/
+depth-resonance.png, all six Sculptor rows visible at900x780. Fixed56 latency and
+raw bypass/limiter behavior retained. Native checks required on committed head.
+Manual host/mic/listening remains deferred, not passed.

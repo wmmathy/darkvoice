@@ -81,3 +81,15 @@ Automatic commits and normal merges are explicitly authorized. No unattended
 scheduler or perpetual development agent is configured; GitHub CI and active
 session work are distinct. Manual qualification remains unrun; public release,
 signing and notarization are separate from development integration.
+
+## Current Voice Sculptor priority — 2026-10-28
+
+Tone PR38, texture core PR39, texture host PR40 and depth/resonance core PR42 now
+merged with all seven native jobs/source quality green. The supported macOS15
+ARM pool replaced unavailable26 capacity without waiving validation. Schema14
+depth/resonance host is locally validated, pending committed-head CI/merge.
+Remaining Sculptor work: Character, qualified independent pitch/formant, real
+Live/Studio/Offline profiles and stronger absolute Colour alias suppression.
+Bandlimited Colour profile implementation and isolated WORLD diagnostic active;
+no production pitch controls until retained gates pass. Earlier pitch failures
+and shared-filter reference limitation remain recorded. Manual tests deferred.

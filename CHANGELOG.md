@@ -1,5 +1,11 @@
 # Changelog
 
+## Depth and resonance controls
+
+- Add independent Depth lows and Resonance700Hz controls to Voice Sculptor.
+- Append schema14 parameters with neutral migrations and unchanged prior definitions.
+- Retain fixed56-sample alignment, raw bypass and limiter protection.
+
 ## Depth and resonance tone core
 
 - Extend VoiceSculptor with independent low-frequency endpoint gain and fixed700Hz resonance emphasis.
