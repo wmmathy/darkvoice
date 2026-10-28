@@ -1,5 +1,11 @@
 # Changelog
 
+## Depth and resonance tone core
+
+- Extend VoiceSculptor with independent low-frequency endpoint gain and fixed700Hz resonance emphasis.
+- Preserve prior tone processing when the two new controls are neutral.
+- Keep new engine parameters and UI controls for the dependent host increment.
+
 ## Voice Sculptor tone core
 
 - Add independent body, warmth tilt and presence processing with fixed filter poles and smooth gain weights.

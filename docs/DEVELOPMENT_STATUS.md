@@ -569,3 +569,40 @@ Colour host PR35 merged daddba6 after exact41c2707 passed all seven native jobs
 that merged base; current application schema11/58sound/12groups/fixed56 latency.
 The new tone library is still outside application routing until its own dependent
 host increment passes. All existing Colour tests and numerical gates are retained.
+
+## Planned Depth/Resonance core task — 2026-10-26
+
+Lead recorded the v2 contract before delegation. Task depth_resonance owns only
+VoiceSculptor.hpp/.cpp and voice_sculptor_tests.cpp in
+/workspace/worktrees/depth-resonance-core, branch feature/sculptor/depth-resonance-core.
+Dependencies are the qualified v1 core; no Breathiness or host source mutation.
+Acceptance includes all original4241 gates, independent transfer/automation,
+32combined endpoints and same-platform v1 bitwise compatibility. Test with strict
+C++20 O2/Werror standalone source/test compile; lead schedules Release/ASan/native
+and read-only QA after freeze. No product controls yet; manual tests deferred.
+
+## Depth/Resonance core qualification — 2026-10-28
+
+VoiceSculptor v2 appends depthDb/resonanceDb after the original three fields.
+Depth is a90Hz fixed-pole bass shelf with requested low-frequency endpoint gain;
+90Hz is not a half-gain shelf center. Resonance is700Hz/Q1.6 emphasis/cut.
+Both ranges±6dB/default0. Dedicated stages leave existing EQ controls editable.
+The conservative five-stage static magnitude bound is27dB; original new-neutral
+settings retain the old15dB bound. Neither is a peak or automation guarantee.
+No F0, anatomical or formant-retuning capability is claimed.
+
+Writer breath_engine froze only VoiceSculptor.hpp/.cpp and voice_sculptor_tests.cpp.
+Independent depth_resonance_qa rebuilt11409 strictO2 checks with zero failures,
+retaining original4241 gates, and reconstructed pinned49ec v1 sources. Optional
+legacy execution passed11617 checks and111312 bitwise-equal samples through old
+control automation/reset/reprepare on this platform/compiler. Header/source SHA:
+729974dac8e568aa47b705030a96e7f500a0109f3f2124d86f5f84e4aa2f7436 /
+252267fe8a521d0c20d87f561fc52aa85c533fad8a334e5a3d29d3593841d792.
+An additional160 impulse-response comparisons had maxcomplexerror4.7707456e-8.
+All32 endpoint combinations, independent analog/TPT transfer and closed-envelope
+oracles, lifecycle/atomicity/allocation/denormal checks passed unchanged gates.
+
+Lead CMake Release passed3.04sec, ASan/UBSan passed28.70sec with leak/halt enabled,
+within existing60sec tone-test budget. Independent QA approved. This is core-only:
+application controls require schema14 after the schema13 texture increment.
+Formatting/static/scans/native/normal merge remain required. Manual tests deferred.
