@@ -6,6 +6,7 @@
 - Append schema14 parameters with neutral migrations and unchanged prior definitions.
 - Retain fixed56-sample alignment, raw bypass and limiter protection.
 
+
 ## Depth and resonance tone core
 
 - Extend VoiceSculptor with independent low-frequency endpoint gain and fixed700Hz resonance emphasis.
@@ -18,6 +19,7 @@
 - Add a center-driven breath-texture amount control after tone shaping and before EQ/time effects.
 - Append one hint-13 parameter with strict schema-13 migrations and neutral factory defaults.
 - Preserve fixed56-sample latency, raw bypass, frozen texture history and final limiter protection.
+
 
 
 ## Breath texture core

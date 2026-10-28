@@ -741,6 +741,7 @@ failed-job retry was requested. PR37 diagnostic native40361362105 had the same
 infrastructure failure and was retried once. No platform gate was waived or
 successful native result inferred from Linux. Development continues independently.
 
+
 ## Depth/Resonance core qualification — 2026-10-28
 
 VoiceSculptor v2 appends depthDb/resonanceDb after the original three fields.
@@ -802,3 +803,5 @@ GUI smoke64 controls/13groups passed; lead inspected build/verification/
 depth-resonance.png, all six Sculptor rows visible at900x780. Fixed56 latency and
 raw bypass/limiter behavior retained. Native checks required on committed head.
 Manual host/mic/listening remains deferred, not passed.
+
+Manual host/microphone/listening qualification remains deferred.

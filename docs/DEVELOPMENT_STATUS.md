@@ -730,6 +730,7 @@ failed-job retry was requested. PR37 diagnostic native40361362105 had the same
 infrastructure failure and was retried once. No platform gate was waived or
 successful native result inferred from Linux. Development continues independently.
 
+
 ## Planned Depth/Resonance core task — 2026-10-26
 
 Lead recorded the v2 contract before delegation. Task depth_resonance owns only
@@ -826,3 +827,5 @@ worktree, no acceptance thresholds relaxed. Pitch remains unqualified: isolated
 WORLD source/filter diagnostic excludes upstream FFT and uses independently
 authored FFT to avoid unresolved provenance. No pitch controls or false completion
 claim. Manual qualification deferred as requested.
+
+Manual host/microphone/listening qualification remains deferred.
