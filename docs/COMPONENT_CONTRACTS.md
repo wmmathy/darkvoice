@@ -961,3 +961,47 @@ Engine writer owns ONLY AudioEngine.hpp/.cpp and tests/engine_tests.cpp. Host
 writer owns ONLY ParameterSchema.hpp, PluginProcessor.hpp/.cpp, PluginEditor.hpp/
 .cpp, PresetBank.cpp, tests/plugin_tests.cpp, preset_tests.cpp, gui_smoke.cpp in
 separate worktrees. Lead owns contracts/CMake/docs/integration; core files frozen.
+
+## WORLD source/filter diagnostic v1 — 2026-10-28
+
+Isolated qualification experiment, not a product dependency or a qualified pitch
+backend. Pin WORLD c794856b537758a3d300757db2e5e31685a822c2. Its root BSD
+and macrodefinitions MIT notices must be retained. Exclude upstream src/fft.cpp:
+its Ooura provenance is unresolved. Independently author a radix-2 FFT shim using
+only BSD world/fft.h declarations, with no Ooura implementation copied. Explicit
+source whitelist: cheaptrick, common, d4c, dio, harvest, matlabfunctions, stonemask,
+synthesis and own shim. Never compile/distribute the excluded FFT file. No vendor
+source, build output or audio fixtures committed. No product CMake changes.
+
+Shim uses standard negative-exponent forward, positive-exponent unnormalized
+inverse, N roundtrip scaling. Support C2C, R2C N/2+1 and Hermitian C2R, input/output
+aliasing by complete scratch copy. Allocate scratch/bit reversal/twiddles in plans,
+never execute. Verify small powers against independent direct DFT, larger powers
+through 131072 by roundtrip/Parseval/DC/Nyquist/analytic tones and allocation check.
+Inspect WORLD use of complex transforms for actual sign/scaling compatibility.
+
+Predeclare six renders: primary DIO+StoneMask and separate Harvest comparator,
+each original three failing 48k two-second float Gaussian-envelope fixtures
+(100/600/+12/0,70/600/-12/0,180/1200/+12/+7). Reuse exact original synthesis and
+analysis metrics from retained qualification tools; no fixture-specific settings.
+Both estimators fixed 50..800Hz range, 5ms frame grid; CheapTrick FFT4096 avoids
+its floor replacement at 70Hz. Keep input floating-point fixture rounding.
+F0 transform only nonzero estimated F0 by semitone factor, same temporal grid.
+Power-envelope warp Eout(f)=Ein(f/formantFactor), linear interpolation and
+clamped Nyquist edge. Aperiodicity unchanged. No hidden output normalization,
+clipping, forced periodicity, oracle F0, adaptive search or noise removal.
+
+Report input-estimate voiced coverage and median F0 error over final second; gate
+coverage >=90%, error <=20cents. Output exactly96000 finite samples, nonzero;
+retained output periodicity >=.8 and broad envelope peak error <=20%. Preserve
+ideal35/unchanged70/even-only controls and odd/grid metrics against subharmonic
+false passes. All six outcomes including failures recorded. No 149-case expansion
+unless one estimator passes all three; even then streaming/latency/modes remain
+unqualified. WORLD upstream analysis/synthesis allocates: diagnostic offline only.
+
+Writer worktree /workspace/worktrees/world-source-filter, branch
+feature/qualification/world-source-filter. Exclusive files:
+tools/qualification/world_fft_shim.cpp, world_probe.cpp, world_analyse.py and
+docs/WORLD_SOURCE_FILTER_EXPERIMENT.md. Lead owns this shared contract. Strict
+O2/Werror probe build and independently checked metrics required. No commit/push
+until lead review; do not touch other feature worktrees.

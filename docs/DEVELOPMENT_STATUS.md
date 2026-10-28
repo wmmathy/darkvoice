@@ -679,3 +679,11 @@ Production source did not change for those negative controls. Formatting/static/
 tracked scans and native validation remain required before normal merge. Core
 only: no new product parameter or host routing is delivered in this increment.
 Manual host/microphone/listening qualification remains deferred.
+
+## Planned WORLD diagnostic — 2026-10-28
+
+Finite isolated pitch investigation under WORLD source/filter diagnostic v1.
+Writer owns four new diagnostic files in world-source-filter worktree only.
+Dependency licence gap is avoided by excluding upstream FFT and authoring own
+shim; not a product integration. Six fixed renders and FFT invariants, all
+failures retained; no quality gate relaxed. Manual testing remains deferred.
