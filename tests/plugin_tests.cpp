@@ -3,6 +3,7 @@
 #include <array>
 #include <bit>
 #include <cmath>
+#include <complex>
 #include <cstdint>
 #include <deque>
 #include <iostream>
@@ -64,6 +65,22 @@ void stateTests() {
     }
     std::cout << "Start-relative fused feedback rounding residual: "
               << std::fma(.001f, 850.f, -.85f) << '\n';
+    for (const auto *id : {"sculptBodyDb", "sculptWarmthDb", "sculptPresenceDb"}) {
+        require(raw(source, id) == 0, "Tone defaults must be exactly neutral");
+        const auto &range = source.parameters.getParameter(id)->getNormalisableRange();
+        require(range.convertTo0to1(0) == .5f && range.convertFrom0to1(.5f) == 0 &&
+                    range.snapToLegalValue(0) == 0,
+                "Signed tone controls preserve exact zero under conversion and snapping");
+        for (float value : {-6.f, -2.3f, -.1f, .1f, 2.3f, 6.f}) {
+            set(source, id, value);
+            require(std::abs(raw(source, id) - value) < 1e-6f,
+                    "Signed nonzero tone values and endpoints roundtrip");
+            require(range.snapToLegalValue(-value) == -range.snapToLegalValue(value),
+                    "Signed tone quantisation stays symmetric");
+        }
+        set(source, id, 0);
+        require(raw(source, id) == 0, "Setting zero must restore exact neutral tone");
+    }
     set(source, "inputDb", 7.5f);
     set(source, "drive", 0.6f);
     set(source, "ratio", 4.0f);
@@ -109,6 +126,10 @@ void stateTests() {
     set(source, "colourDrive", .7f);
     set(source, "colourToneHz", 8200);
     set(source, "colourMix", .6f);
+    set(source, "sculptBodyDb", -4.5f);
+    set(source, "sculptWarmthDb", 2.3f);
+    set(source, "sculptPresenceDb", 5.2f);
+    set(source, "sculptBreathiness", .731f);
     juce::MemoryBlock state;
     source.getStateInformation(state);
     require(state.getSize() > 0, "State serialization empty");
@@ -130,10 +151,12 @@ void stateTests() {
                                                                               : i < 46 ? 8
                                                                               : i < 50 ? 9
                                                                               : i < 55 ? 10
-                                                                                       : 11),
+                                                                              : i < 59 ? 11
+                                                                              : i < 62 ? 12
+                                                                                       : 13),
                 "AU version hint changed");
         require(std::abs(raw(restored, spec.id) - raw(source, spec.id)) < 0.001f,
-                "Full v11 state roundtrip failed");
+                "Full v13 state roundtrip failed");
     }
     require(source.getTailLengthSeconds() == 240.0, "Stereo musical delay tail not reported");
 
@@ -141,7 +164,7 @@ void stateTests() {
     restored.setStateInformation(garbage, sizeof(garbage));
     require(raw(restored, "inputDb") == raw(source, "inputDb"),
             "Malformed state changed parameters");
-    for (const char *version : {"12", "1junk"}) {
+    for (const char *version : {"14", "1junk"}) {
         auto xml = source.parameters.copyState().createXml();
         xml->setAttribute("schemaVersion", version);
         juce::MemoryBlock invalid;
@@ -183,7 +206,8 @@ void stateTests() {
     legacy.setProperty("schemaVersion", 1, nullptr);
     for (int child = legacy.getNumChildren() - 1; child >= 0; --child)
         if (legacy.getChild(child).getProperty("id").toString().startsWith("space") ||
-            legacy.getChild(child).getProperty("id").toString().startsWith("colour"))
+            legacy.getChild(child).getProperty("id").toString().startsWith("colour") ||
+            legacy.getChild(child).getProperty("id").toString().startsWith("sculpt"))
             legacy.removeChild(child, nullptr);
     for (int child = legacy.getNumChildren() - 1; child >= 0; --child)
         if (legacy.getChild(child).getProperty("id").toString().startsWith("doubler"))
@@ -218,7 +242,8 @@ void stateTests() {
     v2.setProperty("schemaVersion", 2, nullptr);
     for (int child = v2.getNumChildren() - 1; child >= 0; --child)
         if (v2.getChild(child).getProperty("id").toString().startsWith("space") ||
-            v2.getChild(child).getProperty("id").toString().startsWith("colour"))
+            v2.getChild(child).getProperty("id").toString().startsWith("colour") ||
+            v2.getChild(child).getProperty("id").toString().startsWith("sculpt"))
             v2.removeChild(child, nullptr);
     for (int child = v2.getNumChildren() - 1; child >= 0; --child)
         if (v2.getChild(child).getProperty("id").toString().startsWith("doubler"))
@@ -259,7 +284,8 @@ void stateTests() {
     v3.setProperty("schemaVersion", 3, nullptr);
     for (int child = v3.getNumChildren() - 1; child >= 0; --child)
         if (v3.getChild(child).getProperty("id").toString().startsWith("space") ||
-            v3.getChild(child).getProperty("id").toString().startsWith("colour"))
+            v3.getChild(child).getProperty("id").toString().startsWith("colour") ||
+            v3.getChild(child).getProperty("id").toString().startsWith("sculpt"))
             v3.removeChild(child, nullptr);
     for (int child = v3.getNumChildren() - 1; child >= 0; --child)
         if (v3.getChild(child).getProperty("id").toString().startsWith("doubler"))
@@ -295,7 +321,8 @@ void stateTests() {
     v4.setProperty("schemaVersion", 4, nullptr);
     for (int child = v4.getNumChildren() - 1; child >= 0; --child)
         if (v4.getChild(child).getProperty("id").toString().startsWith("space") ||
-            v4.getChild(child).getProperty("id").toString().startsWith("colour"))
+            v4.getChild(child).getProperty("id").toString().startsWith("colour") ||
+            v4.getChild(child).getProperty("id").toString().startsWith("sculpt"))
             v4.removeChild(child, nullptr);
     for (int child = v4.getNumChildren() - 1; child >= 0; --child)
         if (v4.getChild(child).getProperty("id").toString().startsWith("doubler"))
@@ -324,7 +351,8 @@ void stateTests() {
     v5.setProperty("schemaVersion", 5, nullptr);
     for (int child = v5.getNumChildren() - 1; child >= 0; --child)
         if (v5.getChild(child).getProperty("id").toString().startsWith("space") ||
-            v5.getChild(child).getProperty("id").toString().startsWith("colour"))
+            v5.getChild(child).getProperty("id").toString().startsWith("colour") ||
+            v5.getChild(child).getProperty("id").toString().startsWith("sculpt"))
             v5.removeChild(child, nullptr);
     for (int child = v5.getNumChildren() - 1; child >= 0; --child)
         if (v5.getChild(child).getProperty("id").toString().startsWith("doubler"))
@@ -541,6 +569,76 @@ void stateTests() {
         if (version == 10)
             require(std::abs(raw(restored, "spaceMix") - .2f) < .001f, "V10 preserves Space sound");
     }
+    for (int version = 1; version <= 11; ++version) {
+        auto old = source.parameters.copyState();
+        old.setProperty("schemaVersion", version, nullptr);
+        for (int child = old.getNumChildren() - 1; child >= 0; --child) {
+            bool keep = false;
+            for (std::size_t i = 0; i < darkvoice::parameterCountForVersion(version); ++i)
+                keep = keep || old.getChild(child).getProperty("id").toString() ==
+                                   darkvoice::parameterSchema[i].id;
+            if (!keep)
+                old.removeChild(child, nullptr);
+        }
+        for (const auto *id : {"sculptBodyDb", "sculptWarmthDb", "sculptPresenceDb"})
+            set(restored, id, 6);
+        juce::MemoryBlock bytes;
+        juce::AudioProcessor::copyXmlToBinary(*old.createXml(), bytes);
+        restored.setStateInformation(bytes.getData(), static_cast<int>(bytes.getSize()));
+        for (std::size_t i = 59; i < darkvoice::parameterSchema.size(); ++i)
+            require(raw(restored, darkvoice::parameterSchema[i].id) == 0,
+                    "Every legacy state initializes neutral VoiceSculptor tone");
+        for (std::size_t i = 0; i < darkvoice::parameterCountForVersion(version); ++i) {
+            const auto &spec = darkvoice::parameterSchema[i];
+            require(std::abs(raw(restored, spec.id) - raw(source, spec.id)) < .001f,
+                    "Tone migration preserves every accepted prior state field");
+        }
+    }
+    for (int version = 1; version <= 12; ++version) {
+        auto old = source.parameters.copyState();
+        old.setProperty("schemaVersion", version, nullptr);
+        for (int child = old.getNumChildren() - 1; child >= 0; --child) {
+            const auto id = old.getChild(child).getProperty("id").toString();
+            bool retained = false;
+            for (std::size_t i = 0; i < darkvoice::parameterCountForVersion(version); ++i)
+                retained = retained || id == darkvoice::parameterSchema[i].id;
+            if (!retained)
+                old.removeChild(child, nullptr);
+        }
+        set(restored, "sculptBreathiness", 1);
+        juce::MemoryBlock bytes;
+        juce::AudioProcessor::copyXmlToBinary(*old.createXml(), bytes);
+        restored.setStateInformation(bytes.getData(), static_cast<int>(bytes.getSize()));
+        require(raw(restored, "sculptBreathiness") == 0,
+                "Every legacy state initializes exactly neutral breath texture");
+        for (std::size_t i = 0; i < darkvoice::parameterCountForVersion(version); ++i)
+            require(std::abs(raw(restored, darkvoice::parameterSchema[i].id) -
+                             raw(source, darkvoice::parameterSchema[i].id)) < .001f,
+                    "Breath migration preserves every prior state value");
+    }
+    for (const auto *invalid : {"NaN", "1e100", "-0.001", "1.001"}) {
+        auto bad = source.parameters.copyState();
+        bad.setProperty("schemaVersion", darkvoice::currentSchemaVersion, nullptr);
+        bad.getChildWithProperty("id", "sculptBreathiness").setProperty("value", invalid, nullptr);
+        const auto before = restored.snapshotPresetValues();
+        juce::MemoryBlock bytes;
+        juce::AudioProcessor::copyXmlToBinary(*bad.createXml(), bytes);
+        restored.setStateInformation(bytes.getData(), static_cast<int>(bytes.getSize()));
+        require(restored.snapshotPresetValues() == before,
+                "Invalid breath texture state must be rejected atomically");
+    }
+    for (const auto *id : {"sculptBodyDb", "sculptWarmthDb", "sculptPresenceDb"})
+        for (const auto *invalid : {"NaN", "1e100", "-6.01", "6.01"}) {
+            auto bad = source.parameters.copyState();
+            bad.setProperty("schemaVersion", darkvoice::currentSchemaVersion, nullptr);
+            bad.getChildWithProperty("id", id).setProperty("value", invalid, nullptr);
+            const auto before = restored.snapshotPresetValues();
+            juce::MemoryBlock bytes;
+            juce::AudioProcessor::copyXmlToBinary(*bad.createXml(), bytes);
+            restored.setStateInformation(bytes.getData(), static_cast<int>(bytes.getSize()));
+            require(restored.snapshotPresetValues() == before,
+                    "Invalid VoiceSculptor tone state must be atomic");
+        }
     for (const auto *invalid : {"0.5", "1.00000001", "1e-500", "NaN", "2", "-1"}) {
         auto bad = source.parameters.copyState();
         bad.setProperty("schemaVersion", darkvoice::currentSchemaVersion, nullptr);
@@ -616,7 +714,7 @@ void stateTests() {
                 "Invalid ID set partially changed state");
     }
     auto values = source.snapshotPresetValues();
-    require(values.size() == 58 && values.count("bypass") == 0,
+    require(values.size() == 62 && values.count("bypass") == 0,
             "Preset must contain only sound parameters");
     values["inputDb"] = 10.0f;
     values["delayMix"] = 0.2f;
@@ -631,7 +729,159 @@ void stateTests() {
     require(std::abs(raw(restored, "inputDb") - 10.0f) < 0.01f,
             "Invalid preset partially changed state");
 }
-// Three matched processors isolate the actual host Colour parallel route without
+std::complex<double> toneTransfer(double rate, double frequency, double body, double warmth,
+                                  double presence) {
+    const auto z =
+        std::exp(std::complex<double>(0, -2 * juce::MathConstants<double>::pi * frequency / rate));
+    const auto band = [&](double center, double q) {
+        const double w = 2 * juce::MathConstants<double>::pi * center / rate;
+        const double alpha = std::sin(w) / (2 * q);
+        return alpha * (1. - z * z) / ((1 + alpha) - 2 * std::cos(w) * z + (1 - alpha) * z * z);
+    };
+    const double k = std::tan(juce::MathConstants<double>::pi * 450 / rate);
+    const auto low = k * (1. + z) / ((1 + k) + (k - 1) * z);
+    const double a = std::pow(10., warmth / 40), b = std::pow(10., -warmth / 40);
+    return (1. + (std::pow(10., body / 20) - 1) * band(180, .85)) * (b + (a - b) * low) *
+           (1. + (std::pow(10., presence / 20) - 1) * band(3000, .7));
+}
+void sculptorToneAudioTests() {
+    juce::MidiBuffer midi;
+    for (double rate : {44100., 48000., 88200., 96000.})
+        for (int channels : {1, 2})
+            for (double frequency : {180., 450., 3000.}) {
+                const auto render = [&](float body, float warmth, float presence) {
+                    DarkVoiceProcessor processor;
+                    layout(processor, channels);
+                    set(processor, "sculptBodyDb", body);
+                    set(processor, "sculptWarmthDb", warmth);
+                    set(processor, "sculptPresenceDb", presence);
+                    processor.prepareToPlay(rate, 73);
+                    // Let the mandatory 20Hz high-pass and tonal filters settle before
+                    // fitting steady-state transfer. A fixed 2048-frame preroll was
+                    // too short at higher rates and mixed startup decay into the oracle.
+                    const int warmFrames = static_cast<int>(std::ceil(.2 * rate));
+                    const int totalFrames = warmFrames + 2048;
+                    // Least-squares sine/cosine fitting avoids a whole-cycle/RMS assumption.
+                    double ss = 0, cc = 0, sc = 0, ys = 0, yc = 0;
+                    for (int offset = 0; offset < totalFrames;) {
+                        const int frames = std::min(257, totalFrames - offset);
+                        juce::AudioBuffer<float> audio(channels, frames);
+                        for (int c = 0; c < channels; ++c)
+                            for (int i = 0; i < frames; ++i)
+                                audio.setSample(
+                                    c, i,
+                                    static_cast<float>(
+                                        .15 * std::sin(2 * juce::MathConstants<double>::pi *
+                                                       frequency * (offset + i) / rate)));
+                        processor.processBlock(audio, midi);
+                        for (int i = 0; i < frames; ++i) {
+                            const auto sample = audio.getSample(0, i);
+                            require(std::isfinite(sample),
+                                    "Actual VoiceSculptor tone audio must be finite");
+                            if (channels == 2)
+                                require(sample == audio.getSample(1, i),
+                                        "Identical stereo tone inputs retain channel equality");
+                            if (offset + i < warmFrames)
+                                continue;
+                            const double phase = 2 * juce::MathConstants<double>::pi * frequency *
+                                                 (offset + i) / rate;
+                            const double sn = std::sin(phase), cs = std::cos(phase);
+                            ss += sn * sn;
+                            cc += cs * cs;
+                            sc += sn * cs;
+                            ys += sample * sn;
+                            yc += sample * cs;
+                        }
+                        offset += frames;
+                    }
+                    require(processor.getLatencySamples() == latency,
+                            "VoiceSculptor tone leaves fixed Colour latency unchanged");
+                    const double determinant = ss * cc - sc * sc;
+                    const auto fitted = std::complex<double>((ys * cc - yc * sc) / determinant,
+                                                             (yc * ss - ys * sc) / determinant);
+                    const auto expected = toneTransfer(
+                        rate, frequency, raw(processor, "sculptBodyDb"),
+                        raw(processor, "sculptWarmthDb"), raw(processor, "sculptPresenceDb"));
+                    return std::pair{fitted, expected};
+                };
+                const auto neutral = render(0, 0, 0).first;
+                require(std::abs(neutral) > .01,
+                        "Neutral paired host tone reference remains audible");
+                for (const auto settings :
+                     {std::array<float, 3>{6, 0, 0}, {0, 6, 0}, {0, 0, 6}, {-3, 4, -5}}) {
+                    const auto [actual, expected] = render(settings[0], settings[1], settings[2]);
+                    if (std::abs(actual / neutral - expected) >= 2e-5)
+                        std::cerr << "Tone oracle case rate=" << rate << " channels=" << channels
+                                  << " frequency=" << frequency << " settings=" << settings[0]
+                                  << ',' << settings[1] << ',' << settings[2]
+                                  << " neutral=" << neutral << " actual=" << actual
+                                  << " ratio=" << actual / neutral << " expected=" << expected
+                                  << " error=" << std::abs(actual / neutral - expected) << '\n';
+                    require(std::abs(actual / neutral - expected) < 2e-5,
+                            "Actual host tone transfer differs from independent paired analytic "
+                            "oracle");
+                }
+            }
+}
+
+void breathinessAudioTests() {
+    for (double rate : {44100., 48000., 88200., 96000.})
+        for (int channels : {1, 2}) {
+            DarkVoiceProcessor neutral, wet, half, repeated;
+            for (auto *p : {&neutral, &wet, &half, &repeated})
+                layout(*p, channels);
+            require(raw(neutral, "sculptBreathiness") == 0,
+                    "Breath texture host default is exactly neutral");
+            set(wet, "sculptBreathiness", 1);
+            set(repeated, "sculptBreathiness", 1);
+            set(half, "sculptBreathiness", .5f);
+            for (auto *p : {&neutral, &wet, &half, &repeated})
+                p->prepareToPlay(rate, 127);
+            double addedEnergy = 0, centerEnergy = 0;
+            juce::MidiBuffer midi;
+            for (int start = 0; start < 4096; start += 127) {
+                const int count = std::min(127, 4096 - start);
+                juce::AudioBuffer<float> dry(channels, count), a(channels, count),
+                    b(channels, count), repeat(channels, count);
+                dry.clear();
+                for (int i = 0; i < count; ++i)
+                    dry.setSample(
+                        0, i,
+                        static_cast<float>(.1 * std::sin(2 * juce::MathConstants<double>::pi * 300 *
+                                                         (start + i) / rate)));
+                a.makeCopyOf(dry);
+                b.makeCopyOf(dry);
+                repeat.makeCopyOf(dry);
+                neutral.processBlock(dry, midi);
+                wet.processBlock(a, midi);
+                half.processBlock(b, midi);
+                repeated.processBlock(repeat, midi);
+                for (int i = 0; i < count; ++i)
+                    for (int c = 0; c < channels; ++c) {
+                        const double addition = a.getSample(c, i) - dry.getSample(c, i);
+                        const double halfway = b.getSample(c, i) - dry.getSample(c, i);
+                        require(std::isfinite(a.getSample(c, i)) &&
+                                    a.getSample(c, i) == repeat.getSample(c, i),
+                                "Actual breath texture must be finite and deterministic");
+                        require(std::abs(addition - 2 * halfway) < 1e-6,
+                                "Actual host breath amount scales the paired added texture");
+                        if (c == 0)
+                            addedEnergy += addition * addition;
+                        else {
+                            centerEnergy += a.getSample(c, i) * a.getSample(c, i);
+                            const double leftAddition = a.getSample(0, i) - dry.getSample(0, i);
+                            require(std::abs(addition - leftAddition) < 1e-6,
+                                    "Unclamped neutral downstream path retains center texture");
+                        }
+                    }
+            }
+            require(addedEnergy > 1e-5 && (channels == 1 || centerEnergy > 1e-5),
+                    "Breath texture must add actual audio including intentional center feed");
+            require(wet.getLatencySamples() == latency && half.getLatencySamples() == latency,
+                    "Breath texture must not change fixed Colour latency");
+        }
+}
+// Matched processors isolate the actual host Colour parallel route without
 // assuming nominal APVTS 0dB is represented exactly on every target architecture.
 void colourAudioTests() {
     for (double rate : {44100., 48000., 88200., 96000.})
@@ -1291,6 +1541,11 @@ void factoryAudioTests() {
                 DarkVoiceProcessor processor;
                 layout(processor, channels);
                 require(processor.applyPreset(preset.values), "Factory application failed");
+                for (const auto *id : {"sculptBodyDb", "sculptWarmthDb", "sculptPresenceDb"})
+                    require(raw(processor, id) == 0,
+                            "All factory preset loads retain exact neutral tone");
+                require(raw(processor, "sculptBreathiness") == 0,
+                        "Every factory load keeps breath texture exactly neutral");
                 processor.prepareToPlay(rate, 257);
                 juce::MidiBuffer midi;
                 double energy = 0;
@@ -1381,6 +1636,8 @@ int main() {
     try {
         stateTests();
         colourAudioTests();
+        sculptorToneAudioTests();
+        breathinessAudioTests();
         forcedBypassTests();
         renderingTests();
         factoryAudioTests();
