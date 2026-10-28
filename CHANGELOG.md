@@ -1,16 +1,23 @@
 # Changelog
 
-## Voice Sculptor tone core
+## Voice Sculptor tone controls
 
-- Add independent body, warmth tilt and presence processing with fixed filter poles and smooth gain weights.
-- Qualify frequency response and automation against independent analytic and state-variable references.
-- Keep the core outside application routing and controls until its dependent host integration is validated.
+- Route body, warmth tilt and presence after de-essing and before EQ/time effects.
+- Append three hint-12 controls and strict schema-12 migrations with exact neutral values.
+- Preserve fixed56-sample latency, frozen bypass histories and final limiter protection.
+- Add a thirteenth editor group while preserving all prior parameter definitions and factory values.
+
 ## Colour host integration
 
 - Route Colour after Space Reverb and align global dry and actual bypass by 56 samples.
 - Resume through a defined dry guard and fade while retaining final gain and enabled limiter protection.
 - Append four hint-11 controls, strict schema-11 migrations and a twelfth editor group.
 - Preserve prior parameter definitions and factory values; report fixed host latency and clear it on release.
+## Voice Sculptor tone core
+
+- Add independent body, warmth tilt and presence processing with fixed filter poles and smooth gain weights.
+- Qualify frequency response and automation against independent analytic and state-variable references.
+- Keep the core outside application routing and controls until its dependent host integration is validated.
 
 ## Oversampled colour core qualification
 

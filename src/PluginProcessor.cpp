@@ -22,8 +22,11 @@ juce::AudioProcessorValueTreeState::ParameterLayout DarkVoiceProcessor::createPa
         else {
             auto range =
                 juce::NormalisableRange<float>{spec.minimum, spec.maximum, spec.step, spec.skew};
-            if (juce::String(spec.id) == "flangerFeedback") {
-                // Anchor signed feedback at zero. Start-relative snapping and affine
+            if (juce::String(spec.id) == "flangerFeedback" ||
+                juce::String(spec.id) == "sculptBodyDb" ||
+                juce::String(spec.id) == "sculptWarmthDb" ||
+                juce::String(spec.id) == "sculptPresenceDb") {
+                // Anchor these signed controls at zero. Start-relative snapping and affine
                 // conversion can leave a nonzero residual under fused multiply-add.
                 range = juce::NormalisableRange<float>{
                     spec.minimum, spec.maximum,
@@ -137,6 +140,9 @@ darkvoice::EngineParameters DarkVoiceProcessor::snapshot() const noexcept {
     p.colourDrive = raw_[56]->load(std::memory_order_relaxed);
     p.colourToneHz = raw_[57]->load(std::memory_order_relaxed);
     p.colourMix = raw_[58]->load(std::memory_order_relaxed);
+    p.sculptBodyDb = raw_[59]->load(std::memory_order_relaxed);
+    p.sculptWarmthDb = raw_[60]->load(std::memory_order_relaxed);
+    p.sculptPresenceDb = raw_[61]->load(std::memory_order_relaxed);
     return p;
 }
 void DarkVoiceProcessor::prepareToPlay(double rate, int maxFrames) {
@@ -243,7 +249,7 @@ void DarkVoiceProcessor::setStateInformation(const void *data, int bytes) {
     const auto version = xml->getStringAttribute("schemaVersion");
     if (version != "1" && version != "2" && version != "3" && version != "4" && version != "5" &&
         version != "6" && version != "7" && version != "8" && version != "9" && version != "10" &&
-        version != "11")
+        version != "11" && version != "12")
         return;
     const auto count = darkvoice::parameterCountForVersion(version.getIntValue());
     const auto state = juce::ValueTree::fromXml(*xml);

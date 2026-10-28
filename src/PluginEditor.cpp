@@ -2,7 +2,7 @@
 #include <cmath>
 namespace {
 const juce::Colour background{0xff111418}, panel{0xff1c2229}, accent{0xffe54b52}, text{0xffecedf0};
-constexpr std::array<const char *, 58> ids{"inputDb",
+constexpr std::array<const char *, 61> ids{"inputDb",
                                            "highPassHz",
                                            "drive",
                                            "thresholdDb",
@@ -59,8 +59,11 @@ constexpr std::array<const char *, 58> ids{"inputDb",
                                            "colourModel",
                                            "colourDrive",
                                            "colourToneHz",
-                                           "colourMix"};
-constexpr std::array<const char *, 58> names{"INPUT GAIN",
+                                           "colourMix",
+                                           "sculptBodyDb",
+                                           "sculptWarmthDb",
+                                           "sculptPresenceDb"};
+constexpr std::array<const char *, 61> names{"INPUT GAIN",
                                              "HIGH-PASS",
                                              "WARMTH DRIVE",
                                              "COMPRESSOR THRESHOLD",
@@ -117,13 +120,16 @@ constexpr std::array<const char *, 58> names{"INPUT GAIN",
                                              "COLOUR STYLE",
                                              "COLOUR DRIVE",
                                              "COLOUR HF TONE",
-                                             "COLOUR PARALLEL MIX"};
-constexpr std::array<const char *, 58> suffixes{
-    " dB", " Hz", "",    " dB", ":1",  "", " dB",  " Hz", " dB", " Hz", " dB", "",
-    " Hz", " dB", " ms", "",    "",    "", "",     "",    " dB", ":1",  " ms", " Hz",
-    " dB", " dB", " Hz", " ms", "",    "", " Hz",  " ms", "",    "",    "",    " dB",
-    " ms", "",    " ms", "",    "",    "", " BPM", "",    "",    " ms", " ms", " Hz",
-    "",    "",    "",    " Hz", " ms", "", "",     "",    " Hz", ""};
+                                             "COLOUR PARALLEL MIX",
+                                             "BODY 180 Hz",
+                                             "WARMTH TILT",
+                                             "PRESENCE 3 kHz"};
+constexpr std::array<const char *, 61> suffixes{
+    " dB", " Hz", "", " dB",  ":1",  "",    " dB", " Hz", " dB", " Hz", " dB", "",    " Hz",
+    " dB", " ms", "", "",     "",    "",    "",    " dB", ":1",  " ms", " Hz", " dB", " dB",
+    " Hz", " ms", "", "",     " Hz", " ms", "",    "",    "",    " dB", " ms", "",    " ms",
+    "",    "",    "", " BPM", "",    "",    " ms", " ms", " Hz", "",    "",    "",    " Hz",
+    " ms", "",    "", "",     " Hz", "",    " dB", " dB", " dB"};
 juce::File presetDirectory(const juce::File &supplied) {
     if (supplied != juce::File{})
         return supplied;
@@ -182,6 +188,7 @@ DarkVoiceEditor::DarkVoiceEditor(DarkVoiceProcessor &p, juce::File root)
     tabs_.addTab("SIMULATED DOUBLER", panel, &pages_[9], false);
     tabs_.addTab("SPACE REVERB", panel, &pages_[10], false);
     tabs_.addTab("COLOUR", panel, &pages_[11], false);
+    tabs_.addTab("VOICE SCULPTOR", panel, &pages_[12], false);
     addAndMakeVisible(tabs_);
     for (std::size_t i = 0; i < sliders_.size(); ++i) {
         auto &slider = sliders_[i];
@@ -191,8 +198,13 @@ DarkVoiceEditor::DarkVoiceEditor(DarkVoiceProcessor &p, juce::File root)
         slider.setName(names[i]);
         slider.setTitle(names[i]);
         slider.setTooltip(
-            i >= 54 ? "Tape/tube-style saturation with 8x oversampling, HF tone and parallel mix. "
-                      "Fixed 56-sample alignment."
+            i == 59 ? "Warmth tilt: +6 dB span gives +3 dB low-frequency gain and -3 dB "
+                      "high-frequency gain, around 450 Hz."
+            : i >= 58
+                ? "Vocal tone shaping: Body at 180 Hz and Presence at 3 kHz. Zero dB is neutral."
+            : i >= 54
+                ? "Tape/tube-style saturation with 8x oversampling, HF tone and parallel mix. "
+                  "Fixed 56-sample alignment."
             : i >= 49 ? "Distinct algorithmic Room / Hall / Plate networks. HF tone is output "
                         "filtering; Decay is not an RT60 time."
             : i >= 45
@@ -223,7 +235,8 @@ DarkVoiceEditor::DarkVoiceEditor(DarkVoiceProcessor &p, juce::File root)
                           : i < 45 ? 8U
                           : i < 49 ? 9U
                           : i < 54 ? 10U
-                                   : 11U;
+                          : i < 58 ? 11U
+                                   : 12U;
         pages_[page].addAndMakeVisible(slider);
         labels_[i].setText(names[i], juce::dontSendNotification);
         labels_[i].setColour(juce::Label::textColourId, juce::Colour(0xffb5bdc7));
@@ -459,7 +472,8 @@ void DarkVoiceEditor::resized() {
                           : i < 45 ? 8U
                           : i < 49 ? 9U
                           : i < 54 ? 10U
-                                   : 11U;
+                          : i < 58 ? 11U
+                                   : 12U;
         const auto row = i < 7    ? i
                          : i < 14 ? i - 7
                          : i < 20 ? i - 14
@@ -471,7 +485,8 @@ void DarkVoiceEditor::resized() {
                          : i < 45 ? i - 37
                          : i < 49 ? i - 45
                          : i < 54 ? i - 49
-                                  : i - 54;
+                         : i < 58 ? i - 54
+                                  : i - 58;
         const int rowHeight = (tabs_.getHeight() - 48) / (page == 8 ? 9 : 7);
         const int y = 14 + static_cast<int>(row) * rowHeight;
         labels_[i].setBounds(16, y, 205, 24);
