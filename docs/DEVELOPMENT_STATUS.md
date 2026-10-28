@@ -711,3 +711,57 @@ type hosted even after multiple attempts' and ARM capacity constraints. One
 failed-job retry was requested. PR37 diagnostic native40361362105 had the same
 infrastructure failure and was retried once. No platform gate was waived or
 successful native result inferred from Linux. Development continues independently.
+
+## Planned Depth/Resonance core task — 2026-10-26
+
+Lead recorded the v2 contract before delegation. Task depth_resonance owns only
+VoiceSculptor.hpp/.cpp and voice_sculptor_tests.cpp in
+/workspace/worktrees/depth-resonance-core, branch feature/sculptor/depth-resonance-core.
+Dependencies are the qualified v1 core; no Breathiness or host source mutation.
+Acceptance includes all original4241 gates, independent transfer/automation,
+32combined endpoints and same-platform v1 bitwise compatibility. Test with strict
+C++20 O2/Werror standalone source/test compile; lead schedules Release/ASan/native
+and read-only QA after freeze. No product controls yet; manual tests deferred.
+
+## Depth/Resonance core qualification — 2026-10-28
+
+VoiceSculptor v2 appends depthDb/resonanceDb after the original three fields.
+Depth is a90Hz fixed-pole bass shelf with requested low-frequency endpoint gain;
+90Hz is not a half-gain shelf center. Resonance is700Hz/Q1.6 emphasis/cut.
+Both ranges±6dB/default0. Dedicated stages leave existing EQ controls editable.
+The conservative five-stage static magnitude bound is27dB; original new-neutral
+settings retain the old15dB bound. Neither is a peak or automation guarantee.
+No F0, anatomical or formant-retuning capability is claimed.
+
+Writer breath_engine froze only VoiceSculptor.hpp/.cpp and voice_sculptor_tests.cpp.
+Independent depth_resonance_qa rebuilt11409 strictO2 checks with zero failures,
+retaining original4241 gates, and reconstructed pinned49ec v1 sources. Optional
+legacy execution passed11617 checks and111312 bitwise-equal samples through old
+control automation/reset/reprepare on this platform/compiler. Header/source SHA:
+729974dac8e568aa47b705030a96e7f500a0109f3f2124d86f5f84e4aa2f7436 /
+252267fe8a521d0c20d87f561fc52aa85c533fad8a334e5a3d29d3593841d792.
+An additional160 impulse-response comparisons had maxcomplexerror4.7707456e-8.
+All32 endpoint combinations, independent analog/TPT transfer and closed-envelope
+oracles, lifecycle/atomicity/allocation/denormal checks passed unchanged gates.
+
+Lead CMake Release passed3.04sec, ASan/UBSan passed28.70sec with leak/halt enabled,
+within existing60sec tone-test budget. Independent QA approved. This is core-only:
+application controls require schema14 after the schema13 texture increment.
+Formatting/static/scans/native/normal merge remain required. Manual tests deferred.
+
+## Verified macOS ARM runner fallback — 2026-10-28
+
+Repeated macos-26 acquisition failed before execution with hosted-runner/ARM
+capacity annotations, including the single failed-job retry for PR38. Live
+runner-images documentation lists macos-15 as a supported ARM64 label. An isolated
+probe on feature/ci/macos-arm-probe completed successfully in run40635804504;
+it asserted uname=arm64 and reported macOS15.7.9, Xcode16.4 build16F6. Probe workflow has no
+checkout, dependencies or secrets and only read permissions. Unrelated standard
+CI on that diagnostic-only branch was canceled; it is not a product validation.
+
+Switch standard macOS jobs from26 to the verified15 pool and explicitly assert
+Apple Silicon. Keep all seven Linux/macOS jobs, every numerical gate, sanitizers,
+JUCE builds and actual unsigned AU validation. OS coverage changes, architecture
+and quality gates do not. No main/feature integration until the corresponding
+new head passes actual native/source-quality checks and normal review/rules.
+Manual host/microphone/listening qualification remains deferred.
