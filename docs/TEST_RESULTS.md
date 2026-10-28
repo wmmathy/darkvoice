@@ -663,6 +663,24 @@ that merged base; current application schema11/58sound/12groups/fixed56 latency.
 The new tone library is still outside application routing until its own dependent
 host increment passes. All existing Colour tests and numerical gates are retained.
 
+
+## Verified macOS ARM runner fallback — 2026-10-28
+
+Repeated macos-26 acquisition failed before execution with hosted-runner/ARM
+capacity annotations, including the single failed-job retry for PR38. Live
+runner-images documentation lists macos-15 as a supported ARM64 label. An isolated
+probe on feature/ci/macos-arm-probe completed successfully in run40635804504;
+it asserted uname=arm64 and reported macOS15.7.9, Xcode16.4 build16F6. Probe workflow has no
+checkout, dependencies or secrets and only read permissions. Unrelated standard
+CI on that diagnostic-only branch was canceled; it is not a product validation.
+
+Switch standard macOS jobs from26 to the verified15 pool and explicitly assert
+Apple Silicon. Keep all seven Linux/macOS jobs, every numerical gate, sanitizers,
+JUCE builds and actual unsigned AU validation. OS coverage changes, architecture
+and quality gates do not. No main/feature integration until the corresponding
+new head passes actual native/source-quality checks and normal review/rules.
+Manual host/microphone/listening qualification remains deferred.
+
 ## Breath texture core qualification — 2026-10-26
 
 The independent Breathiness core implements the recorded synthetic center-vocal
@@ -764,6 +782,7 @@ Apple Silicon. Keep all seven Linux/macOS jobs, every numerical gate, sanitizers
 JUCE builds and actual unsigned AU validation. OS coverage changes, architecture
 and quality gates do not. No main/feature integration until the corresponding
 new head passes actual native/source-quality checks and normal review/rules.
+
 Manual host/microphone/listening qualification remains deferred.
 
 ## Depth/resonance engine and schema14 host — 2026-10-28

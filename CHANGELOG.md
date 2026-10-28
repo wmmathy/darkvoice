@@ -19,6 +19,7 @@
 - Append one hint-13 parameter with strict schema-13 migrations and neutral factory defaults.
 - Preserve fixed56-sample latency, raw bypass, frozen texture history and final limiter protection.
 
+
 ## Breath texture core
 
 - Add a center-driven aspiration texture with a finite RMS envelope, deterministic excitation and a fixed noise-color filter.
