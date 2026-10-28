@@ -1037,3 +1037,22 @@ ALREADY predeclared Harvest comparator to same42manifest/settings/gates, no
 fixture-specific routing orparameterchanges; reportbothentiretables. Selection
 of oneestimator forfuturebackend requires allretainedgates and independentQA,
 notper-fixturehybrids. Do not changeDIOdefaults orhide itsfailures.
+
+### Fixed project YIN comparator for WORLD — 2026-10-28
+
+DIO input estimation fails two retained rows; Harvest comparator also shows
+unvoiced sine failures. Keep both fullnegative tables. Add independent fixed
+project PitchDetector/YIN waveform estimator as third named comparator across
+ALL42retained and3narrow primary fixtures, nothybrid/per-fixturefallback. Compile
+project src/PitchDetector.cpp/header from thisbranch unchanged, fingerprintthem;
+WORLD spectral/synthesis whitelist and ownFFT remain unchanged.
+
+Prepare detector4096frames at44.1/48,8192 at88.2/96,50..800Hz. At each original
+5ms WORLDframe grid, construct centered float window (floor(t*rate)-N/2 start),
+zero-pad out-of-input bounds, call existing analyze; voicedfrequency or0 asreturned.
+No interpolation, filling, quantization, smoothing, overrides ororacle. Same
+CheapTrick4096/8192, D4C, envelope warp/synthesis andmetricgates unchanged.
+Input coverage>=90% andmedianerror<=20cents remain independently reported, plus
+alloriginal outputgates. Worker/offline only; current YIN O(window*maxLag), report
+walltime notRTclaim. Reuse ownedfourfiles and methodCLI, freeze allresults. If
+thisfixedcomparator fails, stop itasnegative, no parametersearch.
