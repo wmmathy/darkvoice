@@ -1,5 +1,12 @@
 # Changelog
 
+## Depth and resonance tone core
+
+- Extend VoiceSculptor with independent low-frequency endpoint gain and fixed700Hz resonance emphasis.
+- Preserve prior tone processing when the two new controls are neutral.
+- Keep new engine parameters and UI controls for the dependent host increment.
+
+
 ## Breath texture control
 
 - Add a center-driven breath-texture amount control after tone shaping and before EQ/time effects.

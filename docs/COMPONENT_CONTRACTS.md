@@ -961,3 +961,86 @@ Engine writer owns ONLY AudioEngine.hpp/.cpp and tests/engine_tests.cpp. Host
 writer owns ONLY ParameterSchema.hpp, PluginProcessor.hpp/.cpp, PluginEditor.hpp/
 .cpp, PresetBank.cpp, tests/plugin_tests.cpp, preset_tests.cpp, gui_smoke.cpp in
 separate worktrees. Lead owns contracts/CMake/docs/integration; core files frozen.
+
+## VoiceSculptor tone core v2: Depth and Resonance — 2026-10-26
+
+Interpretation: independently adjustable tonal operations, not pitch lowering or
+anatomical/formant retuning. Dedicated EQ stages do not overwrite existing EQ.
+Core only, no new product control until dependent engine/host integration.
+
+Append float depthDb=0,resonanceDb=0 AFTER the existing three VoiceSculptorParameters
+fields. Each finite[-6,6]; preserve all existing API/lifecycle/rate/layout/capacity/
+validation/sanitization/latency semantics. Three-value aggregate initialization
+continues assigning Body/Warmth/Presence; defaults make new stages neutral.
+Keep original filter indices0..2 and weight indices0..3 unchanged; append LP90
+and BP700/Q1.6 filters and two gain-contribution weights. All histories continue
+at neutral, target weights computed only on accepted snapshots, same10ms double
+smoothing/true-subnormal cleanup. Cascade Depth -> Body -> Warmth -> Resonance ->
+Presence, with exact-neutral guards preserving old processing and signedzero.
+
+Depth uses fixed bilinear first-order LP90, K=tan(pi*90/rate), b0=b1=K/(1+K),
+a1=(K-1)/(K+1). Stage y=x+(G-1)*LP90(x), G=10^(depthDb/20). Requested dB is
+LOW-FREQUENCY ENDPOINT gain;90Hz is the LP pole, not the shelf half-gain point.
+At+6 setting the90Hz response is about+3.963dB, at-6 about-2.037dB. Resonance is
+fixed unity-peak RBJ bandpass700Hz/Q1.6 using the existing contract's coefficient
+formula and y=x+(G-1)*BP(x), G=10^(resonanceDb/20). Exact center gain follows.
+Neither stage adds a pure alignment delay. Preserve old+15dB static bound for
+new controls0; conservative five-stage static bound27dB, not a peak/automation
+bound. Eventual final engine gain/limiter remain necessary.
+
+Acceptance retains every original4241 assertion and numerical gate. Add independent
+complex-transfer and closed-envelope/state-variable automation oracles, isolated
+endpoints/intermediate values and all32 combined endpoint configurations across
+four rates/mono-stereo. Preserve .02dB/2e-5 spectral and2e-7 automation gates.
+Check Depth DC/high-frequency endpoints and Resonance700 center, distinct spectra,
+neutral continuous tracking, reset/partition/isolation/invalid atomicity/allocation/
+finite extremes/output cleanup and long-decay denormal behavior. Independently
+compare v1 source from the pinned pre-change git revision against v2 on the same
+platform/compiler with new fields0, including old-control automation and reset;
+require bitwise output equality. Do not introduce portable fixed audio hashes.
+Release/ASan/independentQA/native required; manual qualification deferred.
+
+Writer owns ONLY include/darkvoice/VoiceSculptor.hpp,src/VoiceSculptor.cpp,
+tests/voice_sculptor_tests.cpp in isolated depth-resonance-core worktree. Lead owns
+CMake/docs/integration. Qualified existing tone/noise files in other branches stay
+frozen. Future host schema14 depends on schema13: append sculptDepthDb and
+sculptResonanceDb with hint14,±6/.1/default0 and zero-centered snapping,65state/
+64sound fields; preserve prior63 definitions/factories and13 groups. That dependent
+host contract will be established before any engine/host writers start.
+
+## Depth/Resonance host v1 / schema14 — 2026-10-28
+
+Depends on qualified VoiceSculptor v2 and schema13 texture integration. Append
+EngineParameters float sculptDepthDb=0,sculptResonanceDb=0 AFTER sculptBreathiness.
+Map all five tone fields by name/order into VoiceSculptorParameters. Existing
+whole-snapshot validation rejects either invalid field before any targets change.
+No new engine module, allocation, routing or reset change: the v2 tone module
+already implements Depth -> Body -> Warmth -> Resonance -> Presence. Preserve
+fixed56 latency, raw bypass, frozen tone/noise histories, Colour-only resume reset,
+all early guard/fade behavior and final gain/limiter. Extend independent composed
+engine oracles across both new fields, automation/bypass/resume and combined boost;
+retain every prior16642 assertion/gate and all rates/layout/partition/noalloc tests.
+
+Append schema14/AU hint14 IDs sculptDepthDb and sculptResonanceDb in that order,
+finite[-6,6],step.1,default0,linear. Total65 state/64 sound fields excluding only
+bypass. Extend existing signed-zero conversion/snapping ONLY these two new IDs;
+all63 prior definitions/IDs/hints/values unchanged. Strict v1..13 migrations add
+zeros, v14 roundtrip, invalid memory/XML/JSON snapshots atomic. Preserve15 factories
+and original14 original49-field hashes; all15 subsequently appended Space/Colour/
+tone/texture/depth/resonance fields retain neutral defaults in every factory.
+
+Add DEPTH LOWS and RESONANCE700Hz real controls to the existing VoiceSculptor group,
+64 sound attachments plus bypass, still13 readable groups at900x780. Depth tooltip
+explains low-frequency gain below90Hz; Resonance tooltip explains the fixed700Hz
+band. Do not imply F0/formant movement or anatomical inference. Six tone/texture
+rows fit the existing page. Latency status remains actual56 samples. Host tests
+include exact-zero defaults/set/load/migration, nonzero endpoints, paired analytic
+transfer and deterministic texture preservation, factory/state/preset integrity,
+all rates/layouts and real GUI bounds/attachments. Preserve existing steady-state
+preroll and numerical gates; early transients remain independently covered.
+
+Engine writer owns only AudioEngine.hpp/.cpp and engine_tests.cpp. Host writer
+owns only ParameterSchema, PluginProcessor/Editor headers/cpp, PresetBank.cpp and
+plugin/preset/gui tests in separate worktrees. Lead owns contracts/CMake/docs/
+integration; v2 core source frozen during host work. Release/ASan/product/GUI/
+independentQA/native checks before normal merge; manual testing deferred.
