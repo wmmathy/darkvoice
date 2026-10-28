@@ -1034,3 +1034,31 @@ Color/engine/host/core tests stay frozen. Test executable may accept --quality
 live/studio/offline for separate CTest budgets, default all3; no hidden skipped
 empty suite. Future host uses prepared-mode latency, raw alignment and full resume
 oracles; lifecycle-safe global quality selection is separate from sound presets.
+
+### Bandlimited Colour v2 Nyquist guard correction — 2026-10-28
+
+Independent supplemental bin683 at48k (H3 justaboveNyquist) showed ~-14.7dB
+alias in allv1modes, outside original32fixtures. V1 passing results remain true
+but are insufficient for stronger boundary suppression. Do not exposev1bank.
+Retain native firstinterpolation halfband193/257/513 and allhigher halfband65/129/257.
+Change ONLY native LAST decimation kernel to normalized Blackman-windowed sinc
+lowpass cutoff .225 cycles per2xsample (.45*nativeFs). All coefficients participate
+(no structural-even-zero assumption). Same symmetrictapcount, same exactlatency
+120/176/352; dryqueue untouched, noIIRphase. Header/publicAPI unchanged.
+Wet band now explicitly guarded belowNyquist; toneHz remains additional HF filter
+under that band. Independent32x reference must use firsthalfband,lastguardedLP
+without copying productionhelper. Reference1x remains actualnativecurve oldpolicy,
+alloriginal48agreement and32absolute gates unchanged.
+
+Add absolute nearboundary fixtures bothmodels,2amps,4rates atbins683/1025 (H3/H2
+justaboveNyquist respectively), as well as prior719/1597. ActualinputRMS/FFT and
+DC/Nyquist masks retained; gate <=-55dB/inputRMS each. Report generic scan of
+purebins17..2031 step17 at48k/.5drive1tone16k bothmodels allmodes, no per-bin tuning;
+scan outcomes not silently skipped. Also compare small-signal partialmix amplitude
+and phase to independent complex linear FIR response including newguard (e.g
+100,1k,8k,16k,20k), explicit expected HF attenuation, not zero-phase cancellations.
+Do not claim universalaliasbound even if scanpasses; fixed8x andfinitefilters.
+This correction changes helper Decimator to supportallkernelcoefficients; preserve
+oldhelper/tests frozen and preparedallocation/noRTalloc. Lead handles CMake/docs,
+writer samefivefiles. New180spermodeSAN budgets provisional until measured;
+Offline may require360s from measuredcost, documentalltimeoutevidence.
