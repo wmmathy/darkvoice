@@ -56,11 +56,14 @@ source-quality checks passed. The application uses schema11, 58 sound controls
 plus global bypass, 12 groups and fixed56-sample latency. Tape/Tube parallel
 colour, aligned raw bypass and defined limiter-protected resume are implemented.
 
-VoiceSculptor body/warmth/presence tone core is qualified locally and in draft
-PR36; its dependent engine/schema12/UI increment is being verified. It adds
-three genuine tonal operations, not pitch/formant shifting. Depth, resonance,
-breathiness and character remain outstanding. A proposed center-driven breath
-texture is under architecture review; it is not implemented or physiology analysis.
+VoiceSculptor body/warmth/presence core is merged in PR36. Its engine/schema12/UI
+integration is PR38: local checks and Linux native checks pass, but macOS ARM
+runner acquisition failed; one failed-job retry is in progress. The breath-texture
+core is qualified locally in PR39; its schema13 engine/UI integration also passes
+local checks and awaits commit/native integration. Neither is a pitch shifter.
+Depth and resonance tonal-core work is active under a recorded v2 contract;
+character and qualified pitch/formant processing remain outstanding. Product
+capabilities follow merged main revisions, not unmerged branch implementations.
 
 PR19 remains draft/blocked by three combined-periodicity failures; its optional
 540-case diagnostic has 61 periodicity failures. Rubber Band LiveShifter audit

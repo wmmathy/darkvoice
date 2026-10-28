@@ -95,6 +95,7 @@ bool AudioEngine::prepare(double sampleRate, std::size_t maxFrames, std::size_t 
         !gate_.prepare(sampleRate, maxFrames, channels) ||
         !deEsser_.prepare(sampleRate, maxFrames, channels) ||
         !sculptor_.prepare(sampleRate, maxFrames, channels) ||
+        !breathiness_.prepare(sampleRate, maxFrames, channels) ||
         !modulation_.prepare(sampleRate, maxFrames, channels) ||
         !flanger_.prepare(sampleRate, maxFrames, channels) ||
         !doubler_.prepare(sampleRate, maxFrames, channels) ||
@@ -123,7 +124,7 @@ bool AudioEngine::setParameters(const EngineParameters &p) noexcept {
         !VocalLimiter::valid({p.limiterCeilingDb, p.limiterReleaseMs}) ||
         !StereoDelay::valid(stereoDelayParameters(p)) || !Doubler::valid(doublerParameters(p)) ||
         !SpaceReverb::valid(spaceParameters(p)) || !Colour::valid(colourParameters(p)) ||
-        !VoiceSculptor::valid(sculptorParameters(p)))
+        !VoiceSculptor::valid(sculptorParameters(p)) || !Breathiness::valid({p.sculptBreathiness}))
         return false;
     // All snapshots are fully validated before any target is replaced.
     if (!effects_.setParameters(toneParameters(p)))
@@ -139,6 +140,7 @@ bool AudioEngine::setParameters(const EngineParameters &p) noexcept {
     (void)limiter_.setParameters({p.limiterCeilingDb, p.limiterReleaseMs});
     (void)colour_.setParameters(colourParameters(p));
     (void)sculptor_.setParameters(sculptorParameters(p));
+    (void)breathiness_.setParameters({p.sculptBreathiness});
     if (p.limiterEnabled != target_.limiterEnabled)
         limiterResetPending_ = true;
     target_ = p;
@@ -169,6 +171,7 @@ void AudioEngine::reset() noexcept {
     gate_.reset();
     deEsser_.reset();
     sculptor_.reset();
+    breathiness_.reset();
     modulation_.reset();
     flanger_.reset();
     doubler_.reset();
@@ -268,6 +271,7 @@ bool AudioEngine::processInternal(std::span<float *> channels, std::size_t frame
     if (!gate_.process(std::span<float *>(wetChannels.data(), channels_), frames) ||
         !deEsser_.process(std::span<float *>(wetChannels.data(), channels_), frames) ||
         !sculptor_.process(std::span<float *>(wetChannels.data(), channels_), frames) ||
+        !breathiness_.process(std::span<float *>(wetChannels.data(), channels_), frames) ||
         !effects_.process(std::span<float *>(wetChannels.data(), channels_), frames) ||
         !modulation_.process(std::span<float *>(wetChannels.data(), channels_), frames) ||
         !flanger_.process(std::span<float *>(wetChannels.data(), channels_), frames) ||
