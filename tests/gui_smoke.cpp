@@ -66,7 +66,7 @@ int main(int argc, char **argv) {
                 button && button->getName() == "Load preset")
                 load = button;
         }
-        if (controls != 62 || !input || !bypass || !presetSelection || !load)
+        if (controls != 64 || !input || !bypass || !presetSelection || !load)
             return 2;
         input->setValue(6.0, juce::sendNotificationSync);
         if (std::abs(processor.parameters.getRawParameterValue("inputDb")->load() - 6.0f) > 0.01f)
@@ -74,7 +74,7 @@ int main(int argc, char **argv) {
         bypass->setToggleState(true, juce::sendNotificationSync);
         if (processor.parameters.getRawParameterValue("bypass")->load() != 1.0f)
             return 4;
-        constexpr std::array<const char *, 62> names{"INPUT GAIN",
+        constexpr std::array<const char *, 64> names{"INPUT GAIN",
                                                      "OUTPUT GAIN",
                                                      "HIGH-PASS",
                                                      "WARMTH DRIVE",
@@ -135,7 +135,9 @@ int main(int argc, char **argv) {
                                                      "BODY 180 Hz",
                                                      "WARMTH TILT",
                                                      "PRESENCE 3 kHz",
-                                                     "BREATH TEXTURE"};
+                                                     "BREATH TEXTURE",
+                                                     "DEPTH LOWS",
+                                                     "RESONANCE 700 Hz"};
         std::size_t soundIndex = 0;
         for (const auto &spec : darkvoice::parameterSchema) {
             if (juce::String(spec.id) == "bypass")
@@ -317,7 +319,7 @@ int main(int argc, char **argv) {
             if (!stream || !juce::PNGImageFormat().writeImageToStream(image, *stream))
                 return 6;
         }
-        std::cout << "GUI smoke passed: 62 controls, all parameter attachments, bypass, actual "
+        std::cout << "GUI smoke passed: 64 controls, all parameter attachments, bypass, actual "
                      "factory preset audio, dry-pitch feedback, snapshot\n";
         return 0;
     }();

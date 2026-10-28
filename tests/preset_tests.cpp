@@ -73,7 +73,7 @@ std::uint64_t factoryFingerprint(const darkvoice::Preset &preset) {
             id == "spacePreDelayMs" || id == "spaceMix" || id == "colourModel" ||
             id == "colourDrive" || id == "colourToneHz" || id == "colourMix" ||
             id == "sculptBodyDb" || id == "sculptWarmthDb" || id == "sculptPresenceDb" ||
-            id == "sculptBreathiness")
+            id == "sculptBreathiness" || id == "sculptDepthDb" || id == "sculptResonanceDb")
             continue;
         text(id);
         const auto bits = std::bit_cast<std::uint32_t>(value);
@@ -100,7 +100,7 @@ void basicPersistence() {
             require(preset.values.at(spec.id) == spec.defaultValue,
                     "Existing factories keep new stereo delay neutral");
         }
-        require(preset.values.size() == 62 && !preset.values.contains("bypass"),
+        require(preset.values.size() == 64 && !preset.values.contains("bypass"),
                 "Preset excludes bypass");
         if (preset.id != "factory-double-tracked-rock")
             for (std::size_t i = 46; i < darkvoice::parameterSchema.size(); ++i) {
@@ -188,6 +188,8 @@ void basicPersistence() {
     settings["sculptWarmthDb"] = 2.3f;
     settings["sculptPresenceDb"] = 5.2f;
     settings["sculptBreathiness"] = .731f;
+    settings["sculptDepthDb"] = -3.2f;
+    settings["sculptResonanceDb"] = 4.7f;
     juce::String id;
     good(bank.saveAs("  My voice  ", settings, id), "Save user preset");
     require(id.length() == 32 && bank.find(id) != nullptr, "UUID save identifier");
@@ -209,7 +211,7 @@ void basicPersistence() {
     require(std::abs(restored.find(originalId)->values.at("eqMidGainDb") - 3.4f) < .00001f,
             "Parameter roundtrip");
     require(restored.search("renamed").size() == 1, "Name search");
-    require(restored.find(originalId)->values == settings, "Full v13 nondefault preset roundtrip");
+    require(restored.find(originalId)->values == settings, "Full v14 nondefault preset roundtrip");
     const auto exported = temp.file.getChildFile("export.json");
     good(restored.exportFile(originalId, exported), "Export user preset");
     const auto exportedBytes = exported.loadFileAsString();
@@ -303,7 +305,8 @@ void malformedAndMigration() {
     const auto cleanJson = jsonFor(settings);
     for (const auto &hostile :
          {cleanJson + " trailing-garbage", cleanJson + "{}",
-          cleanJson.replace("\"schemaVersion\": 13", "\"schemaVersion\": 4294967301"),
+          cleanJson.replace("\"schemaVersion\": " + juce::String(darkvoice::currentSchemaVersion),
+                            "\"schemaVersion\": 4294967301"),
           juce::String("{\"nested\":") + juce::String::repeatedString("[", 10000) + "0" +
               juce::String::repeatedString("]", 10000) + "}"}) {
         write(external, hostile);
@@ -473,7 +476,7 @@ void malformedAndMigration() {
     legacy["drive"] = .3f;
     write(external, jsonFor(legacy, 1, "Legacy"));
     good(bank.importFile(external, id), "Migrate legacy preset");
-    require(bank.find(id)->values.size() == 62 && bank.find(id)->values.at("delayMix") == 0 &&
+    require(bank.find(id)->values.size() == 64 && bank.find(id)->values.at("delayMix") == 0 &&
                 bank.find(id)->values.at("drive") == .3f,
             "Migration preserves old controls and new defaults");
     {
@@ -492,7 +495,7 @@ void malformedAndMigration() {
             juce::String migratedId;
             good(migration.importFile(external, migratedId), "Migrate exact legacy preset into v7");
             const auto &migrated = migration.find(migratedId)->values;
-            require(migrated.size() == 62 && migrated.at("limiterEnabled") == 0 &&
+            require(migrated.size() == 64 && migrated.at("limiterEnabled") == 0 &&
                         migrated.at("limiterCeilingDb") == -1 &&
                         migrated.at("limiterReleaseMs") == 100 && migrated.at("inputDb") == 5,
                     "All legacy presets preserve old values and disable limiter");
@@ -538,7 +541,7 @@ void malformedAndMigration() {
             good(migrations.importFile(external, migrated),
                  "Import strict pre-stereo-delay preset");
             const auto &result = migrations.find(migrated)->values;
-            require(result.size() == 62 && result.at("inputDb") == 6,
+            require(result.size() == 64 && result.at("inputDb") == 6,
                     "Legacy delay migration preserves prior fields");
             for (std::size_t i = 38; i < darkvoice::parameterSchema.size(); ++i) {
                 const auto &spec = darkvoice::parameterSchema[i];
@@ -586,7 +589,7 @@ void malformedAndMigration() {
             juce::String created;
             good(migrations.importFile(external, created), "Migrate exact pre-doubler preset");
             const auto &values = migrations.find(created)->values;
-            require(values.size() == 62 && values.at("inputDb") == 6,
+            require(values.size() == 64 && values.at("inputDb") == 6,
                     "Doubler migration preserves prior fields");
             for (std::size_t i = 46; i < darkvoice::parameterSchema.size(); ++i) {
                 const auto &spec = darkvoice::parameterSchema[i];
@@ -622,7 +625,7 @@ void malformedAndMigration() {
             juce::String created;
             good(migrations.importFile(external, created), "Migrate exact pre-Space preset");
             const auto &values = migrations.find(created)->values;
-            require(values.size() == 62 && values.at("inputDb") == 6,
+            require(values.size() == 64 && values.at("inputDb") == 6,
                     "Space migration preserves prior fields");
             for (std::size_t i = 50; i < darkvoice::parameterSchema.size(); ++i) {
                 const auto &spec = darkvoice::parameterSchema[i];
@@ -674,7 +677,7 @@ void malformedAndMigration() {
             juce::String created;
             good(migrations.importFile(external, created), "Migrate exact pre-Colour preset");
             const auto &values = migrations.find(created)->values;
-            require(values.size() == 62 && values.at("inputDb") == 6,
+            require(values.size() == 64 && values.at("inputDb") == 6,
                     "Colour migration preserves prior fields");
             for (std::size_t i = 55; i < darkvoice::parameterSchema.size(); ++i) {
                 const auto &spec = darkvoice::parameterSchema[i];
@@ -726,14 +729,16 @@ void malformedAndMigration() {
             juce::String created;
             good(migrations.importFile(external, created), "Migrate exact pre-tone preset");
             const auto &values = migrations.find(created)->values;
-            require(values.size() == 62, "Tone migration expands sound map");
+            require(values.size() == 64, "Tone migration expands sound map");
             for (const auto &[id, value] : old)
                 require(values.at(id) == value,
                         "Tone migration preserves every existing preset value");
-            for (const auto *id : {"sculptBodyDb", "sculptWarmthDb", "sculptPresenceDb"})
+            for (const auto *id : {"sculptBodyDb", "sculptWarmthDb", "sculptPresenceDb",
+                                   "sculptDepthDb", "sculptResonanceDb"})
                 require(values.at(id) == 0, "Every legacy preset initializes neutral tone");
         }
-        for (const auto *id : {"sculptBodyDb", "sculptWarmthDb", "sculptPresenceDb"}) {
+        for (const auto *id : {"sculptBodyDb", "sculptWarmthDb", "sculptPresenceDb",
+                               "sculptDepthDb", "sculptResonanceDb"}) {
             for (float value : {-6.01f, 6.01f, std::numeric_limits<float>::quiet_NaN(),
                                 std::numeric_limits<float>::infinity()}) {
                 auto values = darkvoice::PresetBank::defaults();
@@ -773,7 +778,7 @@ void malformedAndMigration() {
             juce::String created;
             good(migrations.importFile(external, created), "Migrate exact pre-breath preset");
             const auto &values = migrations.find(created)->values;
-            require(values.size() == 62 && values.at("sculptBreathiness") == 0,
+            require(values.size() == 64 && values.at("sculptBreathiness") == 0,
                     "Every legacy preset initializes neutral breath texture");
             for (const auto &[id, value] : old)
                 require(values.at(id) == value,
@@ -799,6 +804,32 @@ void malformedAndMigration() {
             require(migrations.importFile(external, created).failed() &&
                         migrations.presets().size() == before,
                     "Invalid breath texture JSON rejected atomically");
+        }
+    }
+    {
+        darkvoice::PresetBank migrations(temp.file.getChildFile("depth-resonance-migration"));
+        for (int version = 1; version <= 13; ++version) {
+            darkvoice::PresetValues old;
+            for (std::size_t i = 0; i < darkvoice::parameterCountForVersion(version); ++i) {
+                const auto &spec = darkvoice::parameterSchema[i];
+                if (juce::String(spec.id) != "bypass")
+                    old[spec.id] = spec.defaultValue;
+            }
+            old["inputDb"] = 6;
+            if (version >= 12)
+                old["sculptBodyDb"] = -3.4f;
+            if (version >= 13)
+                old["sculptBreathiness"] = .731f;
+            write(external, jsonFor(old, version, "Depth/resonance migration"));
+            juce::String created;
+            good(migrations.importFile(external, created), "Migrate exact pre-v14 preset");
+            const auto &values = migrations.find(created)->values;
+            require(values.size() == 64 && values.at("sculptDepthDb") == 0 &&
+                        values.at("sculptResonanceDb") == 0,
+                    "Every legacy preset initializes neutral depth and resonance");
+            for (const auto &[id, value] : old)
+                require(values.at(id) == value,
+                        "Depth/resonance migration preserves every prior preset value");
         }
     }
     // Emit raw literals: JUCE's JSON writer can round very small doubles to zero.
