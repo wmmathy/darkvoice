@@ -765,3 +765,10 @@ type hosted even after multiple attempts' and ARM capacity constraints. One
 failed-job retry was requested. PR37 diagnostic native40361362105 had the same
 infrastructure failure and was retried once. No platform gate was waived or
 successful native result inferred from Linux. Development continues independently.
+
+## Planned Character contribution package — 2026-10-28
+
+Finite isolated writer owns HarmonicCharacter header/source/test only under
+recorded v1 contract; dependency frozen new bandlimited profile helper supplied
+by lead. Parallel additive output avoids serial Colour latency and stays audible
+independently of Colour mix. All alias/functional gates before host exposure.
