@@ -649,3 +649,33 @@ JUCE builds and actual unsigned AU validation. OS coverage changes, architecture
 and quality gates do not. No main/feature integration until the corresponding
 new head passes actual native/source-quality checks and normal review/rules.
 Manual host/microphone/listening qualification remains deferred.
+
+## Breath texture core qualification — 2026-10-26
+
+The independent Breathiness core implements the recorded synthetic center-vocal
+texture contract. It is not an acoustic health measurement or a listening result.
+The amount defaults to zero. A nonnegative sum tree supplies the finite20ms RMS
+envelope; deterministic excitation passes through a fixed129-tap2–10kHz filter.
+The dry path adds no delay; the generated texture has its own64-sample filter
+onset. After zero mid-input, the addition is exactly zero by N+128 processed
+frames. Stereo Side and mono-fold identities apply within rounding while outputs
+remain unclamped. A silent channel can receive the documented center texture.
+
+Writer breathiness_core_finish owns the three new header/source/test files in
+/workspace/worktrees/breathiness-core; breathiness_review independently reviewed
+and rebuilt the frozen598-check strictO2 suite. Its separate public-output oracle
+matched78000 samples exactly. Independent autocorrelation integration checked the
+filter bounds: maxl1=8.192651702<8.20; minimum power1–12k=.99989218>.999; maximum
+power below1k=.00010549<.0002. Stationary measured noise RMS=.009955–.009972 for
+input.1/amount1, within the declared5% tolerance. These are digital noise-color
+checks, not subjective naturalness or realized IID-randomness claims.
+
+Lead CMake Release passed1/1 in1.74sec and ASan/UBSan passed1/1 in12.14sec with
+leak/halt enabled. The598 checks cover direct RMS/convolution/automation oracles,
+finite silence tails, huge-to-quiet recovery, stereo behavior, neutral float bits,
+lifecycle and allocation guards. A rolling-sum negative control fails exactly8
+recovery checks; removing only emitted-subnormal cleanup fails8 new tail checks.
+Production source did not change for those negative controls. Formatting/static/
+tracked scans and native validation remain required before normal merge. Core
+only: no new product parameter or host routing is delivered in this increment.
+Manual host/microphone/listening qualification remains deferred.
