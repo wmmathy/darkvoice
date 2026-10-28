@@ -1044,3 +1044,55 @@ owns only ParameterSchema, PluginProcessor/Editor headers/cpp, PresetBank.cpp an
 plugin/preset/gui tests in separate worktrees. Lead owns contracts/CMake/docs/
 integration; v2 core source frozen during host work. Release/ASan/product/GUI/
 independentQA/native checks before normal merge; manual testing deferred.
+
+## Prepared quality engine v1 / global quality state v15 — 2026-10-28
+
+Replace active AudioEngine Colour member with BandlimitedColour, keeping legacy
+Colour library/tests unchanged. prepare(rate,maxFrames,channels,QualityMode=Live)
+is non-real-time, quality immutable until next prepare. optional qualityMode()
+returns active mode only while prepared; latencySamples=120/176/352 or0unprepared.
+Raw bypass and dry mix queue maximum352, actual modulo activeL. No extra block
+latency. Existing3arg prepare uses Live. No EngineParameters quality field.
+Failure/release leave engine unprepared and mode none. Validate invalid enum.
+Colour dry alignment and global raw bypass share actual activeL.
+
+Resume after actual bypass resets only Colour (other effects histories frozen as
+before), raw guard exactly activeL, then fade length max(128,2*activeL) samples.
+Raw guard is still under output gain/final limiter after bypass exits. Reset/start
+normal pipeline has no bypass resume guard. Preserve parameter output-clock timing,
+all dynamic/mix/final limiter behavior, invalid process atomicity. No callback
+alloc/locks/I/O. Preserve all existing17342 engine checks' intent; replace explicit
+old latency56 with derived new activeL, update composed references to actual new
+core, never blanket flush/relax numeric gates. Add all3mode latency/raw-bit mix0
+and bypass/guard/fade/stereo/lifecycle/partition/automation/allocation oracles.
+
+Global host quality is lifecycle configuration, NOT an automatable sound parameter.
+API bool requestQualityMode(QualityMode) noexcept validates then atomically stores;
+requestedQualityMode() returns request; activeQualityMode() optional returns last
+successful prepared mode. Changing requested mode never reconfigures callback or
+updates latency live. prepareToPlay snapshots request once, prepares matching bank
+and reports actual latency outside callback; release sets active none. GUI combo
+Live/Studio/Offline plus clear active/pending status; changes apply at reprepare
+(or reopen). No false claim of seamless switching. Display actual reported latency.
+
+State/preset schema15; parameterSchema unchanged65state/64sound and all old
+IDs/ranges/hints identical. parameterCountForVersion14 and15 both65. Full plugin
+state XML root metadata qualityMode canonical string0/1/2 REQUIRED forv15, strict
+validation atomic with all sound state. Invalid/missing/whitespace/fractional/
+overflow/unknown mode rejects whole snapshot and preserves both state and request.
+Oldv1..14 state defaults requested Live; active still unchanged until prepare.
+Serialize requested mode so pending choice survives state. Schema15 preset JSON
+remains64sound fields and NEVER stores/changes quality metadata; legacy preset
+migrations unchanged. Loading/choosing presets preserves requested/active quality.
+Current valid-state fixtures include metadata; legacy fixtures remove it, future
+version rejection derives current+1. Keep malformed-version/boolean/count tests.
+GUI remains64sound controls/13groups, quality combo outside sound sliders.
+
+Engine writer /workspace/worktrees/quality-engine branchfeature/sculptor/quality-engine
+owns ONLY AudioEngine.hpp/.cpp and engine_tests.cpp. Lead supplies frozen bank
+files, owns CMake/docs/integration. Strict O2/Werror with all core source modules
+and actual new bank, no stale archives. Host writer separate isolated worktree
+owns ParameterSchema.hpp,PluginProcessor.hpp/.cpp,PluginEditor.hpp/.cpp,
+PresetBank.cpp only ifrequired, plugin/preset/gui tests. No unrelated edits.
+Independent QA plus actual Release/sanitizer/product/native gates before merge.
+Manual testing deferred. Character parallel contribution is a subsequent contract.

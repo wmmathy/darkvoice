@@ -829,3 +829,10 @@ authored FFT to avoid unresolved provenance. No pitch controls or false completi
 claim. Manual qualification deferred as requested.
 
 Manual host/microphone/listening qualification remains deferred.
+
+## Planned genuine quality-mode integration — 2026-10-28
+
+Engine and host packages follow prepared quality/global state v15 contract,
+separate owned files/worktrees. Bank1905strictchecks passed, QA underway.
+Actual prepared FIR profile affects CPU and latency, global metadata preserves
+mode without preset side effects. No live callback rebuild or unsafe latency swap.
