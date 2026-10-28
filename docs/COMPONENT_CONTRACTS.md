@@ -1028,3 +1028,12 @@ All outputs finite, expected duration. Extra independent Hann-spectrum peaks
 reported as diagnostic, not substitute for retained gates. Preserve failed rows.
 May add --suite retained option in owned probe/analyser, no new owned files.
 No180matrix/streaming/product implementation until42report reviewed.
+
+### WORLD retained comparator expansion
+
+PrimaryDIO retained42reports40pass/2fail (48k isolated1200Hz formant±7,
+inputF0 estimate~62centswrong). Preserve fail evidence, notqualified. Expand the
+ALREADY predeclared Harvest comparator to same42manifest/settings/gates, no
+fixture-specific routing orparameterchanges; reportbothentiretables. Selection
+of oneestimator forfuturebackend requires allretainedgates and independentQA,
+notper-fixturehybrids. Do not changeDIOdefaults orhide itsfailures.
