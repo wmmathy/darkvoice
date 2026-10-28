@@ -1,0 +1,22 @@
+name: macOS ARM capacity probe
+
+on:
+  push:
+    branches: ['feature/ci/macos-arm-probe']
+
+permissions:
+  contents: read
+
+jobs:
+  supported-arm-runner:
+    name: Acquire supported macOS 15 ARM runner
+    runs-on: macos-15
+    timeout-minutes: 5
+    steps:
+      - name: Verify Apple Silicon and available build tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(uname -m)" = arm64
+          sw_vers
+          xcodebuild -version
