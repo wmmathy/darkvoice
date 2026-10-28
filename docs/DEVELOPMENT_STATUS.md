@@ -501,32 +501,6 @@ Read-only hostdesign corrected an initialunlimitedguardproposal beforecode.
 Rawbypassbitpreservation/frozenlegacyhistories/Colourresetandexplicitguard/fade
 require dedicatedoracles. Manualqualification remainsdeferred.
 
-## VoiceSculptor tone core qualification — 2026-10-24
-
-New independentcore supplies Body180Hz/Q.85bell, Warmth450Hzcomplementarytilt,
-Presence3000Hz/Q.7bell, eachgain[-6,6]neutral0. Fixedpoles;10msdoubleweights;
-normalneutralbits/signedzeroexact whilefilterhistoriescontinue. Noaddedlatency,
-externaldependency, hostcontrols orpitch/formantclaim. Coreonly; dependentengine/
-schema12/UIintegration requires separatecontract andgates. Other tonalparameters
-remainoutstanding ratherthanbeing relabeledasthesecontrols.
-
-StrictO2writer4241checks0failures; leadCMakeRelease1/1passes.82sec andASan/UBSan
-1/1passes8.61sec withleak/halt enabled. Independentcomplexanalogtransfer,
-trapezoidalstatevariable/closedexponentialautomationoracles, all4rates/layouts,
-21settings×7frequencies, combinedextremes/densefrequencybound, signedzero/normal
-extremes/reset/partition/invalidatomicity/allocation checks retained. Spectral
-errorgate.02dB,complex2e-5,automation2e-7. Static+15dBfrequencybound isnot apeak/
-automationguarantee. Truefloatoutputsubnormals anddoublesubnormalhistories/weights
-clearwithout arbitraryepsilons. Negativecontrols removingonlyweightcleanup fail8
-longdecaychecks; removingonlyoutputflush fails16activecut±FLTminchecks, while
-priorchecks pass. Meaningfuldenormalregressions. Formatting/cppcheck pass.
-IndependentreadonlysourceQAapproved; separateexecution/native/normalmergepending.
-Manualqualification remainsdeferred/unrun. Atthischeckpoint ColourhostPR35 is
-pendingnative; productcapability follows itsmergedrevision,not thislibraryalone.
-
-IndependentQA actuallyrebuilt strictO2suite4241/0 andran224ownimpulsetransform
-comparisons maxcomplexerror7.69278e-8<2e-7 plusstereoscaling. Approvedfinalcore;
-lead Release/ASan alreadycompleted above. Trackedsecret/dependencyscans pass.
 ## Colour host integration verification — 2026-10-24
 
 Integrated frozen engine/host work under the versioned aligned-engine contract.
@@ -563,12 +537,118 @@ andnumericalgate retained. Finalformat/static/scans alreadypass onintegratedsour
 ColourcorePR33 ismergedcd33a6a; appchanges hereawaitnativeCI/normalmerge. R3audit
 PR34 merged5395776 afterbb64e41 all7native40098123157 andquality40098123175 passed;
 its reproducedfailedqualitycriteria remain blocked, no productbackend introduced.
+## VoiceSculptor tone core qualification — 2026-10-24
+
+New independentcore supplies Body180Hz/Q.85bell, Warmth450Hzcomplementarytilt,
+Presence3000Hz/Q.7bell, eachgain[-6,6]neutral0. Fixedpoles;10msdoubleweights;
+normalneutralbits/signedzeroexact whilefilterhistoriescontinue. Noaddedlatency,
+externaldependency, hostcontrols orpitch/formantclaim. Coreonly; dependentengine/
+schema12/UIintegration requires separatecontract andgates. Other tonalparameters
+remainoutstanding ratherthanbeing relabeledasthesecontrols.
+
+StrictO2writer4241checks0failures; leadCMakeRelease1/1passes.82sec andASan/UBSan
+1/1passes8.61sec withleak/halt enabled. Independentcomplexanalogtransfer,
+trapezoidalstatevariable/closedexponentialautomationoracles, all4rates/layouts,
+21settings×7frequencies, combinedextremes/densefrequencybound, signedzero/normal
+extremes/reset/partition/invalidatomicity/allocation checks retained. Spectral
+errorgate.02dB,complex2e-5,automation2e-7. Static+15dBfrequencybound isnot apeak/
+automationguarantee. Truefloatoutputsubnormals anddoublesubnormalhistories/weights
+clearwithout arbitraryepsilons. Negativecontrols removingonlyweightcleanup fail8
+longdecaychecks; removingonlyoutputflush fails16activecut±FLTminchecks, while
+priorchecks pass. Meaningfuldenormalregressions. Formatting/cppcheck pass.
+IndependentreadonlysourceQAapproved; separateexecution/native/normalmergepending.
+Manualqualification remainsdeferred/unrun. Atthischeckpoint ColourhostPR35 is
+pendingnative; productcapability follows itsmergedrevision,not thislibraryalone.
+
+IndependentQA actuallyrebuilt strictO2suite4241/0 andran224ownimpulsetransform
+comparisons maxcomplexerror7.69278e-8<2e-7 plusstereoscaling. Approvedfinalcore;
+lead Release/ASan alreadycompleted above. Trackedsecret/dependencyscans pass.
+
+## Active finite tone integration assignments — 2026-10-24
+
+Leadestablishedtonecorecontractd759e74 anddependenthostcontract25f7f93; basea5bb182
+combinesColour41c270andqualifiedtonecore. Actualengineagentcolour_engine_finish
+worksfeature/sculptor/tone-engine in/workspace/worktrees/sculptor-tone-engine,
+exclusiveAudioEngine.hpp/.cpp,tests/engine_tests.cpp. Actualhostagent
+colour_host_finish worksfeature/sculptor/tone-host in/workspace/worktrees/
+sculptor-tone-host, exclusiveParameterSchema,PluginProcessor/Editor,PresetBank,
+plugin/preset/gui tests. Exactownership/acceptance islastCOMPONENT_CONTRACTSsection.
+Engineheaderpublishedbeforehostsnapshotwork. Readonlycolour_qa independently
+qualifiedcore4241tests+224transforms; leadowns CMake/docs/integration/nativegates.
+StrictO2testcommands link correspondingengine/sourcestandalonetests; fulllead
+product/Release/ASan suites runsequentially afterfreeze. No perpetualscheduler.
+
+Separatelypitch_failure_design runsbounded developer-only couplingdiagnostics
+in/workspace/worktrees/pitch-coupling-audit (basefa4af29), newqualificationtools/
+reportonly. Existingfailedbackend/tests remainunchanged. Neither diagnosticnor
+finiteagents imply functionalpitchcorrection ormanualhost/listeningqualification.
+
+## VoiceSculptor tone host verification — 2026-10-24
+
+Integrated frozen engine/host files under schema12 contract. Independent QA
+rebuilt strictO2 engine:16104checks/0, all eight composed rate/layout oracles
+maxerror0. Host retains all59prior definitions, appends3tonefields; exactzero-
+centered conversion/snapping onlynewfields prevents FMA residual atnominalzero.
+Core remains qualified; application uses62state/61sound fields and13groups here.
+
+First fullproductrun passed20/21, failed new steady-state tone transfer fixture
+at48kmono180Hz/body+6: error2.84806e-5 above retained2e-5 gate. Fixed2048sample
+preroll was insufficient for mandatory20HzHP startup. Replaced onlyfixturepreroll
+with ceil(.2*rate), kept2048fit/allcases/callbacks/2e-5 gate. IndependentQA reviewed
+analytic decay andchange. FreshhostCTest passes81.07sec; previousother20tests
+unchanged/pass. Earlytransients remain covered byall-sampleengineoracle.
+
+GUI61attachments/13groups passes and /tmp/darkvoice-sculptor-tone.png inspected;
+all labels fit900x780 and actual56samplelatency visible. Formatting/cppcheck/
+whitespace pass. FullRelease/ASan, scans/native/normalmerge pending. Manualhost/
+microphone/listening qualification remains deferred/unrun. ColourPR35 ismerged
+daddba6 after41c270 native40098919922 all7jobs/quality40098919947; tonecorePR36
+remains draft. No pitch/formant backend qualifies from this increment.
+
+## Tone integration evidence recovery — 2026-10-26
+
+Resumed workspace preserves completed CTest logs despite temporary output logs
+being gone. build/flanger/Testing/Temporary/LastTest.log records18passed/0failed;
+build/flanger-sanitized/Testing/Temporary/LastTest.log likewise18passed/0failed,
+including VoiceSculptor4241 and engine16104 checks. Those runs finished on
+October24; this is recovered evidence, not newly executed sanitizer validation.
+The product suite is rerunning now for a complete current21-test report.
+
+TonecorePR36 merged49ecce6 after exact925f1ea native40099826216 all7jobs and
+quality40099826232 passed. Currentmain remains schema11/58soundcontrols/56sample
+latency because dependenttonehost integration remainslocal pendingcommit/native.
+Allmanualhost/microphone/listening qualification remains explicitlydeferred.
+
+Current complete product rerun:21/21 passed217.34sec, host125.71sec within existing
+180sec runtimebudget. No code/threshold adjustment was needed. Recovered18/18
+Release and18/18ASan results remain the corresponding completed October24 runs;
+GUI61controls/13groups and independent16104engine checks were already verified.
+No manual qualification is claimed. Commit/native CI and normal merge follow.
+
+Historical core integration checkpoint:
 
 Colour host PR35 merged daddba6 after exact41c2707 passed all seven native jobs
 40098919922 and source-quality40098919947. This tone-core branch now includes
 that merged base; current application schema11/58sound/12groups/fixed56 latency.
 The new tone library is still outside application routing until its own dependent
 host increment passes. All existing Colour tests and numerical gates are retained.
+
+## Verified macOS ARM runner fallback — 2026-10-28
+
+Repeated macos-26 acquisition failed before execution with hosted-runner/ARM
+capacity annotations, including the single failed-job retry for PR38. Live
+runner-images documentation lists macos-15 as a supported ARM64 label. An isolated
+probe on feature/ci/macos-arm-probe completed successfully in run40635804504;
+it asserted uname=arm64 and reported macOS15.7.9, Xcode16.4 build16F6. Probe workflow has no
+checkout, dependencies or secrets and only read permissions. Unrelated standard
+CI on that diagnostic-only branch was canceled; it is not a product validation.
+
+Switch standard macOS jobs from26 to the verified15 pool and explicitly assert
+Apple Silicon. Keep all seven Linux/macOS jobs, every numerical gate, sanitizers,
+JUCE builds and actual unsigned AU validation. OS coverage changes, architecture
+and quality gates do not. No main/feature integration until the corresponding
+new head passes actual native/source-quality checks and normal review/rules.
+Manual host/microphone/listening qualification remains deferred.
 
 ## Breath texture core qualification — 2026-10-26
 

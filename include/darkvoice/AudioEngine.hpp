@@ -12,6 +12,7 @@
 #include <darkvoice/StereoDelay.hpp>
 #include <darkvoice/ToneEffects.hpp>
 #include <darkvoice/VocalLimiter.hpp>
+#include <darkvoice/VoiceSculptor.hpp>
 #include <span>
 #include <vector>
 namespace darkvoice {
@@ -45,6 +46,7 @@ struct EngineParameters {
     float chorusRateHz = .8f, chorusDepthMs = 6.0f, chorusMix = 0.0f, stereoWidth = 1.0f;
     int colourModel = 0;
     float colourDrive = .25f, colourToneHz = 16000, colourMix = 0;
+    float sculptBodyDb = 0, sculptWarmthDb = 0, sculptPresenceDb = 0;
 };
 struct EngineMeters {
     float inputPeak = 0.0f;
@@ -76,6 +78,7 @@ class AudioEngine {
     ToneEffects effects_;
     NoiseGate gate_;
     DeEsser deEsser_;
+    VoiceSculptor sculptor_;
     ModulationEffects modulation_;
     Flanger flanger_;
     Doubler doubler_;

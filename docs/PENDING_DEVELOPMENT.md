@@ -31,7 +31,6 @@ Source-quality run39740257019 passed. This is not a passing overall build result
 | Priority / tracking | Pending implementation | Dependency / acceptance |
 | --- | --- | --- |
 | P1 Sculptor, #3/#18 | Qualified independent pitch/formant shifting and formant preservation; depth/body/warmth/presence/resonance/breathiness/character controls; real quality modes | Resolve combined-periodicity failures, broader F0/transient/unvoiced material, listening/CPU; integrate delayed dry/mix/bypass and host latency only after qualification |
-| P1 Effects, #3 | Integrate qualified Tape/Tube Colour core and parallel mix into engine/host | Fixed 56-sample aligned dry/bypass, safe resume and final limiter, schema11 migration, real controls, automated/native/independent review; core alone is merged, host work remains in progress |
 | P1 Integration, #14/#16/#18 | Review/integrate eventual qualified Sculptor and remaining effects; de-esser/chorus/flanger now merged | Required repository checks/review; no automatic bypass or release; preserve stacked bases until dependencies integrate |
 | P2 Presets, #3 | Complete all20 required vocal factory sounds, audition/tune them and preserve correction/harmony independence | Underlying DSP must exist; fifteen sounds now use existing DSP; five correction/choir/octave sounds remain pending; do not add presets implying unavailable correction/choir features |
 | P2 Track-aware correction, #4 | Reference WAV/AIFF/FLAC/MP3 import where available/licensed, key/scale/BPM/chord timeline/confidence and manual edits; manual/chromatic/custom correction, musical transitions/humanization/vibrato/drift; graphical tracking | Qualified shift backend and real-time pitch tracker; versioned analysis/timeline/transport contracts, preanalysis, offsets and GarageBand manual/standalone fallbacks |
@@ -52,12 +51,16 @@ Rock PR31 (d67a64c2), SpaceReverb PR32 (cc49c99) and Colour core PR33 (cd33a6a).
 Each passed all seven native jobs and source-quality checks on its reviewed head;
 exact run IDs and local evidence are in DEVELOPMENT_STATUS.md and TEST_RESULTS.md.
 
-At cd33a6a the application uses schema10, 54 sound controls plus global bypass,
-11 editor groups and zero algorithmic engine latency. Colour is a qualified
-standalone DSP core with 56-sample group delay, still outside application routing.
-Do not describe its pending controls or host latency integration as delivered.
-The active integration contract defines schema11, 58 sound controls, 12 groups,
-aligned raw bypass and a guarded resume that retains final limiter protection.
+Colour host PR35 is merged at daddba6 after all seven native checks and
+source-quality checks passed. The application uses schema11, 58 sound controls
+plus global bypass, 12 groups and fixed56-sample latency. Tape/Tube parallel
+colour, aligned raw bypass and defined limiter-protected resume are implemented.
+
+VoiceSculptor body/warmth/presence tone core is qualified locally and in draft
+PR36; its dependent engine/schema12/UI increment is being verified. It adds
+three genuine tonal operations, not pitch/formant shifting. Depth, resonance,
+breathiness and character remain outstanding. A proposed center-driven breath
+texture is under architecture review; it is not implemented or physiology analysis.
 
 PR19 remains draft/blocked by three combined-periodicity failures; its optional
 540-case diagnostic has 61 periodicity failures. Rubber Band LiveShifter audit
