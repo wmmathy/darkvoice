@@ -1005,3 +1005,26 @@ tools/qualification/world_fft_shim.cpp, world_probe.cpp, world_analyse.py and
 docs/WORLD_SOURCE_FILTER_EXPERIMENT.md. Lead owns this shared contract. Strict
 O2/Werror probe build and independently checked metrics required. No commit/push
 until lead review; do not touch other feature worktrees.
+
+### WORLD diagnostic v1 retained42-render expansion
+
+Both estimators passed narrow3; expand primaryDIO+StoneMask only to fixed
+42-render manifest from sculptor_tests.cpp fa4af2971779737acdd72e7ca9f37070a926aabc
+qualification suite (149 original assertions, not149 audio cases):16 sine accuracy
+(4rates*shifts -12,-7,7,12),3 multi-formant,4 isolated,16 envelope matrix,3 combined.
+Same fixtures, windows, broad/geometric search boundaries and thresholds. No
+Oracle F0/formantBase input to WORLD. Fixed analysis FFT4096 at44.1/48,8192 at
+88.2/96,5ms frames,50..800HzDIO+StoneMask. Preserve-formants=false for16 sine
+cases means spectral envelope scales with pitchFactor; true for26 other cases
+means requested formantFactor only. All other policies from v1 unchanged.
+
+Report each retained substantive gate independently: sine accuracy<20cents;
+vowel/isolated/envelope intended-grid periodicity>.8; relevant independently
+searched peak errors<20%. Original combined3periodicity>.8 plus broad envelope
+check. No falsely claiming exactly149checks when lifecycle assertions belonged
+to old backend. Reuse identical float synthesis and analysis arithmetic. Input
+estimate coverage/error reported; new estimator criteria remain separately named.
+All outputs finite, expected duration. Extra independent Hann-spectrum peaks
+reported as diagnostic, not substitute for retained gates. Preserve failed rows.
+May add --suite retained option in owned probe/analyser, no new owned files.
+No180matrix/streaming/product implementation until42report reviewed.
