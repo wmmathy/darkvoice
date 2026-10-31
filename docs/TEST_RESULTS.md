@@ -663,6 +663,7 @@ that merged base; current application schema11/58sound/12groups/fixed56 latency.
 The new tone library is still outside application routing until its own dependent
 host increment passes. All existing Colour tests and numerical gates are retained.
 
+
 ## Verified macOS ARM runner fallback — 2026-10-28
 
 Repeated macos-26 acquisition failed before execution with hosted-runner/ARM
@@ -737,3 +738,102 @@ Historical failures remain evidence: v1 near-Nyquist leakage about-14.7dB; v2
 input-image scan failures; v3 step17 scan passed but between-grid bins1720..1724
 failed about-53.64dB from intrinsic8x folding. V4 increases shaping to16x and uses
 guarded first/last kernels; measured algorithmic delays are124/184/368samples.
+
+## Breath texture host qualification — 2026-10-26
+
+Engine/host integration is implemented under schema13:63 state/62 sound fields,
+13 groups. Independent QA rebuilt16642 strictO2 engine checks, all eight new
+composed routes and eight prior tone routes matched exactly. All62 prior schema
+definitions remain unchanged; actual/forced bypass freezes RMS/FIR/PRNG and
+resume resets only Colour. Final gain and enabled limiter cover every unbypassed
+sample. Core files remain frozen; factories retain all prior settings and new0.
+
+Initial fullproduct run passed21/22, including host129.21sec, but one positive
+preset fixture mislabeled62 sound fields as schema12. Production correctly
+rejected that map. Changed only helper default to currentSchemaVersion and future
+rejection fixture to current+1; explicit legacy fixtures, parser and numeric gates
+unchanged. QA reviewed the repair. Targeted preset rerun passes0.33sec; all22
+product tests are therefore covered across the full run and repaired target.
+A misplaced Colour comment was corrected without changing audio-test statements.
+
+Current Release19/19 passes15.83sec; ASan/UBSan19/19 passes219.14sec with leak/halt
+enabled. Existing180sec per-engine/host budgets retained. GUI62 attachments/13
+groups passed, /tmp/darkvoice-breath-texture.png inspected and all controls fit.
+Formatting/cppcheck/whitespace checks pass; tracked scans and native CI/normal
+merge follow. Manual host/microphone/listening tests remain deferred/unrun.
+
+PR38 native40361692487 passed all four Linux jobs; three macOS ARM jobs failed
+before starting because GitHub reported 'The job was not acquired by Runner of
+type hosted even after multiple attempts' and ARM capacity constraints. One
+failed-job retry was requested. PR37 diagnostic native40361362105 had the same
+infrastructure failure and was retried once. No platform gate was waived or
+successful native result inferred from Linux. Development continues independently.
+
+
+## Depth/Resonance core qualification — 2026-10-28
+
+VoiceSculptor v2 appends depthDb/resonanceDb after the original three fields.
+Depth is a90Hz fixed-pole bass shelf with requested low-frequency endpoint gain;
+90Hz is not a half-gain shelf center. Resonance is700Hz/Q1.6 emphasis/cut.
+Both ranges±6dB/default0. Dedicated stages leave existing EQ controls editable.
+The conservative five-stage static magnitude bound is27dB; original new-neutral
+settings retain the old15dB bound. Neither is a peak or automation guarantee.
+No F0, anatomical or formant-retuning capability is claimed.
+
+Writer breath_engine froze only VoiceSculptor.hpp/.cpp and voice_sculptor_tests.cpp.
+Independent depth_resonance_qa rebuilt11409 strictO2 checks with zero failures,
+retaining original4241 gates, and reconstructed pinned49ec v1 sources. Optional
+legacy execution passed11617 checks and111312 bitwise-equal samples through old
+control automation/reset/reprepare on this platform/compiler. Header/source SHA:
+729974dac8e568aa47b705030a96e7f500a0109f3f2124d86f5f84e4aa2f7436 /
+252267fe8a521d0c20d87f561fc52aa85c533fad8a334e5a3d29d3593841d792.
+An additional160 impulse-response comparisons had maxcomplexerror4.7707456e-8.
+All32 endpoint combinations, independent analog/TPT transfer and closed-envelope
+oracles, lifecycle/atomicity/allocation/denormal checks passed unchanged gates.
+
+Lead CMake Release passed3.04sec, ASan/UBSan passed28.70sec with leak/halt enabled,
+within existing60sec tone-test budget. Independent QA approved. This is core-only:
+application controls require schema14 after the schema13 texture increment.
+Formatting/static/scans/native/normal merge remain required. Manual tests deferred.
+
+## Verified macOS ARM runner fallback — 2026-10-28
+
+Repeated macos-26 acquisition failed before execution with hosted-runner/ARM
+capacity annotations, including the single failed-job retry for PR38. Live
+runner-images documentation lists macos-15 as a supported ARM64 label. An isolated
+probe on feature/ci/macos-arm-probe completed successfully in run40635804504;
+it asserted uname=arm64 and reported macOS15.7.9, Xcode16.4 build16F6. Probe workflow has no
+checkout, dependencies or secrets and only read permissions. Unrelated standard
+CI on that diagnostic-only branch was canceled; it is not a product validation.
+
+Switch standard macOS jobs from26 to the verified15 pool and explicitly assert
+Apple Silicon. Keep all seven Linux/macOS jobs, every numerical gate, sanitizers,
+JUCE builds and actual unsigned AU validation. OS coverage changes, architecture
+and quality gates do not. No main/feature integration until the corresponding
+new head passes actual native/source-quality checks and normal review/rules.
+
+Manual host/microphone/listening qualification remains deferred.
+
+## Depth/resonance engine and schema14 host — 2026-10-28
+
+Engine strict O2 and independent QA each passed17342 checks, retaining16642 prior
+checks; all24 combined routing comparisons exact zero error. All63 prior parameter
+definitions unchanged; two neutral ±6dB fields append schema14 (65state/64sound).
+Initial full22-product suite passed21: plugin suite stopped at stale unsupported
+version14 fixture, now a valid version. Repair uses currentSchemaVersion+1 and
+retains malformed-version/atomic rejection. Preset overflow fixture derives current
+version too. Targeted preset+plugin rerun2/2 passed159.59sec (plugin159.12,preset.47).
+Thus every product suite passed across initial run and affected rerun; no failed
+production behavior was hidden. Full Release19/19 passed18.01sec; full ASan/UBSan
+19/19 passed276.88sec with leak/halt enabled and unchanged budgets. Persistent
+build/flanger{,-sanitized}/Testing/Temporary/LastTest.log retains suite evidence.
+GUI smoke64 controls/13groups passed; lead inspected build/verification/
+depth-resonance.png, all six Sculptor rows visible at900x780. Fixed56 latency and
+raw bypass/limiter behavior retained. Native checks required on committed head.
+Manual host/mic/listening remains deferred, not passed.
+
+Manual host/microphone/listening qualification remains deferred.
+
+Final optimized v4 strict O2 cores also passed1,211/0 each: Live31.273s,
+Studio47.711s,Offline108.308s in this cloud session. All three profiles executed
+the full fixed/reference/complex matrices. Full dense scans remain pending CI.

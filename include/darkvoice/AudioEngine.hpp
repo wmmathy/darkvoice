@@ -2,6 +2,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <darkvoice/Breathiness.hpp>
 #include <darkvoice/Colour.hpp>
 #include <darkvoice/DeEsser.hpp>
 #include <darkvoice/Doubler.hpp>
@@ -47,6 +48,8 @@ struct EngineParameters {
     int colourModel = 0;
     float colourDrive = .25f, colourToneHz = 16000, colourMix = 0;
     float sculptBodyDb = 0, sculptWarmthDb = 0, sculptPresenceDb = 0;
+    float sculptBreathiness = 0;
+    float sculptDepthDb = 0, sculptResonanceDb = 0;
 };
 struct EngineMeters {
     float inputPeak = 0.0f;
@@ -79,6 +82,7 @@ class AudioEngine {
     NoiseGate gate_;
     DeEsser deEsser_;
     VoiceSculptor sculptor_;
+    Breathiness breathiness_;
     ModulationEffects modulation_;
     Flanger flanger_;
     Doubler doubler_;

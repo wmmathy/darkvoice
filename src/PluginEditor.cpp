@@ -2,7 +2,7 @@
 #include <cmath>
 namespace {
 const juce::Colour background{0xff111418}, panel{0xff1c2229}, accent{0xffe54b52}, text{0xffecedf0};
-constexpr std::array<const char *, 61> ids{"inputDb",
+constexpr std::array<const char *, 64> ids{"inputDb",
                                            "highPassHz",
                                            "drive",
                                            "thresholdDb",
@@ -62,8 +62,11 @@ constexpr std::array<const char *, 61> ids{"inputDb",
                                            "colourMix",
                                            "sculptBodyDb",
                                            "sculptWarmthDb",
-                                           "sculptPresenceDb"};
-constexpr std::array<const char *, 61> names{"INPUT GAIN",
+                                           "sculptPresenceDb",
+                                           "sculptBreathiness",
+                                           "sculptDepthDb",
+                                           "sculptResonanceDb"};
+constexpr std::array<const char *, 64> names{"INPUT GAIN",
                                              "HIGH-PASS",
                                              "WARMTH DRIVE",
                                              "COMPRESSOR THRESHOLD",
@@ -123,13 +126,16 @@ constexpr std::array<const char *, 61> names{"INPUT GAIN",
                                              "COLOUR PARALLEL MIX",
                                              "BODY 180 Hz",
                                              "WARMTH TILT",
-                                             "PRESENCE 3 kHz"};
-constexpr std::array<const char *, 61> suffixes{
+                                             "PRESENCE 3 kHz",
+                                             "BREATH TEXTURE",
+                                             "DEPTH LOWS",
+                                             "RESONANCE 700 Hz"};
+constexpr std::array<const char *, 64> suffixes{
     " dB", " Hz", "", " dB",  ":1",  "",    " dB", " Hz", " dB", " Hz", " dB", "",    " Hz",
     " dB", " ms", "", "",     "",    "",    "",    " dB", ":1",  " ms", " Hz", " dB", " dB",
     " Hz", " ms", "", "",     " Hz", " ms", "",    "",    "",    " dB", " ms", "",    " ms",
     "",    "",    "", " BPM", "",    "",    " ms", " ms", " Hz", "",    "",    "",    " Hz",
-    " ms", "",    "", "",     " Hz", "",    " dB", " dB", " dB"};
+    " ms", "",    "", "",     " Hz", "",    " dB", " dB", " dB", "",    " dB", " dB"};
 juce::File presetDirectory(const juce::File &supplied) {
     if (supplied != juce::File{})
         return supplied;
@@ -198,8 +204,13 @@ DarkVoiceEditor::DarkVoiceEditor(DarkVoiceProcessor &p, juce::File root)
         slider.setName(names[i]);
         slider.setTitle(names[i]);
         slider.setTooltip(
-            i == 59 ? "Warmth tilt: +6 dB span gives +3 dB low-frequency gain and -3 dB "
-                      "high-frequency gain, around 450 Hz."
+            i == 63   ? "Boost or soften the fixed 700 Hz resonance band."
+            : i == 62 ? "Adjust low-frequency endpoint gain below 90 Hz."
+            : i == 61
+                ? "Center-driven added texture follows the recent vocal level. Amount controls "
+                  "the added breath texture."
+            : i == 59 ? "Warmth tilt: +6 dB span gives +3 dB low-frequency gain and -3 dB "
+                        "high-frequency gain, around 450 Hz."
             : i >= 58
                 ? "Vocal tone shaping: Body at 180 Hz and Presence at 3 kHz. Zero dB is neutral."
             : i >= 54

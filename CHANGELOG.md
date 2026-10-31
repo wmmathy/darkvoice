@@ -7,6 +7,28 @@
 - Preserve legacy Colour and leave application integration for a dependent change.
 - Add fixed, complex-response and complete sharded alias qualification; preserve negative findings.
 
+## Depth and resonance controls
+
+- Add independent Depth lows and Resonance700Hz controls to Voice Sculptor.
+- Append schema14 parameters with neutral migrations and unchanged prior definitions.
+- Retain fixed56-sample alignment, raw bypass and limiter protection.
+
+
+## Depth and resonance tone core
+
+- Extend VoiceSculptor with independent low-frequency endpoint gain and fixed700Hz resonance emphasis.
+- Preserve prior tone processing when the two new controls are neutral.
+- Keep new engine parameters and UI controls for the dependent host increment.
+
+
+## Breath texture control
+
+- Add a center-driven breath-texture amount control after tone shaping and before EQ/time effects.
+- Append one hint-13 parameter with strict schema-13 migrations and neutral factory defaults.
+- Preserve fixed56-sample latency, raw bypass, frozen texture history and final limiter protection.
+
+
+
 ## Breath texture core
 
 - Add a center-driven aspiration texture with a finite RMS envelope, deterministic excitation and a fixed noise-color filter.
