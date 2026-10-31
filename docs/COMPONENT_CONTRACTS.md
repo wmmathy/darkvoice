@@ -1078,3 +1078,29 @@ wet bandwidth guard applies also to near-Nyquist inputs; document attenuation.
 No output clipping, fixture tuning, exclusions or threshold relaxation. Writer
 retains same five-file ownership. Character dependency must adopt both guards
 and retain its independently generated reference and negative v1 evidence.
+
+### Bandlimited Colour v4 intrinsic alias correction — 2026-10-31
+
+Independent adjacent-bin QA found Tape48k/.5 bins1720..1724 fail-55dB in allv3
+modes (bin1724 worst~-53.65). Outputbin12 matches19th harmonic folding at8x;
+longer boundaries cannot remove it. Preserve v3passing fixed/grid results and
+negative additionalcases. Do not exposev3. Increase nonlinear oversampling to16x
+(fourup/fourdownstages), retaining guarded193/257/513 native boundaries and
+higher halfband65/129/257 at remaining stages. Recompute high-rate nonlinear
+pre/deemphasis/DC/tone coefficients at16*rate; curves/native smoothing unchanged.
+Generichelper named Oversampler16; no legacyhelper mutation.
+
+Actual profile delay=nativeM/2+7*higherM/16: Live124,Studio184,Offline368; maximum368.
+No hidden compensation retaining oldreportedlatency. Independent32x reference
+latency126/188/376, alignmentdelta2/4/8. Keep all numericgates; add explicit
+1720..1724 absolute fixtures acrossbothstyles/amps/rates and allmodes and dense
+48k/.5 scan EVERY integerbin17..2031, notstep17. Run dense scan as separate
+--scan mode tests (Release CI required), corefixtures/complex/lifecycle also
+separate --core mode for Debug/SAN budgets. Default runs all, neveremptysuites.
+No claim of universalaliasbound; all new observed negativecases retained.
+
+Preparedquality engine/globalv15 contract now uses124/184/368 throughout, max368,
+guardL andfade2L; all API/state semantics and65definitions unchanged. Character
+uses same16xhelper/delays and independent32xref2/4/8, guardedboundaries. Higher
+CPU must be measured; no deadlinesclaim. All dependentengine/host tests must
+explicitly adopt measuredlatencies, preserve routing/controlclock/atomicgates.
