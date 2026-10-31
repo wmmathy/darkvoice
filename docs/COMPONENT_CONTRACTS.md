@@ -1105,3 +1105,20 @@ guardL andfade2L; all API/state semantics and65definitions unchanged. Character
 uses same16xhelper/delays and independent32xref2/4/8, guardedboundaries. Higher
 CPU must be measured; no deadlinesclaim. All dependentengine/host tests must
 explicitly adopt measuredlatencies, preserve routing/controlclock/atomicgates.
+
+### Qualification execution and prepared-kernel optimization
+
+Dense scans are distinct Release qualification gates, deterministically sharded
+over inclusive17..2031 with completecoverage/nooverlap. Debug/SAN execute a
+nonempty --safety mode covering validation/lifecycle/reset/partition/automation/
+allocation/extremes; Release --core retains ALLfixedalias/reference/complex gates,
+and all dense shards required before integration. Default stillALLtests. Do not
+report safety-only as numeric qualification. Existing legacytests/gates unchanged.
+New testbudgets based measuredmodecost, separate actual outcomes documented.
+
+Prepared sparse polyphase coefficient/index arrays are permitted to avoid looping
+through known halfbandzero coefficients in16x higherstages. All allocation only
+prepare; fixedarrays acceptable. Preserve exact accumulationorder of nonzeros
+and demonstrate same-platform bitwise equivalence to frozenv4helper on random/
+impulse/constant/extr inputs both nonlinearcurves/allprofiles. This is performance
+work, notfilter redesign; allnumericgates remain. No fastmath or coefficientpruning.
