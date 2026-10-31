@@ -1086,8 +1086,9 @@ modes (bin1724 worst~-53.65). Outputbin12 matches19th harmonic folding at8x;
 longer boundaries cannot remove it. Preserve v3passing fixed/grid results and
 negative additionalcases. Do not exposev3. Increase nonlinear oversampling to16x
 (fourup/fourdownstages), retaining guarded193/257/513 native boundaries and
-higher halfband65/129/257 at remaining stages. Recompute high-rate nonlinear
-pre/deemphasis/DC/tone coefficients at16*rate; curves/native smoothing unchanged.
+higher halfband65/129/257 at remaining stages. Preserve existing NATIVE-rate pre/deemphasis/DC/tone placement and coefficients
+exactly; only stateless nonlinear shaping runs16x. There are no high-rate memory
+coefficients in the retained algorithm. Curves/native smoothing unchanged.
 Generichelper named Oversampler16; no legacyhelper mutation.
 
 Actual profile delay=nativeM/2+7*higherM/16: Live124,Studio184,Offline368; maximum368.
