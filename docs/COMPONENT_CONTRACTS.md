@@ -1056,3 +1056,28 @@ Input coverage>=90% andmedianerror<=20cents remain independently reported, plus
 alloriginal outputgates. Worker/offline only; current YIN O(window*maxLag), report
 walltime notRTclaim. Reuse ownedfourfiles and methodCLI, freeze allresults. If
 thisfixedcomparator fails, stop itasnegative, no parametersearch.
+
+### Fixed REAPER F0 comparator for WORLD — 2026-10-31
+
+After fixedDIO40/42,Harvest24/42,YIN31/42 negatives, evaluate one independent
+uniform REAPER trajectory, nothybrid/per-fixturefallback. Pin google/REAPER
+1d6e9b95e6b08b500fccbc9a043989dbda747276 Apache2; retain notices and explicit
+epoch_tracker/{epoch_tracker,fft,fd_filter,lpc_analyzer}.cc whitelist. No REAPER
+sourcevendored, no external proprietarydependencies, no upstreamWORLDfft.cpp.
+
+Convert originalfloat input ONLY for F0analysis using fixed32768 multiplier,
+round nearest and clampint16[-32768,32767]; count/reportclips. No per-fixture
+normalization. WORLD analysis/synthesis stilloriginalfloat. Init50..800Hz, highpass
+false andHilbertfalse for ALLfixtures; ComputeFeatures,TrackEpochs,then
+ResampleAndReturnResults at.005seconds. Map returnedcontourindexk to original
+WORLDframek; nonpositive/unavailableframes0, truncateextratrailingframes; no
+interpolation/hold/fill beyond upstreamownresampler. Declare actualsourceframe
+count/mapping and never oracle. Same CheapTrick,D4C,warp,all42+narrow3fixtures
+and original/input-estimation gates unchanged. Named comparatorreaper, no
+changes old threeestimator branches/defaults. Record allfailures/PCM clipping.
+Offlineallocatingdiagnostic only; noRT/deadline/streamingqualification follows.
+Read-only license/API audit must establish actualtimestamp convention before
+render; if output firstframe offset differs, record fixed documentedmapping.
+Writer retains samefourdiagnosticfiles; buildcommands and hashes all sources
+explicit. StrictO2/authoredwarnings, FFT/sanitizer/invariants, independentmetric
+review before anybackendchoice. No parametersearch if thiscandidatefails.
