@@ -1062,3 +1062,19 @@ This correction changes helper Decimator to supportallkernelcoefficients; preser
 oldhelper/tests frozen and preparedallocation/noRTalloc. Lead handles CMake/docs,
 writer samefivefiles. New180spermodeSAN budgets provisional until measured;
 Offline may require360s from measuredcost, documentalltimeoutevidence.
+
+### Bandlimited Colour v3 input-image guard — 2026-10-31
+
+V2 Live scan found17/238 absolute failures, worst-13.954841dB atTube bin2023:
+first-interpolation images mix down inside nonlinear shaping and cannot be removed
+by final filtering. Preserve negative logs. Replace BOTH native-boundary kernels
+(first interpolation and last decimation) with normalized Blackman sinc cutoff
+.225 cycles/2xsample. Higher stages unchanged. Interpolator must compute both
+polyphase branches using all coefficients, with gain2, no halfband even shortcut.
+Same tapcounts/group delays120/176/352, public API and dry queues unchanged.
+Reference independently computes both guarded kernels; all original gates, v2
+edge fixtures,238-bin scan per mode and complex partialmix checks remain. Explicit
+wet bandwidth guard applies also to near-Nyquist inputs; document attenuation.
+No output clipping, fixture tuning, exclusions or threshold relaxation. Writer
+retains same five-file ownership. Character dependency must adopt both guards
+and retain its independently generated reference and negative v1 evidence.
