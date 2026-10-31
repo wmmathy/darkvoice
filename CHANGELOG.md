@@ -1,5 +1,12 @@
 # Changelog
 
+## Guarded Colour quality-profile library
+
+- Add a separate16x Colour implementation with guarded input/output FIR filters.
+- Provide prepared Live/Studio/Offline profiles with124/184/368-sample delays.
+- Preserve legacy Colour and leave application integration for a dependent change.
+- Add fixed, complex-response and complete sharded alias qualification; preserve negative findings.
+
 ## Breath texture core
 
 - Add a center-driven aspiration texture with a finite RMS envelope, deterministic excitation and a fixed noise-color filter.

@@ -690,3 +690,18 @@ existing Colour/engine/host source mutation. Strict C++20 O2/Werror standalone
 per-profile tests; lead schedules CMake/Release/ASan/native and independent QA.
 All48 reference gates plus32 independent absolute-mask fixtures apply to each
 actual mode. No new application mode selector until prepared-lifecycle integration.
+
+## Guarded Colour profiles ready for native qualification — 2026-10-31
+
+The new library uses16x nonlinear shaping and prepared Live/Studio/Offline FIR
+profiles, with actual124/184/368-sample latency. Legacy Colour and current app
+routing remain unchanged in this core increment. Independent review reproduced
+fixed numerical checks and supplemental failures repaired by v4. All3 sanitizer
+safety modes pass. Full dense24-job alias qualification and exact-head native
+checks are still required before normal merge; no failed gate is waived.
+
+Sparse prepared coefficients preserve bitwise output and reduce measured probe
+CPU about2.37–2.81x versus generic16x processing. This is cloud probe evidence,
+not target-machine deadline qualification. Separate prepared-quality host/state15
+integration and Character contribution are under development; qualified pitch/
+formant remains blocked by retained tests. Manual qualification stays deferred.
