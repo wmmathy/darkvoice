@@ -1111,3 +1111,12 @@ even-only controls asdiagnostic, plusunvoicednoise/silence beforefuturebackend.
 Originalnominal-grid andinput-estimationgates unchanged. No broadersearch iffails;
 reportallfailures. Writer samefourfiles, no productF0module changes; offline
 only. Allnewmethodgates requireindependentrecompute ofselection/refinement.
+
+For periodicity-comparator controls, an estimator's explicitfalse analysis/track
+result means that candidate is unavailable (allzero contour), with backendstatus
+reported; the SAMEpolicy applies to allfixtures and frames. Other independent
+candidates may still be scored by waveformdata. Allocation/IO/probeexceptions
+remain hardfailures, notsilently converted. Ifallcandidatesunavailable or below
+scorethreshold, returnunvoiced0. No groundtruth/prescribedvoicing fallback.
+Tie selection is against the globalmaximumscore set (within1e-6), thenhighestF0,
+so candidateiterationorder cannotchange selection through tiechains.
