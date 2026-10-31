@@ -1081,3 +1081,33 @@ render; if output firstframe offset differs, record fixed documentedmapping.
 Writer retains samefourdiagnosticfiles; buildcommands and hashes all sources
 explicit. StrictO2/authoredwarnings, FFT/sanitizer/invariants, independentmetric
 review before anybackendchoice. No parametersearch if thiscandidatefails.
+
+### Uniform waveform-periodicity selection comparator — 2026-10-31
+
+Allfourfixedestimators failretainedcases: REAPER25/42, including16unvoicedsines
+andone20.1356%nominal-grid envelopefailure despiteaccurateHannpeak. Preserve
+alltables; no metricreplacement. Newnamedperiodicity comparator is one uniformly
+data-driven estimatoralgorithm, notfixture-specific routing orknown-F0choice.
+No existingcandidate/defaults changed. Obtain allfour priorfixedcandidatecontours
+(DIO,Harvest,YIN,REAPER), atsame5msgrid usingexistingdeclaredmappings.
+
+For everyframe, sameoriginalfloat waveformwindow N4096lowrates/8192high,
+centeredstart=floor(t*Fs)-N/2 CLAMPED to[0,inputLength-N] (fixtureslongenough).
+Subtract wholewindowmean; forintegerlagk compute NCCF dot(x[n],x[n+k]) divided
+by sqrt(pairenergies), n0..N-k-1; invalid/zeroenergy score=-1. Candidateperiod
+Fs/f mustfinite and50..800Hz. At k=round(period), NCCF at k-1,k,k+1. Only if
+centerislocalmaximum and curvature<0, refine k by parabolic delta
+.5*(left-right)/(left-2*middle+right), clamped[-1,1]; otherwise keeporiginal
+candidateperiod. Score refinedperiod by NCCF with linearlyinterpolateddelayed
+samples using n withvalid n+ceil(period)<N, samepairenergynormalization.
+Select maximumscore; scoretieswithin1e-6 preferhighestfrequency (shortestperiod).
+Voicedonlyifscore>=.9 andrefinedF0within50..800;otherwise0. No roundingtoscale,
+groundtruth, interpolationbetweenframes, forcinggaps or empirical per-fixture
+thresholds. Scores andselectedcandidate/periods loggedraw for independentQA.
+
+Same WORLD CheapTrick/D4C/warp and outputgates, narrow3first then42ifallpass.
+This algorithmmustalso demonstrate waveform-onlybehavior on ideal35/unchanged70/
+even-only controls asdiagnostic, plusunvoicednoise/silence beforefuturebackend.
+Originalnominal-grid andinput-estimationgates unchanged. No broadersearch iffails;
+reportallfailures. Writer samefourfiles, no productF0module changes; offline
+only. Allnewmethodgates requireindependentrecompute ofselection/refinement.
