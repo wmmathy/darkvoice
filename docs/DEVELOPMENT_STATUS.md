@@ -883,3 +883,31 @@ Character source checkpoint425a75b is pushed separately; its three fixed modes
 and safety checks pass, while engine/UI integration and dense/native gates remain.
 Pitch diagnostic work is checkpointed independently and stays outside products.
 Manual host/microphone/listening qualification remains deferred.
+
+Initial fullproduct run passed21/22, including host129.21sec, but one positive
+preset fixture mislabeled62 sound fields as schema12. Production correctly
+rejected that map. Changed only helper default to currentSchemaVersion and future
+rejection fixture to current+1; explicit legacy fixtures, parser and numeric gates
+unchanged. QA reviewed the repair. Targeted preset rerun passes0.33sec; all22
+product tests are therefore covered across the full run and repaired target.
+A misplaced Colour comment was corrected without changing audio-test statements.
+
+Current Release19/19 passes15.83sec; ASan/UBSan19/19 passes219.14sec with leak/halt
+enabled. Existing180sec per-engine/host budgets retained. GUI62 attachments/13
+groups passed, /tmp/darkvoice-breath-texture.png inspected and all controls fit.
+Formatting/cppcheck/whitespace checks pass; tracked scans and native CI/normal
+merge follow. Manual host/microphone/listening tests remain deferred/unrun.
+
+PR38 native40361692487 passed all four Linux jobs; three macOS ARM jobs failed
+before starting because GitHub reported 'The job was not acquired by Runner of
+type hosted even after multiple attempts' and ARM capacity constraints. One
+failed-job retry was requested. PR37 diagnostic native40361362105 had the same
+infrastructure failure and was retried once. No platform gate was waived or
+successful native result inferred from Linux. Development continues independently.
+
+## Planned Character contribution package — 2026-10-28
+
+Finite isolated writer owns HarmonicCharacter header/source/test only under
+recorded v1 contract; dependency frozen new bandlimited profile helper supplied
+by lead. Parallel additive output avoids serial Colour latency and stays audible
+independently of Colour mix. All alias/functional gates before host exposure.

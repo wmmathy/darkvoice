@@ -1257,3 +1257,53 @@ owns ParameterSchema.hpp,PluginProcessor.hpp/.cpp,PluginEditor.hpp/.cpp,
 PresetBank.cpp only ifrequired, plugin/preset/gui tests. No unrelated edits.
 Independent QA plus actual Release/sanitizer/product/native gates before merge.
 Manual testing deferred. Character parallel contribution is a subsequent contract.
+
+## Harmonic Character contribution v1 — 2026-10-28
+
+Independent additive harmonic-character DSP, not pitch/formant shifting or a
+physiological model. New class HarmonicCharacter has parameters struct with
+float amount=0 in[-1,1]. Same lifecycle/validation signatures as BandlimitedColour,
+prepare accepts QualityMode defaultLive, latency120/176/352 by same immutable
+prepared mode. process REPLACES input samples with the aligned harmonic DELTA;
+engine later sums it parallel with Colour, never serial extra buffering. At exact
+amount0 after settled/reset, delta is exact positive zero while histories track.
+
+Reuse qualified new bandlimited helper read-only, never old helper. For simplest
+independent implementation use two complete Oversampler8 instances per channel
+(one odd, one even), identical boundary/higher kernels193/65,257/129,513/257.
+Optimization sharing upsamplers is deferred until measured necessary. Stateful
+callbacks prohibited. Curves z=tanh(2*x)/tanh(2); odd=z*z*z, even=z*z. Each stream
+then native DC blocker y=v-prevV+exp(-2*pi*10/fs)*prevY (double), clean subnormals.
+Weights n=max(-amount,0),p=max(amount,0) each10ms one-pole smoothed at native
+output sample clock. delta=.25*(n*dcOdd+p*dcEven). Negative amount ADDS odd colour;
+positive adds even. Both histories continuously process at neutral. No pre/post
+IIR lowpasses, arbitrary normalization, output clipping or residual subtraction.
+Sanitize nonfinite and float-subnormal input to0; finite extreme float arithmetic
+remains double until bounded delta conversion; flush output float subnormals.
+
+Prepare accepts four supported rates,mono/stereo,maxFrames1..65536; invalid
+prepare leaves unprepared, parameters validated atomically, empty blocks freeze,
+reset clears histories and settles target. No callback allocations, locks or I/O.
+Output impulse peaks are NOT guaranteed .25: derive conservative profile bound
+using bounded |z|<=1/tanh2, effective downsampling FIR L1 and DC l1<=2; frequency
+gain unity does not establish a transient bound. Record actual rendered peaks.
+
+Acceptance: exact neutral0 and channel isolation; odd/even parity tests, H3/H2
+contrast at coherent220Hz-near bin,10Hz DC attenuation/decay; reset/partition and
+automation independent scalar weight oracle; finite extremes/denormals, invalid
+atomicity and allocation checks. Independent generic32x reference (zero insertion
+full convolution) for96cases per mode:4rates*2amplitudes(.15,.5)*3signals
+(bins719,1597,two683+1129)*4amounts(-1,-.5,.5,1),N4096,warm4096,reference
+alignmentdelta6/12/24. Residual <=-55dB/inputRMS and>=20dB improvement vs native
+1x nonlinear/DC reference. Separately pure64cases per mode use harmonic mask
+absolute alias <=-55dB/inputRMS, warmceil(rate/4096)*4096>=1sec, actual input
+FFT/RMS validated. Report zero-output cases honestly (not every curve creates
+below-Nyquist harmonics). Preserve DC/Nyquist calibration and negative alias
+controls. No universal arbitrary-signal alias or perceptual qualification claim.
+
+Writer worktree /workspace/worktrees/harmonic-character, branch
+feature/sculptor/harmonic-character. Own ONLY include/darkvoice/HarmonicCharacter.hpp,
+src/HarmonicCharacter.cpp, tests/harmonic_character_tests.cpp. Lead supplies frozen
+QualityMode.hpp/BandlimitedColour.hpp/helper from qualified writer, owns CMake/docs.
+No engine/host edits. Strict O2/Werror tests and per-mode time measurements; lead
+ASan/native/independent QA before integration. No commit/push yet.
