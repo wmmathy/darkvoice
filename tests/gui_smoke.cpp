@@ -40,7 +40,7 @@ int main(int argc, char **argv) {
         }
 #endif
         std::unique_ptr<juce::AudioProcessorEditor> editor(new DarkVoiceEditor(processor, root));
-        if (!editor || editor->getWidth() < 760 || editor->getHeight() < 720)
+        if (!editor || editor->getWidth() < 900 || editor->getHeight() < 780)
             return 1;
         std::vector<juce::Component *> components;
         std::set<juce::Component *> visited;
@@ -66,7 +66,7 @@ int main(int argc, char **argv) {
                 button && button->getName() == "Load preset")
                 load = button;
         }
-        if (controls != 45 || !input || !bypass || !presetSelection || !load)
+        if (controls != 49 || !input || !bypass || !presetSelection || !load)
             return 2;
         input->setValue(6.0, juce::sendNotificationSync);
         if (std::abs(processor.parameters.getRawParameterValue("inputDb")->load() - 6.0f) > 0.01f)
@@ -74,7 +74,7 @@ int main(int argc, char **argv) {
         bypass->setToggleState(true, juce::sendNotificationSync);
         if (processor.parameters.getRawParameterValue("bypass")->load() != 1.0f)
             return 4;
-        constexpr std::array<const char *, 45> names{"INPUT GAIN",
+        constexpr std::array<const char *, 49> names{"INPUT GAIN",
                                                      "OUTPUT GAIN",
                                                      "HIGH-PASS",
                                                      "WARMTH DRIVE",
@@ -118,7 +118,11 @@ int main(int argc, char **argv) {
                                                      "STEREO DELAY SYNC (0 / 1)",
                                                      "MANUAL TEMPO",
                                                      "BEAT DIVISION",
-                                                     "USE HOST TEMPO (0 / 1)"};
+                                                     "USE HOST TEMPO (0 / 1)",
+                                                     "DOUBLER SEPARATION",
+                                                     "DOUBLER VARIATION",
+                                                     "DOUBLER RATE",
+                                                     "DOUBLER MIX"};
         std::size_t soundIndex = 0;
         for (const auto &spec : darkvoice::parameterSchema) {
             if (juce::String(spec.id) == "bypass")
@@ -221,10 +225,13 @@ int main(int argc, char **argv) {
         bool gateTab = false;
         for (auto *component : components)
             if (auto *tabs = dynamic_cast<juce::TabbedComponent *>(component)) {
-                if (tabs->getNumTabs() != 9)
+                if (tabs->getOrientation() != juce::TabbedButtonBar::TabsAtLeft ||
+                    tabs->getTabBarDepth() < 160)
+                    return 22;
+                if (tabs->getNumTabs() != 10)
                     return 17;
-                tabs->setCurrentTabIndex(8);
-                gateTab = tabs->getCurrentTabName() == "STEREO DELAY";
+                tabs->setCurrentTabIndex(9);
+                gateTab = tabs->getCurrentTabName() == "SIMULATED DOUBLER";
             }
         if (!gateTab)
             return 18;
@@ -258,7 +265,7 @@ int main(int argc, char **argv) {
             if (!stream || !juce::PNGImageFormat().writeImageToStream(image, *stream))
                 return 6;
         }
-        std::cout << "GUI smoke passed: 45 controls, all parameter attachments, bypass, actual "
+        std::cout << "GUI smoke passed: 49 controls, all parameter attachments, bypass, actual "
                      "factory preset audio, dry-pitch feedback, snapshot\n";
         return 0;
     }();

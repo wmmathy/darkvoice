@@ -2,7 +2,7 @@
 #include <cmath>
 namespace {
 const juce::Colour background{0xff111418}, panel{0xff1c2229}, accent{0xffe54b52}, text{0xffecedf0};
-constexpr std::array<const char *, 45> ids{"inputDb",
+constexpr std::array<const char *, 49> ids{"inputDb",
                                            "highPassHz",
                                            "drive",
                                            "thresholdDb",
@@ -46,8 +46,12 @@ constexpr std::array<const char *, 45> ids{"inputDb",
                                            "stereoDelaySync",
                                            "stereoDelayBpm",
                                            "stereoDelayDivision",
-                                           "stereoDelayHostTempo"};
-constexpr std::array<const char *, 45> names{"INPUT GAIN",
+                                           "stereoDelayHostTempo",
+                                           "doublerSeparationMs",
+                                           "doublerVariationMs",
+                                           "doublerRateHz",
+                                           "doublerMix"};
+constexpr std::array<const char *, 49> names{"INPUT GAIN",
                                              "HIGH-PASS",
                                              "WARMTH DRIVE",
                                              "COMPRESSOR THRESHOLD",
@@ -91,12 +95,16 @@ constexpr std::array<const char *, 45> names{"INPUT GAIN",
                                              "STEREO DELAY SYNC (0 / 1)",
                                              "MANUAL TEMPO",
                                              "BEAT DIVISION",
-                                             "USE HOST TEMPO (0 / 1)"};
-constexpr std::array<const char *, 45> suffixes{
-    " dB", " Hz", "",    " dB", ":1", "", " dB",  " Hz", " dB", " Hz", " dB", "",
-    " Hz", " dB", " ms", "",    "",   "", "",     "",    " dB", ":1",  " ms", " Hz",
-    " dB", " dB", " Hz", " ms", "",   "", " Hz",  " ms", "",    "",    "",    " dB",
-    " ms", "",    " ms", "",    "",   "", " BPM", "",    ""};
+                                             "USE HOST TEMPO (0 / 1)",
+                                             "DOUBLER SEPARATION",
+                                             "DOUBLER VARIATION",
+                                             "DOUBLER RATE",
+                                             "DOUBLER MIX"};
+constexpr std::array<const char *, 49> suffixes{
+    " dB", " Hz", "", " dB",  ":1",  "",    " dB", " Hz", " dB", " Hz", " dB", "",    " Hz",
+    " dB", " ms", "", "",     "",    "",    "",    " dB", ":1",  " ms", " Hz", " dB", " dB",
+    " Hz", " ms", "", "",     " Hz", " ms", "",    "",    "",    " dB", " ms", "",    " ms",
+    "",    "",    "", " BPM", "",    "",    " ms", " ms", " Hz", ""};
 juce::File presetDirectory(const juce::File &supplied) {
     if (supplied != juce::File{})
         return supplied;
@@ -111,6 +119,22 @@ juce::File presetDirectory(const juce::File &supplied) {
         .getChildFile("DarkVoiceStudio/Presets");
 }
 } // namespace
+void DarkVoiceLookAndFeel::drawTabButton(juce::TabBarButton &button, juce::Graphics &g, bool hover,
+                                         bool down) {
+    auto area = button.getLocalBounds().reduced(4, 3);
+    g.setColour(button.isFrontTab() ? juce::Colour(0xff34303a)
+                                    : (hover || down ? juce::Colour(0xff293039) : panel));
+    g.fillRoundedRectangle(area.toFloat(), 5.0f);
+    if (button.isFrontTab()) {
+        g.setColour(accent);
+        g.fillRect(area.getX(), area.getY() + 5, 3, area.getHeight() - 10);
+    }
+    g.setColour(button.isFrontTab() ? text : juce::Colour(0xffb5bdc7));
+    g.setFont(juce::Font(
+        juce::FontOptions(12.0f, button.isFrontTab() ? juce::Font::bold : juce::Font::plain)));
+    g.drawFittedText(button.getButtonText(), area.reduced(10, 0), juce::Justification::centredLeft,
+                     1);
+}
 DarkVoiceEditor::DarkVoiceEditor(DarkVoiceProcessor &p, juce::File root)
     : AudioProcessorEditor(p), processor_(p), bank_(presetDirectory(root)) {
     look_.setColour(juce::Slider::thumbColourId, accent);
@@ -126,6 +150,7 @@ DarkVoiceEditor::DarkVoiceEditor(DarkVoiceProcessor &p, juce::File root)
     look_.setColour(juce::TextButton::buttonColourId, panel);
     setLookAndFeel(&look_);
     tabs_.setName("Processing groups");
+    tabs_.setTabBarDepth(170);
     tabs_.addTab("DYNAMICS / TONE", panel, &pages_[0], false);
     tabs_.addTab("PARAMETRIC EQ", panel, &pages_[1], false);
     tabs_.addTab("DELAY / REVERB", panel, &pages_[2], false);
@@ -135,6 +160,7 @@ DarkVoiceEditor::DarkVoiceEditor(DarkVoiceProcessor &p, juce::File root)
     tabs_.addTab("FLANGER", panel, &pages_[6], false);
     tabs_.addTab("LIMITER", panel, &pages_[7], false);
     tabs_.addTab("STEREO DELAY", panel, &pages_[8], false);
+    tabs_.addTab("SIMULATED DOUBLER", panel, &pages_[9], false);
     addAndMakeVisible(tabs_);
     for (std::size_t i = 0; i < sliders_.size(); ++i) {
         auto &slider = sliders_[i];
@@ -144,8 +170,11 @@ DarkVoiceEditor::DarkVoiceEditor(DarkVoiceProcessor &p, juce::File root)
         slider.setName(names[i]);
         slider.setTitle(names[i]);
         slider.setTooltip(
-            i >= 37 ? "Stereo repeats, single echo or ping-pong. Sync uses beat division; host BPM "
-                      "falls back to manual if unavailable."
+            i >= 45 ? "Simulated double tracking: two independently wandering delayed copies; not "
+                      "another performance or harmony."
+            : i >= 37
+                ? "Stereo repeats, single echo or ping-pong. Sync uses beat division; host BPM "
+                  "falls back to manual if unavailable."
             : i >= 34
                 ? "Default off. Final-output sample-peak limiting, not true-peak. Enable 0 is "
                   "off; 1 is on."
@@ -165,7 +194,8 @@ DarkVoiceEditor::DarkVoiceEditor(DarkVoiceProcessor &p, juce::File root)
                           : i < 30 ? 5U
                           : i < 34 ? 6U
                           : i < 37 ? 7U
-                                   : 8U;
+                          : i < 45 ? 8U
+                                   : 9U;
         pages_[page].addAndMakeVisible(slider);
         labels_[i].setText(names[i], juce::dontSendNotification);
         labels_[i].setColour(juce::Label::textColourId, juce::Colour(0xffb5bdc7));
@@ -258,7 +288,7 @@ DarkVoiceEditor::DarkVoiceEditor(DarkVoiceProcessor &p, juce::File root)
     refreshPresets();
     showResult(result, "6 factory sounds / Save as creates a user copy");
     setResizable(true, true);
-    setResizeLimits(760, 720, 1200, 1000);
+    setResizeLimits(900, 780, 1200, 1000);
     setSize(900, 780);
     timerCallback();
     startTimerHz(20);
@@ -377,6 +407,7 @@ void DarkVoiceEditor::resized() {
     favoritesOnly_.setBounds(610, 141, 120, 30);
     status_.setBounds(24, 178, width, 28);
     tabs_.setBounds(24, 214, width, getHeight() - 316);
+    const int contentWidth = tabs_.getWidth() - tabs_.getTabBarDepth() - 8;
     for (std::size_t i = 0; i < sliders_.size(); ++i) {
         const auto page = i < 7    ? 0U
                           : i < 14 ? 1U
@@ -386,7 +417,8 @@ void DarkVoiceEditor::resized() {
                           : i < 30 ? 5U
                           : i < 34 ? 6U
                           : i < 37 ? 7U
-                                   : 8U;
+                          : i < 45 ? 8U
+                                   : 9U;
         const auto row = i < 7    ? i
                          : i < 14 ? i - 7
                          : i < 20 ? i - 14
@@ -395,14 +427,15 @@ void DarkVoiceEditor::resized() {
                          : i < 30 ? i - 26
                          : i < 34 ? i - 30
                          : i < 37 ? i - 34
-                                  : i - 37;
+                         : i < 45 ? i - 37
+                                  : i - 45;
         const int rowHeight = (tabs_.getHeight() - 48) / (page == 8 ? 9 : 7);
         const int y = 14 + static_cast<int>(row) * rowHeight;
         labels_[i].setBounds(16, y, 205, 24);
-        sliders_[i].setBounds(228, y - 2, width - 258, 29);
+        sliders_[i].setBounds(228, y - 2, contentWidth - 258, 29);
         (void)page;
     }
-    tempo_.setBounds(16, tabs_.getHeight() - 66, width - 32, 24);
+    tempo_.setBounds(16, tabs_.getHeight() - 66, contentWidth - 32, 24);
     bypass_.setBounds(28, getHeight() - 82, 200, 28);
     meter_.setBounds(240, getHeight() - 82, getWidth() - 268, 28);
     pitch_.setBounds(24, getHeight() - 56, getWidth() - 48, 22);

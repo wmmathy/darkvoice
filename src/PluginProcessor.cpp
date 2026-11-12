@@ -124,6 +124,10 @@ darkvoice::EngineParameters DarkVoiceProcessor::snapshot() const noexcept {
     const auto actual = hostTempoBpm();
     if (raw_[45]->load(std::memory_order_relaxed) >= .5f && actual >= 20 && actual <= 300)
         p.stereoDelayBpm = actual;
+    p.doublerSeparationMs = raw_[46]->load(std::memory_order_relaxed);
+    p.doublerVariationMs = raw_[47]->load(std::memory_order_relaxed);
+    p.doublerRateHz = raw_[48]->load(std::memory_order_relaxed);
+    p.doublerMix = raw_[49]->load(std::memory_order_relaxed);
     return p;
 }
 void DarkVoiceProcessor::prepareToPlay(double rate, int maxFrames) {
@@ -221,7 +225,7 @@ void DarkVoiceProcessor::setStateInformation(const void *data, int bytes) {
         return;
     const auto version = xml->getStringAttribute("schemaVersion");
     if (version != "1" && version != "2" && version != "3" && version != "4" && version != "5" &&
-        version != "6" && version != "7" && version != "8")
+        version != "6" && version != "7" && version != "8" && version != "9")
         return;
     const auto count = darkvoice::parameterCountForVersion(version.getIntValue());
     const auto state = juce::ValueTree::fromXml(*xml);
