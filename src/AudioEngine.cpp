@@ -54,7 +54,8 @@ SpaceReverbParameters spaceParameters(const EngineParameters &p) noexcept {
 }
 
 VoiceSculptorParameters sculptorParameters(const EngineParameters &p) noexcept {
-    return {p.sculptBodyDb, p.sculptWarmthDb, p.sculptPresenceDb};
+    return {p.sculptBodyDb, p.sculptWarmthDb, p.sculptPresenceDb, p.sculptDepthDb,
+            p.sculptResonanceDb};
 }
 ColourParameters colourParameters(const EngineParameters &p) noexcept {
     return {p.colourModel, p.colourDrive, p.colourToneHz, p.colourMix};

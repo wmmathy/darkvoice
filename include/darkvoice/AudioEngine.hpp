@@ -49,6 +49,7 @@ struct EngineParameters {
     float colourDrive = .25f, colourToneHz = 16000, colourMix = 0;
     float sculptBodyDb = 0, sculptWarmthDb = 0, sculptPresenceDb = 0;
     float sculptBreathiness = 0;
+    float sculptDepthDb = 0, sculptResonanceDb = 0;
 };
 struct EngineMeters {
     float inputPeak = 0.0f;
