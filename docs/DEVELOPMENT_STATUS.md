@@ -442,3 +442,21 @@ finite527cap. Native CI/normal merge pending. Manual audition remains deferred.
 StereoDelayPR28 merged04a0b404 after exact8b3befe all7native39955609604 and
 quality39955609594 passed. RingfixPR29 merged0598ce915 after13a2a7a all7native
 39955678027 andquality39955678063 passed. DoublerPR30 remains pendingnative.
+
+## Room/hall/plate work package — 2026-10-23
+
+Architecture agent established concrete distinct4lineRoom/8lineHallFDN and
+crosscoupledallpassPlate recurrences; lead recorded SpaceReverbv1/schema10
+before assignments. deesser_review owns onlycore/header/tests in space-reverb-
+core; host owns engine/schema/processor/editor/presets/regressions in separate
+space-reverb-host, including actual15factory preservation. Lead owns CMake/static
+coverage/docs/integration; no proprietarydependency or changed legacyreverb.
+Manual listening remains deferred; stability/analytic/modelidentity/tail/RT
+fixtures and independentQA/nativeCI remain mandatory before normalmerge.
+
+Independent roundedlength mathQA found maxweightedfeedbackloop.99393549<1 across
+fourrates. It also corrected an initialtailassumption: movingpredelay canrepeat
+inputenergy, so activeSpace hosttail is60s ratherthan40s (oldneutral40 and
+musicaldelay240 retained). Pointwiseexponentialenvelope proof accounts for
+variabletone/modelweights and boundedinputduplication; no exactsilence or
+perceptualqualification claim. Host/sourcecontractamended beforeintegration.
