@@ -195,7 +195,7 @@ juce::Result decode(const juce::File &file, Preset &preset, bool local) {
     std::size_t position = 0;
     for (const auto &spec : parameterSchema) {
         const auto index = position++;
-        if (spec.boolean || index >= count)
+        if (juce::String(spec.id) == "bypass" || index >= count)
             continue;
         const auto value = values->getProperty(spec.id);
         if (!numeric(value))
@@ -206,7 +206,9 @@ juce::Result decode(const juce::File &file, Preset &preset, bool local) {
             return fail("Preset parameter outside range");
         // Controls use float values: decimal 0.1 must be accepted at a 0.1f bound.
         const float represented = static_cast<float>(number);
-        if (!std::isfinite(represented) || represented < spec.minimum || represented > spec.maximum)
+        if (!std::isfinite(represented) || represented < spec.minimum ||
+            represented > spec.maximum ||
+            (spec.boolean && represented != 0.0f && represented != 1.0f))
             return fail("Preset parameter outside range");
         candidate[spec.id] = represented;
     }
@@ -432,19 +434,20 @@ PresetBank::PresetBank(juce::File directory)
 PresetValues PresetBank::defaults() {
     PresetValues values;
     for (const auto &spec : parameterSchema)
-        if (!spec.boolean)
+        if (juce::String(spec.id) != "bypass")
             values[spec.id] = spec.defaultValue;
     return values;
 }
 juce::Result PresetBank::validate(const PresetValues &values) {
     if (values.size() != parameterSchema.size() - 1)
-        return fail("Preset must contain exactly twenty sound parameters");
+        return fail("Preset must contain exactly the current non-bypass sound parameters");
     for (const auto &spec : parameterSchema) {
-        if (spec.boolean)
+        if (juce::String(spec.id) == "bypass")
             continue;
         const auto value = values.find(spec.id);
         if (value == values.end() || !std::isfinite(value->second) ||
-            value->second < spec.minimum || value->second > spec.maximum)
+            value->second < spec.minimum || value->second > spec.maximum ||
+            (spec.boolean && value->second != 0.0f && value->second != 1.0f))
             return fail("Invalid preset sound parameter");
     }
     return juce::Result::ok();

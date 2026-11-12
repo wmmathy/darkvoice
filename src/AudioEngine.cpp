@@ -42,7 +42,8 @@ bool AudioEngine::prepare(double sampleRate, std::size_t maxFrames, std::size_t 
         !gate_.prepare(sampleRate, maxFrames, channels) ||
         !deEsser_.prepare(sampleRate, maxFrames, channels) ||
         !modulation_.prepare(sampleRate, maxFrames, channels) ||
-        !flanger_.prepare(sampleRate, maxFrames, channels))
+        !flanger_.prepare(sampleRate, maxFrames, channels) ||
+        !limiter_.prepare(sampleRate, maxFrames, channels))
         return false;
     rate_ = sampleRate;
     maxFrames_ = maxFrames;
@@ -60,7 +61,8 @@ bool AudioEngine::setParameters(const EngineParameters &p) noexcept {
         !NoiseGate::valid({p.gateThresholdDb, p.gateRatio, p.gateReleaseMs}) ||
         !DeEsser::valid({p.deEssHz, p.deEssThresholdDb, p.deEssReductionDb}) ||
         !ModulationEffects::valid({p.chorusRateHz, p.chorusDepthMs, p.chorusMix, p.stereoWidth}) ||
-        !Flanger::valid({p.flangerRateHz, p.flangerDepthMs, p.flangerFeedback, p.flangerMix}))
+        !Flanger::valid({p.flangerRateHz, p.flangerDepthMs, p.flangerFeedback, p.flangerMix}) ||
+        !VocalLimiter::valid({p.limiterCeilingDb, p.limiterReleaseMs}))
         return false;
     // All snapshots are fully validated before any target is replaced.
     if (!effects_.setParameters(toneParameters(p)))
@@ -70,6 +72,9 @@ bool AudioEngine::setParameters(const EngineParameters &p) noexcept {
     (void)modulation_.setParameters({p.chorusRateHz, p.chorusDepthMs, p.chorusMix, p.stereoWidth});
     (void)flanger_.setParameters(
         {p.flangerRateHz, p.flangerDepthMs, p.flangerFeedback, p.flangerMix});
+    (void)limiter_.setParameters({p.limiterCeilingDb, p.limiterReleaseMs});
+    if (p.limiterEnabled != target_.limiterEnabled)
+        limiter_.reset();
     target_ = p;
     return true;
 }
@@ -85,6 +90,7 @@ void AudioEngine::reset() noexcept {
     deEsser_.reset();
     modulation_.reset();
     flanger_.reset();
+    limiter_.reset();
 }
 
 bool AudioEngine::process(std::span<float *> channels, std::size_t frames) noexcept {
@@ -157,9 +163,15 @@ bool AudioEngine::process(std::span<float *> channels, std::size_t frames) noexc
                                           static_cast<double>(wet_[c][i]) * current_.mix) *
                                          outputGain);
             channels[c][i] = output;
-            meters_.outputPeak = std::max(meters_.outputPeak, std::abs(output));
         }
     }
+    // The limiter protects the final blend and output gain, including dry-only
+    // monitoring. Global bypass returned above before any limiter processing.
+    if (target_.limiterEnabled && !limiter_.process(channels, frames))
+        return false;
+    for (float *channel : channels)
+        for (std::size_t i = 0; i < frames; ++i)
+            meters_.outputPeak = std::max(meters_.outputPeak, std::abs(channel[i]));
     return true;
 }
 } // namespace darkvoice

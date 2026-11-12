@@ -6,6 +6,7 @@
 #include <darkvoice/ModulationEffects.hpp>
 #include <darkvoice/NoiseGate.hpp>
 #include <darkvoice/ToneEffects.hpp>
+#include <darkvoice/VocalLimiter.hpp>
 #include <span>
 #include <vector>
 namespace darkvoice {
@@ -27,6 +28,8 @@ struct EngineParameters {
     float gateThresholdDb = -50.0f, gateRatio = 1.0f, gateReleaseMs = 120.0f;
     float deEssHz = 6000.0f, deEssThresholdDb = -24.0f, deEssReductionDb = 0.0f;
     float flangerRateHz = .3f, flangerDepthMs = 2, flangerFeedback = 0, flangerMix = 0;
+    bool limiterEnabled = false;
+    float limiterCeilingDb = -1.0f, limiterReleaseMs = 100.0f;
     float chorusRateHz = .8f, chorusDepthMs = 6.0f, chorusMix = 0.0f, stereoWidth = 1.0f;
 };
 struct EngineMeters {
@@ -57,6 +60,7 @@ class AudioEngine {
     DeEsser deEsser_;
     ModulationEffects modulation_;
     Flanger flanger_;
+    VocalLimiter limiter_;
     std::array<std::vector<float>, 2> wet_;
 };
 } // namespace darkvoice

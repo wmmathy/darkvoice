@@ -2,7 +2,7 @@
 #include <cmath>
 namespace {
 const juce::Colour background{0xff111418}, panel{0xff1c2229}, accent{0xffe54b52}, text{0xffecedf0};
-constexpr std::array<const char *, 34> ids{"inputDb",
+constexpr std::array<const char *, 37> ids{"inputDb",
                                            "highPassHz",
                                            "drive",
                                            "thresholdDb",
@@ -35,8 +35,11 @@ constexpr std::array<const char *, 34> ids{"inputDb",
                                            "flangerRateHz",
                                            "flangerDepthMs",
                                            "flangerFeedback",
-                                           "flangerMix"};
-constexpr std::array<const char *, 34> names{"INPUT GAIN",
+                                           "flangerMix",
+                                           "limiterEnabled",
+                                           "limiterCeilingDb",
+                                           "limiterReleaseMs"};
+constexpr std::array<const char *, 37> names{"INPUT GAIN",
                                              "HIGH-PASS",
                                              "WARMTH DRIVE",
                                              "COMPRESSOR THRESHOLD",
@@ -69,11 +72,14 @@ constexpr std::array<const char *, 34> names{"INPUT GAIN",
                                              "FLANGER RATE",
                                              "FLANGER DEPTH",
                                              "FLANGER FEEDBACK",
-                                             "FLANGER MIX"};
-constexpr std::array<const char *, 34> suffixes{
-    " dB", " Hz", "",    " dB", ":1", "", " dB", " Hz", " dB", " Hz", " dB", "",
-    " Hz", " dB", " ms", "",    "",   "", "",    "",    " dB", ":1",  " ms", " Hz",
-    " dB", " dB", " Hz", " ms", "",   "", " Hz", " ms", "",    ""};
+                                             "FLANGER MIX",
+                                             "LIMITER ENABLE (0 = OFF, 1 = ON)",
+                                             "LIMITER CEILING",
+                                             "LIMITER RELEASE"};
+constexpr std::array<const char *, 37> suffixes{
+    " dB", " Hz", "", " dB", ":1",  "",    " dB", " Hz", " dB", " Hz", " dB", "",    " Hz",
+    " dB", " ms", "", "",    "",    "",    "",    " dB", ":1",  " ms", " Hz", " dB", " dB",
+    " Hz", " ms", "", "",    " Hz", " ms", "",    "",    "",    " dB", " ms"};
 juce::File presetDirectory(const juce::File &supplied) {
     if (supplied != juce::File{})
         return supplied;
@@ -110,6 +116,7 @@ DarkVoiceEditor::DarkVoiceEditor(DarkVoiceProcessor &p, juce::File root)
     tabs_.addTab("DE-ESSER", panel, &pages_[4], false);
     tabs_.addTab("CHORUS / WIDTH", panel, &pages_[5], false);
     tabs_.addTab("FLANGER", panel, &pages_[6], false);
+    tabs_.addTab("LIMITER", panel, &pages_[7], false);
     addAndMakeVisible(tabs_);
     for (std::size_t i = 0; i < sliders_.size(); ++i) {
         auto &slider = sliders_[i];
@@ -119,7 +126,9 @@ DarkVoiceEditor::DarkVoiceEditor(DarkVoiceProcessor &p, juce::File root)
         slider.setName(names[i]);
         slider.setTitle(names[i]);
         slider.setTooltip(
-            i >= 30   ? "Flanger mix 0 is off. Signed feedback changes the comb character."
+            i >= 34 ? "Default off. Final-output sample-peak limiting, not true-peak. Enable 0 is "
+                      "off; 1 is on."
+            : i >= 30 ? "Flanger mix 0 is off. Signed feedback changes the comb character."
             : i >= 26 ? "Chorus mix 0 is off. Width 1 is neutral; 0 folds stereo to mono. "
                         "Wide settings can increase peaks; width is a no-op in mono."
             : i >= 23 ? "Split-band de-esser; max reduction 0 disables attenuation. "
@@ -133,7 +142,8 @@ DarkVoiceEditor::DarkVoiceEditor(DarkVoiceProcessor &p, juce::File root)
                           : i < 23 ? 3U
                           : i < 26 ? 4U
                           : i < 30 ? 5U
-                                   : 6U;
+                          : i < 34 ? 6U
+                                   : 7U;
         pages_[page].addAndMakeVisible(slider);
         labels_[i].setText(names[i], juce::dontSendNotification);
         labels_[i].setColour(juce::Label::textColourId, juce::Colour(0xffb5bdc7));
@@ -336,14 +346,16 @@ void DarkVoiceEditor::resized() {
                           : i < 23 ? 3U
                           : i < 26 ? 4U
                           : i < 30 ? 5U
-                                   : 6U;
+                          : i < 34 ? 6U
+                                   : 7U;
         const auto row = i < 7    ? i
                          : i < 14 ? i - 7
                          : i < 20 ? i - 14
                          : i < 23 ? i - 20
                          : i < 26 ? i - 23
                          : i < 30 ? i - 26
-                                  : i - 30;
+                         : i < 34 ? i - 30
+                                  : i - 34;
         const int rowHeight = (tabs_.getHeight() - 48) / 7;
         const int y = 14 + static_cast<int>(row) * rowHeight;
         labels_[i].setBounds(16, y, 205, 24);

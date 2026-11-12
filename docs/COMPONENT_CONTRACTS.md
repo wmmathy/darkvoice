@@ -355,3 +355,24 @@ latency or callback changes. Six correction/choir/octave/double-track presets
 remain pending their actual DSP. Acceptance: unique validated full snapshots,
 persistence/migration regressions, and finite non-silent product rendering at all
 four supported rates in mono/stereo. Names describe styles, not qualified naturalness.
+
+### Vocal limiter host integration v7
+
+Route VocalLimiter after final dry/wet blend and output gain, before output meters.
+Global bypass remains exact and bypasses limiting. Append three parameters after
+all35 existing IDs: limiterEnabled boolean default0; limiterCeilingDb [-24,0]
+default-1 step.1; limiterReleaseMs [5,1000] default100 step1. AU hint7, state/preset
+schema7 with38 total/37 non-bypass fields. Strict versions1..6 migrate enabled=0,
+ceiling=-1,release=100; preserve prior settings/IDs/hints. Existing14factories remain
+limiter-off. A limiter applies to the final output even at dry/wet0, when enabled.
+Enable changes act at block boundary; reset reduction on enabled transition to
+avoid stale attenuation. Ceiling changes protect the next sample; release remains
+continuous otherwise. No added latency. Not true-peak or oversampled.
+
+Editor adds an eighth Limiter tab with three real controls (enable exposed as
+0/1 slider consistent with attachment infrastructure and clearly labelled).
+Acceptance: core remains13suites, product limiter audio ceiling after output gain
+and dry/wet, linked stereo/release/disable/bypass/neutral defaults; exact v6
+migration and v7 nondefault state/preset roundtrips, invalid snapshots atomic,
+all rates/layouts/variable buffers and callback allocation safety; GUI37 controls
+and all attachments/eighttabs. Native CI/auval and independent review before merge.
