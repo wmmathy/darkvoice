@@ -1157,3 +1157,9 @@ feature/qualification/world-source-filter. Strict authored compile, FFT invarian
 CLI/corruption guards, complete matrix report and fingerprints before commit.
 Independent QA before any streaming or product backend contract. Manual deferred;
 no realtime, naturalness, unvoiced-transition or release claim from this matrix.
+
+Matrix Hann clarification: preserve the existing unconstrained full-spectrum
+Hann peak unchanged and additionally report a separately named200–3000Hz Hann
+peak for the vowel envelope diagnostic. Both are exploratory; neither replaces
+the original target-window nominal-grid search or any hard gate. Record search
+limits explicitly and leave retained42 metrics unchanged.
