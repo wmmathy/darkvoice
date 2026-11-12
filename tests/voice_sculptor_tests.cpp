@@ -69,7 +69,12 @@ std::complex<double> transfer(double rate, double frequency, Parameters p) {
         std::tan(std::numbers::pi * frequency / rate) / std::tan(std::numbers::pi * 450 / rate);
     const auto low = 1.0 / std::complex<double>(1, u);
     const double a = std::pow(10., p.warmthDb / 40.), b = std::pow(10., -p.warmthDb / 40.);
-    return (1.0 + (std::pow(10., p.bodyDb / 20.) - 1) * band(180, .85)) * (b + (a - b) * low) *
+    const double depthU =
+        std::tan(std::numbers::pi * frequency / rate) / std::tan(std::numbers::pi * 90 / rate);
+    const auto depthLow = 1.0 / std::complex<double>(1, depthU);
+    return (1.0 + (std::pow(10., p.depthDb / 20.) - 1) * depthLow) *
+           (1.0 + (std::pow(10., p.bodyDb / 20.) - 1) * band(180, .85)) * (b + (a - b) * low) *
+           (1.0 + (std::pow(10., p.resonanceDb / 20.) - 1) * band(700, 1.6)) *
            (1.0 + (std::pow(10., p.presenceDb / 20.) - 1) * band(3000, .7));
 }
 std::complex<double> fit(const std::vector<float> &samples, double rate, double frequency) {
@@ -157,6 +162,78 @@ void spectral(double rate, std::size_t channels) {
           "body warmth and presence have distinct spectral operations");
 }
 
+// V2 response proof uses the same independent analog/bilinear oracle, not
+// production coefficient formulas. All32 five-control endpoint combinations are
+// included, plus isolated endpoint/intermediate settings for both new controls.
+void spectralV2(double rate, std::size_t channels) {
+    VoiceSculptor fx;
+    check(fx.prepare(rate, 257, channels), "v2 spectral preparation");
+    std::vector<Parameters> settings;
+    for (float gain : {-6.f, -3.f, 3.f, 6.f}) {
+        settings.push_back({0, 0, 0, gain, 0});
+        settings.push_back({0, 0, 0, 0, gain});
+    }
+    for (unsigned bits = 0; bits < 32; ++bits) {
+        const auto gain = [bits](unsigned bit) { return bits & (1U << bit) ? 6.f : -6.f; };
+        settings.push_back({gain(0), gain(1), gain(2), gain(3), gain(4)});
+    }
+    for (const auto p : settings) {
+        check(fx.setParameters(p), "v2 spectral target accepted");
+        for (double frequency : {70., 90., 180., 450., 700., 3000., 16000.}) {
+            fx.reset();
+            std::vector<float> left(8192), right;
+            for (std::size_t i = 0; i < left.size(); ++i)
+                left[i] =
+                    static_cast<float>(.1 * std::sin(2 * std::numbers::pi * frequency * i / rate));
+            if (channels == 2)
+                right = left;
+            check(render(fx, left, channels == 2 ? &right : nullptr, 257), "v2 spectral render");
+            const auto measured = fit(left, rate, frequency),
+                       expected = transfer(rate, frequency, p);
+            check(std::abs(20 * std::log10(std::abs(measured) / std::abs(expected))) < .02 &&
+                      std::abs(measured - expected) < 2e-5,
+                  "v2 independent complex transfer and unchanged .02dB/2e-5 gates");
+            if (channels == 2)
+                check(left == right, "v2 dualmono spectral identity");
+        }
+    }
+    for (float gain : {-6.f, -3.f, 3.f, 6.f}) {
+        check(std::abs(20 * std::log10(std::abs(transfer(rate, 700, {0, 0, 0, 0, gain}))) - gain) <
+                  1e-10,
+              "analytic resonance exact700Hz gain");
+        for (bool nyquist : {false, true}) {
+            check(fx.setParameters({0, 0, 0, gain, 0}), "depth endpoint target");
+            fx.reset();
+            std::vector<float> left(4096, .1f), right;
+            if (nyquist)
+                for (std::size_t i = 1; i < left.size(); i += 2)
+                    left[i] = -.1f;
+            if (channels == 2)
+                right = left;
+            check(render(fx, left, channels == 2 ? &right : nullptr, 257),
+                  "depth DC/Nyquist render");
+            check(std::abs(20 * std::log10(std::abs(left.back()) / .1) - (nyquist ? 0 : gain)) <
+                      .002,
+                  "depth requested low-frequency endpoint and unity high endpoint");
+        }
+    }
+    bool bound = true;
+    for (unsigned bits = 0; bits < 32; ++bits) {
+        const auto gain = [bits](unsigned bit) { return bits & (1U << bit) ? 6.f : -6.f; };
+        const Parameters p{gain(0), gain(1), gain(2), gain(3), gain(4)};
+        for (int i = 1; i < 2048; ++i)
+            bound &=
+                std::abs(transfer(rate, rate * i / 4096, p)) <= std::pow(10., 27. / 20.) + 1e-12;
+    }
+    check(bound, "v2 five-stage static magnitude bounded by conservative27dB");
+    check(std::abs(transfer(rate, 70, {0, 0, 0, 6, 0})) > std::abs(transfer(rate, 70, {6, 0, 0})) &&
+              std::abs(transfer(rate, 700, {0, 0, 0, 0, 6})) >
+                  std::abs(transfer(rate, 700, {6, 0, 0})) &&
+              std::abs(transfer(rate, 16000, {0, 6, 0})) <
+                  std::abs(transfer(rate, 16000, {0, 0, 0, 6, 0})),
+          "depth resonance and existing tone stages have distinct spectral responses");
+}
+
 // Independent time-domain oracle: trapezoidal-integrator state-variable filters,
 // unlike production transposed direct form II. Smoothed weights use a closed
 // exponential envelope rather than the production iterative update.
@@ -172,12 +249,13 @@ struct Reference {
             return 2 * r * band;
         }
     };
-    std::array<Band, 2> bands;
+    std::array<Band, 3> bands;
     long double lowState = 0;
     double rate;
-    std::array<long double, 4> start{0, 1, 1, 0}, target{0, 1, 1, 0};
+    std::array<long double, 6> start{0, 1, 1, 0, 0, 0}, target{0, 1, 1, 0, 0, 0};
     std::size_t age = 0;
-    std::array<long double, 4> weights() const {
+    long double depthState = 0;
+    std::array<long double, 6> weights() const {
         auto values = target;
         const auto decay = std::exp(-static_cast<long double>(age) / (.010L * rate));
         for (std::size_t i = 0; i < values.size(); ++i)
@@ -186,8 +264,9 @@ struct Reference {
     }
     void set(Parameters p, bool settle = false) {
         start = weights();
-        target = {std::pow(10.L, p.bodyDb / 20.L) - 1, std::pow(10.L, p.warmthDb / 40.L),
-                  std::pow(10.L, -p.warmthDb / 40.L), std::pow(10.L, p.presenceDb / 20.L) - 1};
+        target = {std::pow(10.L, p.bodyDb / 20.L) - 1,  std::pow(10.L, p.warmthDb / 40.L),
+                  std::pow(10.L, -p.warmthDb / 40.L),   std::pow(10.L, p.presenceDb / 20.L) - 1,
+                  std::pow(10.L, p.depthDb / 20.L) - 1, std::pow(10.L, p.resonanceDb / 20.L) - 1};
         if (settle)
             start = target;
         age = 0;
@@ -196,6 +275,10 @@ struct Reference {
         ++age;
         const auto w = weights();
         long double x = input;
+        const auto kd = std::tan(std::numbers::pi_v<long double> * 90 / rate);
+        const auto depth = (kd * x + depthState) / (1 + kd);
+        depthState = 2 * depth - depthState;
+        x += w[4] * depth;
         const auto body =
             bands[0].process(x, std::tan(std::numbers::pi_v<long double> * 180 / rate), .85L);
         x += w[0] * body;
@@ -203,6 +286,9 @@ struct Reference {
         const auto low = (k * x + lowState) / (1 + k);
         lowState = 2 * low - lowState;
         x = w[2] * x + (w[1] - w[2]) * low;
+        const auto resonance =
+            bands[2].process(x, std::tan(std::numbers::pi_v<long double> * 700 / rate), 1.6L);
+        x += w[5] * resonance;
         const auto presence =
             bands[1].process(x, std::tan(std::numbers::pi_v<long double> * 3000 / rate), .7L);
         return static_cast<float>(x + w[3] * presence);
@@ -211,7 +297,10 @@ struct Reference {
 
 void automation(double rate, std::size_t channels) {
     for (const auto setting :
-         {Parameters{6, 0, 0}, Parameters{0, -6, 0}, Parameters{0, 0, 6}, Parameters{6, -3, -6}}) {
+         {Parameters{6, 0, 0}, Parameters{0, -6, 0}, Parameters{0, 0, 6}, Parameters{6, -3, -6},
+          Parameters{0, 0, 0, 6, 0}, Parameters{0, 0, 0, -6, 0}, Parameters{0, 0, 0, 0, 6},
+          Parameters{0, 0, 0, 0, -6}, Parameters{3, -4, 6, -5, 2},
+          Parameters{-3, 6, -5, 3.7f, -2.3f}}) {
         VoiceSculptor fx, split;
         check(fx.prepare(rate, 257, channels) && split.prepare(rate, 257, channels),
               "automation preparation");
@@ -375,13 +464,142 @@ void behavior(double rate, std::size_t channels) {
     check(close(a, sum, 3e-7), "static module superposition");
 }
 
-void longDecay(double rate, std::size_t channels) {
+void behaviorV2(double rate, std::size_t channels) {
+    VoiceSculptor actual, expected;
+    const Parameters p{3, -2, 5, 4, -3};
+    check(actual.prepare(rate, 257, channels) && expected.prepare(rate, 257, channels) &&
+              actual.setParameters(p) && expected.setParameters(p),
+          "v2 active lifecycle preparation");
+    actual.reset();
+    expected.reset();
+    auto left = source(2048), right = left, baseline = left, baselineRight = right;
+    check(render(actual, left, channels == 2 ? &right : nullptr, 257) &&
+              render(expected, baseline, channels == 2 ? &baselineRight : nullptr, 17) &&
+              left == baseline && (channels == 1 || right == baselineRight),
+          "v2 active controls exact irregular partition reference");
+    for (float bad :
+         {-6.001f, 6.001f, std::numeric_limits<float>::quiet_NaN(),
+          std::numeric_limits<float>::infinity(), -std::numeric_limits<float>::infinity()}) {
+        auto invalid = p;
+        invalid.bodyDb = -6;
+        invalid.depthDb = bad;
+        check(!actual.setParameters(invalid),
+              "v2 invalid depth atomically rejects other target changes");
+        invalid = p;
+        invalid.warmthDb = 6;
+        invalid.resonanceDb = bad;
+        check(!actual.setParameters(invalid),
+              "v2 invalid resonance atomically rejects other target changes");
+    }
+    std::array<float, 257> empty{}, second{};
+    std::array<float *, 2> ptr{empty.data(), second.data()};
+    check(actual.process(std::span<float *>(ptr.data(), channels), 0) &&
+              !actual.process(std::span<float *>(ptr.data(), channels), 258),
+          "v2 empty and invalid calls cannot advance new filter histories");
+    left = source(2048);
+    right = left;
+    baseline = left;
+    baselineRight = right;
+    check(render(actual, left, channels == 2 ? &right : nullptr, 257) &&
+              render(expected, baseline, channels == 2 ? &baselineRight : nullptr, 13) &&
+              left == baseline && (channels == 1 || right == baselineRight),
+          "v2 rejected snapshots and calls preserve all accepted states");
+    actual.reset();
+    expected.reset();
+    left = source(2048);
+    right = left;
+    baseline = left;
+    baselineRight = right;
+    check(render(actual, left, channels == 2 ? &right : nullptr, 257) &&
+              render(expected, baseline, channels == 2 ? &baselineRight : nullptr, 13) &&
+              left == baseline && actual.latencySamples() == 0,
+          "v2 reset clears new histories and settles all target weights without added latency");
+    const auto before = allocations.load();
+    rejectAllocation = true;
+    bool safe = actual.setParameters({-6, 6, -6, 6, -6});
+    for (int block = 0; block < 8; ++block)
+        safe &= actual.process(std::span<float *>(ptr.data(), channels), 257);
+    actual.reset();
+    rejectAllocation = false;
+    check(safe && allocations == before, "v2 active process/set/reset allocate nothing");
+    for (float gain : {-6.f, 6.f}) {
+        check(actual.setParameters({gain, gain, gain, gain, gain}), "v2 finite extreme target");
+        actual.reset();
+        left.assign(2048, std::numeric_limits<float>::max());
+        for (std::size_t i = 1; i < left.size(); i += 2)
+            left[i] = -left[i];
+        right = left;
+        check(render(actual, left, channels == 2 ? &right : nullptr, 257) &&
+                  std::all_of(left.begin(), left.end(), [](float x) { return std::isfinite(x); }),
+              "v2 combined extremes keep finite input/output finite");
+    }
+}
+
+#ifdef DARKVOICE_TEST_LEGACY_V1
+// Build this optional proof with the pinned49ec v1 header/source renamed into
+// darkvoice_v1 in a temporary directory. Both versions share one compiler/process;
+// portable fixed audio hashes are deliberately not used.
+void legacyCompatibility() {
+    std::size_t compared = 0;
+    for (double rate : {44100., 48000., 88200., 96000.})
+        for (std::size_t channels : {1U, 2U}) {
+            VoiceSculptor current;
+            darkvoice_v1::VoiceSculptor prior;
+            check(current.prepare(rate, 257, channels) && prior.prepare(rate, 257, channels),
+                  "v1/v2 temporary-reference preparation");
+            std::size_t absolute = 0;
+            for (std::size_t segment = 0; segment < 12; ++segment) {
+                const auto p = std::array<Parameters, 4>{
+                    {{}, {6, -6, 6}, {-3.7f, 2.3f, -5.1f}, {-6, 6, -6}}}[segment % 4];
+                if (segment == 7)
+                    check(current.prepare(rate, 257, channels) &&
+                              prior.prepare(rate, 257, channels),
+                          "v1/v2 reprepare lifecycle");
+                check(current.setParameters(p) &&
+                          prior.setParameters({p.bodyDb, p.warmthDb, p.presenceDb}),
+                      "v1/v2 old-control automation accepted");
+                if (segment % 3 == 0) {
+                    current.reset();
+                    prior.reset();
+                }
+                bool identical = true;
+                for (std::size_t at = 0; at < 773;) {
+                    const auto n = std::min<std::size_t>(
+                        773 - at, std::array<std::size_t, 5>{1, 13, 257, 71, 19}[at % 5]);
+                    std::array<std::array<float, 257>, 2> a{}, b{};
+                    for (std::size_t c = 0; c < channels; ++c)
+                        for (std::size_t i = 0; i < n; ++i)
+                            a[c][i] = b[c][i] =
+                                static_cast<float>(.17 * std::sin(.037 * (absolute + i) + c) +
+                                                   .11 * std::cos(.211 * (absolute + i) + .7 * c));
+                    std::array<float *, 2> pa{a[0].data(), a[1].data()},
+                        pb{b[0].data(), b[1].data()};
+                    identical &= current.process(std::span<float *>(pa.data(), channels), n) &&
+                                 prior.process(std::span<float *>(pb.data(), channels), n);
+                    for (std::size_t c = 0; c < channels; ++c)
+                        for (std::size_t i = 0; i < n; ++i) {
+                            identical &= std::bit_cast<std::uint32_t>(a[c][i]) ==
+                                         std::bit_cast<std::uint32_t>(b[c][i]);
+                            ++compared;
+                        }
+                    at += n;
+                    absolute += n;
+                }
+                check(identical, "v2 new-zero stages retain bitwise v1 output through "
+                                 "automation/reset/reprepare");
+            }
+        }
+    std::printf("Legacy same-platform v1/v2 samples compared: %zu\n", compared);
+}
+#endif
+
+void longDecay(double rate, std::size_t channels, Parameters seed = {6, 0, 0}) {
     VoiceSculptor fx;
-    check(fx.prepare(rate, 257, channels) && fx.setParameters({6, 0, 0}), "long-decay preparation");
+    check(fx.prepare(rate, 257, channels) && fx.setParameters(seed), "long-decay preparation");
     fx.reset();
     check(fx.setParameters({}), "decay target neutral");
     // Fixed, continuously excited filters keep their histories normal. Only the
-    // fading body weight approaches the double-subnormal range after ~7 seconds.
+    // fading contribution weights approach the double-subnormal range after ~7 seconds.
     // An unflushed weight eventually stalls there and continues raising floating
     // underflow on each update. After true-subnormal flushing it stays exactzero.
     const auto input = source(257);
@@ -463,12 +681,18 @@ DV_NOINLINE void operator delete[](void *p, std::size_t) noexcept {
 
 int main() {
     lifecycle();
+#ifdef DARKVOICE_TEST_LEGACY_V1
+    legacyCompatibility();
+#endif
     for (double rate : {44100., 48000., 88200., 96000.})
         for (std::size_t channels : {1U, 2U}) {
             spectral(rate, channels);
+            spectralV2(rate, channels);
             automation(rate, channels);
             behavior(rate, channels);
+            behaviorV2(rate, channels);
             longDecay(rate, channels);
+            longDecay(rate, channels, {0, 0, 0, 6, 6});
         }
     std::printf("VoiceSculptor checks: %d, failures: %d\n", checks, failures);
     return failures == 0 ? 0 : 1;

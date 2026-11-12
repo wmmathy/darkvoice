@@ -7,6 +7,7 @@
 namespace darkvoice {
 struct VoiceSculptorParameters {
     float bodyDb = 0, warmthDb = 0, presenceDb = 0;
+    float depthDb = 0, resonanceDb = 0;
 };
 
 class VoiceSculptor {
@@ -27,6 +28,6 @@ class VoiceSculptor {
   private:
     struct Impl;
     std::unique_ptr<Impl> impl_;
-    std::array<double, 4> targets_{0, 1, 1, 0};
+    std::array<double, 6> targets_{0, 1, 1, 0, 0, 0};
 };
 } // namespace darkvoice

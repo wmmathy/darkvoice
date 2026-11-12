@@ -36,9 +36,9 @@ Coefficients bandpass(double rate, double frequency, double q) noexcept {
 struct VoiceSculptor::Impl {
     std::size_t maxFrames = 0, channelCount = 0;
     double smoothing = 0;
-    std::array<Coefficients, 3> coefficients;
-    std::array<std::array<Filter, 3>, 2> channels{};
-    std::array<double, 4> weights{0, 1, 1, 0};
+    std::array<Coefficients, 5> coefficients;
+    std::array<std::array<Filter, 5>, 2> channels{};
+    std::array<double, 6> weights{0, 1, 1, 0, 0, 0};
 };
 
 VoiceSculptor::VoiceSculptor() noexcept = default;
@@ -46,7 +46,8 @@ VoiceSculptor::~VoiceSculptor() = default;
 
 bool VoiceSculptor::valid(const VoiceSculptorParameters &p) noexcept {
     const auto validGain = [](float x) { return std::isfinite(x) && x >= -6 && x <= 6; };
-    return validGain(p.bodyDb) && validGain(p.warmthDb) && validGain(p.presenceDb);
+    return validGain(p.bodyDb) && validGain(p.warmthDb) && validGain(p.presenceDb) &&
+           validGain(p.depthDb) && validGain(p.resonanceDb);
 }
 
 bool VoiceSculptor::prepare(double rate, std::size_t maxFrames, std::size_t channels) noexcept {
@@ -60,11 +61,15 @@ bool VoiceSculptor::prepare(double rate, std::size_t maxFrames, std::size_t chan
         next->channelCount = channels;
         next->smoothing = 1 - std::exp(-1 / (.010 * rate));
         const double k = std::tan(std::numbers::pi * 450 / rate);
-        next->coefficients = {bandpass(rate, 180, .85),
-                              Coefficients{k / (1 + k), k / (1 + k), 0, (k - 1) / (k + 1), 0},
-                              bandpass(rate, 3000, .7)};
+        const double depth = std::tan(std::numbers::pi * 90 / rate);
+        next->coefficients = {
+            bandpass(rate, 180, .85),
+            Coefficients{k / (1 + k), k / (1 + k), 0, (k - 1) / (k + 1), 0},
+            bandpass(rate, 3000, .7),
+            Coefficients{depth / (1 + depth), depth / (1 + depth), 0, (depth - 1) / (depth + 1), 0},
+            bandpass(rate, 700, 1.6)};
         impl_ = std::move(next);
-        targets_ = {0, 1, 1, 0};
+        targets_ = {0, 1, 1, 0, 0, 0};
         reset();
         return true;
     } catch (...) {
@@ -75,8 +80,9 @@ bool VoiceSculptor::prepare(double rate, std::size_t maxFrames, std::size_t chan
 bool VoiceSculptor::setParameters(const VoiceSculptorParameters &p) noexcept {
     if (!valid(p))
         return false;
-    targets_ = {std::pow(10.0, p.bodyDb / 20.0) - 1, std::pow(10.0, p.warmthDb / 40.0),
-                std::pow(10.0, -p.warmthDb / 40.0), std::pow(10.0, p.presenceDb / 20.0) - 1};
+    targets_ = {std::pow(10.0, p.bodyDb / 20.0) - 1,  std::pow(10.0, p.warmthDb / 40.0),
+                std::pow(10.0, -p.warmthDb / 40.0),   std::pow(10.0, p.presenceDb / 20.0) - 1,
+                std::pow(10.0, p.depthDb / 20.0) - 1, std::pow(10.0, p.resonanceDb / 20.0) - 1};
     return true;
 }
 
@@ -105,6 +111,9 @@ bool VoiceSculptor::process(std::span<float *> channels, std::size_t frames) noe
         for (std::size_t c = 0; c < channels.size(); ++c) {
             auto &filters = p.channels[c];
             double x = cleanInput(channels[c][i]);
+            const double depth = filters[3].process(x, p.coefficients[3]);
+            if (p.weights[4] != 0)
+                x += p.weights[4] * depth;
             const double body = filters[0].process(x, p.coefficients[0]);
             if (p.weights[0] != 0)
                 x += p.weights[0] * body;
@@ -113,6 +122,9 @@ bool VoiceSculptor::process(std::span<float *> channels, std::size_t frames) noe
             // every fixed filter continues tracking its own stage input.
             if (p.weights[1] != 1 || p.weights[2] != 1)
                 x = p.weights[2] * x + (p.weights[1] - p.weights[2]) * low;
+            const double resonance = filters[4].process(x, p.coefficients[4]);
+            if (p.weights[5] != 0)
+                x += p.weights[5] * resonance;
             const double presence = filters[2].process(x, p.coefficients[2]);
             if (p.weights[3] != 0)
                 x += p.weights[3] * presence;
