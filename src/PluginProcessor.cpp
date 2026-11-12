@@ -133,6 +133,10 @@ darkvoice::EngineParameters DarkVoiceProcessor::snapshot() const noexcept {
     p.spaceToneHz = raw_[52]->load(std::memory_order_relaxed);
     p.spacePreDelayMs = raw_[53]->load(std::memory_order_relaxed);
     p.spaceMix = raw_[54]->load(std::memory_order_relaxed);
+    p.colourModel = discrete(raw_[55]->load(std::memory_order_relaxed), 1);
+    p.colourDrive = raw_[56]->load(std::memory_order_relaxed);
+    p.colourToneHz = raw_[57]->load(std::memory_order_relaxed);
+    p.colourMix = raw_[58]->load(std::memory_order_relaxed);
     return p;
 }
 void DarkVoiceProcessor::prepareToPlay(double rate, int maxFrames) {
@@ -156,7 +160,8 @@ void DarkVoiceProcessor::releaseResources() {
     hostTempoBpm_.store(0, std::memory_order_relaxed);
     prepared_ = false;
     dryAnalysis_.release();
-    engine_.reset();
+    engine_.release();
+    setLatencySamples(0);
     inputPeak_.store(0, std::memory_order_relaxed);
     outputPeak_.store(0, std::memory_order_relaxed);
 }
@@ -170,6 +175,12 @@ void DarkVoiceProcessor::updateHostTempo() noexcept {
     hostTempoBpm_.store(tempo, std::memory_order_relaxed);
 }
 void DarkVoiceProcessor::processBlock(juce::AudioBuffer<float> &audio, juce::MidiBuffer &) {
+    processAudio(audio, false);
+}
+void DarkVoiceProcessor::processBlockBypassed(juce::AudioBuffer<float> &audio, juce::MidiBuffer &) {
+    processAudio(audio, true);
+}
+void DarkVoiceProcessor::processAudio(juce::AudioBuffer<float> &audio, bool forceBypass) {
     juce::ScopedNoDenormals noDenormals;
     if (!prepared_ || audio.getNumChannels() != getTotalNumInputChannels() ||
         audio.getNumChannels() < 1 || audio.getNumChannels() > 2) {
@@ -189,9 +200,10 @@ void DarkVoiceProcessor::processBlock(juce::AudioBuffer<float> &audio, juce::Mid
         std::array<float *, 2> channels{audio.getWritePointer(0) + offset, nullptr};
         if (audio.getNumChannels() == 2)
             channels[1] = audio.getWritePointer(1) + offset;
-        if (!engine_.process(std::span<float *>(channels.data(),
-                                                static_cast<std::size_t>(audio.getNumChannels())),
-                             count)) {
+        const auto channelSpan =
+            std::span<float *>(channels.data(), static_cast<std::size_t>(audio.getNumChannels()));
+        if (!(forceBypass ? engine_.processBypassed(channelSpan, count)
+                          : engine_.process(channelSpan, count))) {
             audio.clear();
             inPeak = outPeak = 0;
             break;
@@ -230,7 +242,8 @@ void DarkVoiceProcessor::setStateInformation(const void *data, int bytes) {
         return;
     const auto version = xml->getStringAttribute("schemaVersion");
     if (version != "1" && version != "2" && version != "3" && version != "4" && version != "5" &&
-        version != "6" && version != "7" && version != "8" && version != "9" && version != "10")
+        version != "6" && version != "7" && version != "8" && version != "9" && version != "10" &&
+        version != "11")
         return;
     const auto count = darkvoice::parameterCountForVersion(version.getIntValue());
     const auto state = juce::ValueTree::fromXml(*xml);
@@ -256,7 +269,8 @@ void DarkVoiceProcessor::setStateInformation(const void *data, int bytes) {
             return;
         if ((id == "stereoDelayMode" && !darkvoice::exactSmallIntegerNumber(numberText, 2)) ||
             (id == "stereoDelayDivision" && !darkvoice::exactSmallIntegerNumber(numberText, 5)) ||
-            (id == "spaceModel" && !darkvoice::exactSmallIntegerNumber(numberText, 2)))
+            (id == "spaceModel" && !darkvoice::exactSmallIntegerNumber(numberText, 2)) ||
+            (id == "colourModel" && !darkvoice::exactSmallIntegerNumber(numberText, 1)))
             return;
         std::istringstream parser(numberText);
         parser.imbue(std::locale::classic());
@@ -266,7 +280,8 @@ void DarkVoiceProcessor::setStateInformation(const void *data, int bytes) {
             value < spec.minimum || value > spec.maximum ||
             (spec.boolean && value != 0 && value != 1))
             return;
-        if ((id == "stereoDelayMode" || id == "stereoDelayDivision" || id == "spaceModel") &&
+        if ((id == "stereoDelayMode" || id == "stereoDelayDivision" || id == "spaceModel" ||
+             id == "colourModel") &&
             std::trunc(value) != value)
             return;
         seen[index] = true;
