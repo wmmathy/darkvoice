@@ -1120,3 +1120,40 @@ remain hardfailures, notsilently converted. Ifallcandidatesunavailable or below
 scorethreshold, returnunvoiced0. No groundtruth/prescribedvoicing fallback.
 Tie selection is against the globalmaximumscore set (within1e-6), thenhighestF0,
 so candidateiterationorder cannotchange selection through tiechains.
+
+## Periodicity backend expanded stationary qualification v1 — 2026-11-12
+
+Independent QA approved dca1cdf as an offline diagnostic, including fresh FFT
+and narrow3, independent waveform selection/refinement at critical retained
+rows and preserved legacy failures. Extend ONLY the existing fixed periodicity
+algorithm to the original combined matrix from sculptor_tests.cpp at fa4af297:
+2 rates(48000,96000) ×3 sourceF0(70,100,180) ×2 Gaussian centers(600,1200)
+×5 pitch shifts(-12,-7,0,7,12) ×3 formant shifts(-7,0,7) =180 renders. Same
+2-second float synthesis, original final-half correlation/search arithmetic,
+all4 candidate settings, NCCF/refinement/tie/unavailable policy unchanged.
+
+Hard gates: every output expected length, finite, positive energy; every
+expected-F0 lag correlation strictly>.8; input estimator coverage>=.9 and median
+absolute cents error<=20. Preserve the original nearest-grid resolvability test
+and report grid-envelope peaks/errors as exploratory (not replacement for
+periodicity or an independent spectral proof). Also report separate broad Hann
+peaks, same declared search limits; no tuning based on rows. Count180 audio
+cases, do not falsely claim540 lifecycle assertions. Emit all failures; analyser
+returns nonzero for hard-gate failure, not silent row omissions. Existing42 and
+controls/narrow suites remain available unchanged.
+
+Optional exact-input analysis reuse avoids recomputing identical source F0
+trajectories for15 pitch/formant settings. Cache key MUST compare sample rate
+and complete original float bytes, not expectedF0/center/case labels. Cache only
+4 candidate contours/status, selection scores and selected inputF0; spectral
+analysis/D4C/warp/synthesis remain fresh per render. Record cache hits and source
+identity. Validate two representative cold/hot trajectories bitwise before use.
+Independent analyser may reuse waveform-decision verification only when original
+input bytes, rate, all contour/status/score bytes match exactly; it must still
+measure output and hard gates for all180 renders. No candidate/fixture search.
+
+Writer same four diagnostic files, worktree world-source-filter, branch
+feature/qualification/world-source-filter. Strict authored compile, FFT invariant,
+CLI/corruption guards, complete matrix report and fingerprints before commit.
+Independent QA before any streaming or product backend contract. Manual deferred;
+no realtime, naturalness, unvoiced-transition or release claim from this matrix.
