@@ -85,7 +85,7 @@ void snapshotsAndSmoothing() {
     p.mix = 0;
     p.outputDb = 12;
     check(engine.setParameters(p) && reference.setParameters(p), "valid parameter snapshot");
-    const std::array<float darkvoice::EngineParameters::*, 54> fields{
+    const std::array<float darkvoice::EngineParameters::*, 55> fields{
         &darkvoice::EngineParameters::inputDb,
         &darkvoice::EngineParameters::outputDb,
         &darkvoice::EngineParameters::highPassHz,
@@ -139,7 +139,8 @@ void snapshotsAndSmoothing() {
         &darkvoice::EngineParameters::colourMix,
         &darkvoice::EngineParameters::sculptBodyDb,
         &darkvoice::EngineParameters::sculptWarmthDb,
-        &darkvoice::EngineParameters::sculptPresenceDb};
+        &darkvoice::EngineParameters::sculptPresenceDb,
+        &darkvoice::EngineParameters::sculptBreathiness};
     for (int value : {-1, 3}) {
         auto invalid = p;
         invalid.stereoDelayMode = value;
@@ -1214,6 +1215,205 @@ void sculptorRoutingOracle(double rate, std::size_t count) {
     std::printf("Sculptor route %.0f Hz/%zu channels max error %.9g\n", rate, count, maxError);
 }
 
+// Independent composition also includes the stochastic stage and preserves its
+// RMS, FIR and generator state while actual/forced bypass freezes processing.
+void breathinessRoutingOracle(double rate, std::size_t count) {
+    darkvoice::AudioEngine actual, partitioned;
+    darkvoice::DeEsser deEsser;
+    darkvoice::VoiceSculptor sculptor;
+    darkvoice::Breathiness breathiness;
+    darkvoice::ToneEffects legacy;
+    darkvoice::Colour colour;
+    darkvoice::VocalLimiter limiter;
+    check(actual.prepare(rate, 257, count) && partitioned.prepare(rate, 257, count) &&
+              deEsser.prepare(rate, 1, count) && sculptor.prepare(rate, 1, count) &&
+              breathiness.prepare(rate, 1, count) && legacy.prepare(rate, 1, count) &&
+              colour.prepare(rate, 1, count) && limiter.prepare(rate, 1, count),
+          "Breath texture independently composed route preparation all rates/layouts");
+    darkvoice::EngineParameters p;
+    p.highPassHz = 80;
+    p.deEssHz = 3000;
+    p.deEssThresholdDb = -40;
+    p.deEssReductionDb = 6;
+    p.eqMidHz = 650;
+    p.eqMidGainDb = 4;
+    p.eqMidQ = .8f;
+    p.delayMs = 20;
+    p.delayFeedback = .2f;
+    p.delayMix = .3f;
+    p.colourMix = .6f;
+    p.colourDrive = .7f;
+    p.colourModel = 1;
+    p.colourToneHz = 11000;
+    p.mix = .85f;
+    p.outputDb = 12;
+    p.limiterEnabled = true;
+    p.limiterCeilingDb = -3;
+    p.limiterReleaseMs = 700;
+    darkvoice::ToneEffectsParameters tone;
+    tone.eqMidHz = p.eqMidHz;
+    tone.eqMidGainDb = p.eqMidGainDb;
+    tone.eqMidQ = p.eqMidQ;
+    tone.delayMs = p.delayMs;
+    tone.delayFeedback = p.delayFeedback;
+    tone.delayMix = p.delayMix;
+    check(actual.setParameters(p) && partitioned.setParameters(p) &&
+              deEsser.setParameters({p.deEssHz, p.deEssThresholdDb, p.deEssReductionDb}) &&
+              legacy.setParameters(tone) &&
+              colour.setParameters({p.colourModel, p.colourDrive, p.colourToneHz, p.colourMix}) &&
+              limiter.setParameters({p.limiterCeilingDb, p.limiterReleaseMs}),
+          "Breath texture independent route parameter setup");
+    actual.reset();
+    partitioned.reset();
+    deEsser.reset();
+    sculptor.reset();
+    breathiness.reset();
+    legacy.reset();
+    colour.reset();
+    limiter.reset();
+    const auto clean = [](double x) { return std::abs(x) < 1e-20 ? 0.f : static_cast<float>(x); };
+    const double pole = std::exp(-2 * std::numbers::pi * p.highPassHz / rate);
+    const double smoothing = 1 - std::exp(-1 / (.010 * rate));
+    std::array<float, 2> previousInput{}, previousOutput{};
+    std::array<std::array<float, 56>, 2> raw{};
+    std::size_t position = 0, absolute = 0, guard = 0, fade = 128;
+    float mix = p.mix, outputDb = p.outputDb;
+    bool wasBypassed = false, exactPartitions = true, referenceOkay = true, protectedAudio = true;
+    double maxError = 0;
+    double activeEnergy = 0, textureEnergy = 0;
+    struct Segment {
+        std::size_t frames, partition;
+        bool bypass, force;
+        float body, warmth, presence, amount;
+    };
+    for (const auto segment : std::array<Segment, 10>{{{1700, 257, false, false, 0, 0, 0, 0},
+                                                       {601, 137, false, false, 6, 0, 0, .731f},
+                                                       {503, 97, false, false, 0, -6, 0, .127f},
+                                                       {509, 193, false, false, 0, 0, 6, .999f},
+                                                       {97, 17, true, false, -6, 6, -6, .327f},
+                                                       {400, 137, false, false, -6, 6, -6, .327f},
+                                                       {31, 31, false, true, 6, 6, 6, 1},
+                                                       {80, 23, false, false, 6, 6, 6, 1},
+                                                       {23, 23, true, false, 0, 0, 0, 0},
+                                                       {400, 71, false, false, -4, 3, 6, .853f}}}) {
+        p.bypass = segment.bypass;
+        p.sculptBodyDb = segment.body;
+        p.sculptWarmthDb = segment.warmth;
+        p.sculptPresenceDb = segment.presence;
+        p.sculptBreathiness = segment.amount;
+        const auto beforeSet = allocations.load();
+        rejectAllocations.store(true);
+        const bool accepted = actual.setParameters(p) && partitioned.setParameters(p);
+        rejectAllocations.store(false);
+        check(accepted && allocations.load() == beforeSet &&
+                  sculptor.setParameters({segment.body, segment.warmth, segment.presence}) &&
+                  breathiness.setParameters({segment.amount}),
+              "Breath texture engine snapshots accepted without allocation");
+        for (std::size_t offset = 0; offset < segment.frames; offset += segment.partition) {
+            const auto frames = std::min(segment.partition, segment.frames - offset);
+            std::array<std::array<float, 257>, 2> audio{}, split{}, expected{};
+            for (std::size_t i = 0; i < frames; ++i) {
+                std::array<float, 2> sample{}, dry{};
+                for (std::size_t c = 0; c < count; ++c) {
+                    const double time = (absolute + i) / rate;
+                    const float source = static_cast<float>(
+                        .4 * std::sin(2 * std::numbers::pi * 180 * time + c * .3) +
+                        .2 * std::sin(2 * std::numbers::pi * 700 * time + c * .8) +
+                        .3 * std::cos(2 * std::numbers::pi * 5000 * time + c * .7));
+                    audio[c][i] = split[c][i] = source;
+                    dry[c] = raw[c][position];
+                    raw[c][position] = source;
+                    if (!segment.bypass && !segment.force) {
+                        sample[c] = clean(pole * (static_cast<double>(previousOutput[c]) + source -
+                                                  previousInput[c]));
+                        previousInput[c] = source;
+                        previousOutput[c] = sample[c];
+                    }
+                }
+                position = (position + 1) % 56;
+                if (segment.bypass || segment.force) {
+                    for (std::size_t c = 0; c < count; ++c)
+                        expected[c][i] = dry[c];
+                    wasBypassed = true;
+                    continue;
+                }
+                if (wasBypassed) {
+                    colour.reset(); // No reset of the tonal or other legacy histories.
+                    guard = 56;
+                    fade = 0;
+                    wasBypassed = false;
+                }
+                std::array<float *, 2> one{&sample[0], &sample[1]};
+                const auto channels = std::span<float *>(one.data(), count);
+                referenceOkay &= deEsser.process(channels, 1) && sculptor.process(channels, 1);
+                const auto beforeTexture = sample;
+                referenceOkay &= breathiness.process(channels, 1);
+                for (std::size_t c = 0; c < count; ++c) {
+                    const double addition = static_cast<double>(sample[c]) - beforeTexture[c];
+                    textureEnergy += addition * addition;
+                }
+                referenceOkay &= legacy.process(channels, 1) && colour.process(channels, 1);
+                mix = static_cast<float>(mix + smoothing * (p.mix - mix));
+                outputDb = static_cast<float>(outputDb + smoothing * (p.outputDb - outputDb));
+                const double weight = guard != 0   ? (--guard, 0.)
+                                      : fade < 128 ? static_cast<double>(++fade) / 128
+                                                   : 1.;
+                for (std::size_t c = 0; c < count; ++c) {
+                    const double blend = static_cast<double>(dry[c]) * (1. - mix) +
+                                         static_cast<double>(sample[c]) * mix;
+                    sample[c] =
+                        clean((weight == 0 ? dry[c] : dry[c] * (1 - weight) + blend * weight) *
+                              std::pow(10., outputDb / 20.));
+                }
+                referenceOkay &= limiter.process(channels, 1);
+                for (std::size_t c = 0; c < count; ++c) {
+                    expected[c][i] = sample[c];
+                    activeEnergy += static_cast<double>(sample[c]) * sample[c];
+                }
+            }
+            std::array<float *, 2> ptr{audio[0].data(), audio[1].data()};
+            auto channels = std::span<float *>(ptr.data(), count);
+            const auto before = allocations.load();
+            rejectAllocations.store(true);
+            const bool processed = segment.force ? actual.processBypassed(channels, frames)
+                                                 : actual.process(channels, frames);
+            // Empty forced call while active cannot synthetically reset tone/Colour.
+            const bool empty = actual.processBypassed(channels, 0);
+            rejectAllocations.store(false);
+            check(
+                processed && empty && allocations.load() == before && actual.latencySamples() == 56,
+                "Breath texture active/bypassed/resume audio has fixed latency and no allocation");
+            for (std::size_t i = 0; i < frames; ++i) {
+                std::array<float *, 2> samplePtr{&split[0][i], &split[1][i]};
+                const auto one = std::span<float *>(samplePtr.data(), count);
+                exactPartitions &= segment.force ? partitioned.processBypassed(one, 1)
+                                                 : partitioned.process(one, 1);
+                for (std::size_t c = 0; c < count; ++c) {
+                    exactPartitions &= audio[c][i] == split[c][i];
+                    maxError = std::max(
+                        maxError, std::abs(static_cast<double>(audio[c][i]) - expected[c][i]));
+                    if (!segment.bypass && !segment.force)
+                        protectedAudio &=
+                            std::isfinite(audio[c][i]) &&
+                            std::abs(audio[c][i]) <= std::pow(10., p.limiterCeilingDb / 20.);
+                }
+            }
+            absolute += frames;
+        }
+    }
+    check(referenceOkay && maxError < 3e-7 && activeEnergy > 1,
+          "Breath texture amount/continuous neutral history/frozen RMS/FIR/PRNG/full resume match "
+          "independent route");
+    check(textureEnergy > .001,
+          "active amount produces measurable actual texture in composed route");
+    check(exactPartitions,
+          "Breath texture engine automation and bypass partition invariant all rates/layouts");
+    check(protectedAudio,
+          "combined Breath texture boosts never exceed enabled final limiter ceiling");
+    std::printf("Breath texture route %.0f Hz/%zu channels max error %.9g\n", rate, count,
+                maxError);
+}
+
 void sculptorInvalidAtomicity(double rate, std::size_t count) {
     darkvoice::AudioEngine actual, reference;
     check(actual.prepare(rate, 257, count) && reference.prepare(rate, 257, count),
@@ -1268,6 +1468,67 @@ void sculptorInvalidAtomicity(double rate, std::size_t count) {
     check(actual.process(std::span<float *>(a.data(), count), 257) &&
               reference.process(std::span<float *>(b.data(), count), 257) && audio == expected,
           "Sculptor engine reset clears histories and settles accepted tone targets");
+}
+
+void breathinessInvalidAndReset(double rate, std::size_t count) {
+    darkvoice::AudioEngine actual, reference, fresh;
+    check(actual.prepare(rate, 257, count) && reference.prepare(rate, 257, count) &&
+              fresh.prepare(rate, 257, count),
+          "Breath texture atomicity/reset preparation");
+    darkvoice::EngineParameters p;
+    p.sculptBreathiness = .653f;
+    p.sculptBodyDb = 6;
+    p.colourMix = .4f;
+    p.limiterEnabled = true;
+    p.limiterCeilingDb = -6;
+    check(actual.setParameters(p) && reference.setParameters(p) && fresh.setParameters(p),
+          "Breath texture valid active snapshot");
+    for (float invalid :
+         {-.001f, 1.001f, std::numeric_limits<float>::quiet_NaN(),
+          std::numeric_limits<float>::infinity(), -std::numeric_limits<float>::infinity()}) {
+        auto candidate = p;
+        candidate.sculptBreathiness = invalid;
+        candidate.outputDb = -24;
+        candidate.limiterEnabled = false;
+        check(!actual.setParameters(candidate),
+              "Breath texture invalid range/nonfinite snapshot rejected atomically");
+    }
+    std::array<std::array<float, 257>, 2> audio{}, expected{};
+    std::array<float *, 2> a{audio[0].data(), audio[1].data()};
+    std::array<float *, 2> b{expected[0].data(), expected[1].data()};
+    const auto ca = std::span<float *>(a.data(), count);
+    const auto cb = std::span<float *>(b.data(), count);
+    bool equivalent = true;
+    for (std::size_t block = 0; block < 12; ++block) {
+        for (std::size_t c = 0; c < count; ++c)
+            for (std::size_t i = 0; i < 257; ++i)
+                audio[c][i] = expected[c][i] =
+                    static_cast<float>(.5 * std::sin((block * 257 + i) * (.07 + c * .03)));
+        const auto before = allocations.load();
+        rejectAllocations.store(true);
+        equivalent &= !actual.processBypassed(ca, 258) && actual.processBypassed(ca, 0) &&
+                      actual.process(ca, 257) && reference.process(cb, 257);
+        rejectAllocations.store(false);
+        equivalent &= allocations.load() == before;
+        for (std::size_t c = 0; c < count; ++c)
+            equivalent &= audio[c] == expected[c];
+    }
+    check(equivalent,
+          "Breath texture invalid snapshots/blocks and empty bypass preserve targets/history/PRNG");
+    actual.reset();
+    fresh.reset();
+    bool resetEquivalent = true;
+    for (std::size_t block = 0; block < 8; ++block) {
+        for (std::size_t c = 0; c < count; ++c)
+            for (std::size_t i = 0; i < 257; ++i)
+                audio[c][i] = expected[c][i] =
+                    static_cast<float>(.4 * std::cos((block * 257 + i) * (.043 + c * .037)));
+        resetEquivalent &= actual.process(ca, 257) && fresh.process(cb, 257);
+        for (std::size_t c = 0; c < count; ++c)
+            resetEquivalent &= audio[c] == expected[c];
+    }
+    check(resetEquivalent,
+          "Breath texture engine reset reproduces fresh prepared RMS/FIR/PRNG and settled amount");
 }
 
 void invalidBlocksAndAllocationFailure() {
@@ -1358,6 +1619,10 @@ int main() {
     snapshotsAndSmoothing();
     activePartitionAndBypass();
     for (double rate : {44100.0, 48000.0, 88200.0, 96000.0}) {
+        breathinessInvalidAndReset(rate, 1);
+        breathinessInvalidAndReset(rate, 2);
+        breathinessRoutingOracle(rate, 1);
+        breathinessRoutingOracle(rate, 2);
         sculptorRoutingOracle(rate, 1);
         sculptorRoutingOracle(rate, 2);
         sculptorInvalidAtomicity(rate, 1);
