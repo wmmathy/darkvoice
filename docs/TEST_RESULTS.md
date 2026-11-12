@@ -866,3 +866,12 @@ REAPERnarrow3passed,full42pending. No productpitchcontrols/backendqualification.
 Final optimized v4 strict O2 cores also passed1,211/0 each: Live31.273s,
 Studio47.711s,Offline108.308s in this cloud session. All three profiles executed
 the full fixed/reference/complex matrices. Full dense scans remain pending CI.
+
+## Prepared quality modes: Release product rerun — 2026-11-12
+
+Fresh Release Vocal/plugin and preset targets rebuilt successfully in
+build/flanger-products. Affected suites passed2/2 in33.83seconds: presets.08s,
+plugin.state_and_audio33.75s. All state/audio assertions executed under the
+unchanged180-second budget. This resolves Release application validation; the
+earlier Debug180-second timeout remains recorded and is not described as passed.
+Exact-head native CI and any remaining sanitizer checks still gate merge.
