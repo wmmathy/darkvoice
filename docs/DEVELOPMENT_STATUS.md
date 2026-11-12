@@ -681,6 +681,32 @@ tracked scans and native validation remain required before normal merge. Core
 only: no new product parameter or host routing is delivered in this increment.
 Manual host/microphone/listening qualification remains deferred.
 
+## Planned bandlimited Colour/quality core package — 2026-10-28
+
+Lead established the exact profile contract before delegation. Task colour_quality
+owns five new core/header/private-helper/test files in /workspace/worktrees/
+bandlimited-colour, branch feature/effects/bandlimited-colour. Dependency is the
+qualified legacy model and independently confirmed absolute-alias audit; no
+existing Colour/engine/host source mutation. Strict C++20 O2/Werror standalone
+per-profile tests; lead schedules CMake/Release/ASan/native and independent QA.
+All48 reference gates plus32 independent absolute-mask fixtures apply to each
+actual mode. No new application mode selector until prepared-lifecycle integration.
+
+## Guarded Colour profiles ready for native qualification — 2026-10-31
+
+The new library uses16x nonlinear shaping and prepared Live/Studio/Offline FIR
+profiles, with actual124/184/368-sample latency. Legacy Colour and current app
+routing remain unchanged in this core increment. Independent review reproduced
+fixed numerical checks and supplemental failures repaired by v4. All3 sanitizer
+safety modes pass. Full dense24-job alias qualification and exact-head native
+checks are still required before normal merge; no failed gate is waived.
+
+Sparse prepared coefficients preserve bitwise output and reduce measured probe
+CPU about2.37–2.81x versus generic16x processing. This is cloud probe evidence,
+not target-machine deadline qualification. Separate prepared-quality host/state15
+integration and Character contribution are under development; qualified pitch/
+formant remains blocked by retained tests. Manual qualification stays deferred.
+
 ## Breath texture dependent work packages — 2026-10-26
 
 Launch plan: engine task breath_engine owns only AudioEngine.hpp/.cpp and

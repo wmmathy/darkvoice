@@ -7,6 +7,13 @@
 - Persist global quality separately from sound presets with strict schema15 migration.
 - Keep final product/native qualification pending; preserve the Debug test timeout evidence.
 
+## Guarded Colour quality-profile library
+
+- Add a separate16x Colour implementation with guarded input/output FIR filters.
+- Provide prepared Live/Studio/Offline profiles with124/184/368-sample delays.
+- Preserve legacy Colour and leave application integration for a dependent change.
+- Add fixed, complex-response and complete sharded alias qualification; preserve negative findings.
+
 ## Depth and resonance controls
 
 - Add independent Depth lows and Resonance700Hz controls to Voice Sculptor.

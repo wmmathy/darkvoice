@@ -711,6 +711,34 @@ tracked scans and native validation remain required before normal merge. Core
 only: no new product parameter or host routing is delivered in this increment.
 Manual host/microphone/listening qualification remains deferred.
 
+## Guarded 16x Colour and prepared profiles — 2026-10-31
+
+New BandlimitedColour library leaves legacy Colour and application routing untouched.
+Generic v4 strict O2 core passed 1,211 checks per mode, retaining all48 reference
+cases,144 absolute fixtures and42 complex partial-mix comparisons per mode.
+Optimized sparse helper retains every nonzero coefficient and accumulation order:
+368,640 output samples and1,190 coefficient checks match the frozen generic
+implementation bitwise. Independent QA reran this against actual production code.
+Independent optimized Live core passed1,211/0. Its54 additional public-output
+renders passed independent full-FFT/actual-input-RMS analysis, including all
+previously failing bins. Worst supplemental case was -88.5901dB/inputRMS.
+
+Optimized strict safety passed214 checks per mode. Lead Debug ASan/UBSan safety
+passed3/3 in161.31s (Live29.04,Studio38.47,Offline93.79), with leak detection and
+halt-on-error. These are explicitly safety checks, not numerical qualification.
+Optimized Release cores and complete dense scan remain separate gates. The scan
+covers every integer bin17..2031, both styles, each profile:4,030 cases per mode.
+Eight disjoint inclusive ranges per mode cover all cases with no overlap; all24
+CI jobs must pass before merge. Native checks remain required on committed head.
+Core/SAN job budgets expand to45minutes for added tests; numeric thresholds and
+legacy tests are unchanged. No realtime deadline or arbitrary-signal alias bound
+is established by these fixtures. Manual listening/host tests remain deferred.
+
+Historical failures remain evidence: v1 near-Nyquist leakage about-14.7dB; v2
+input-image scan failures; v3 step17 scan passed but between-grid bins1720..1724
+failed about-53.64dB from intrinsic8x folding. V4 increases shaping to16x and uses
+guarded first/last kernels; measured algorithmic delays are124/184/368samples.
+
 ## Breath texture host qualification — 2026-10-26
 
 Engine/host integration is implemented under schema13:63 state/62 sound fields,
@@ -834,3 +862,7 @@ V1SANLive100.66s/Studio161.82s passed,OfflineTIMEOUT180.12s; these were obsolete
 
 WORLD fixedcomparators remainednegative: DIO40/42,Harvest24/42,YIN31/42. Fixed
 REAPERnarrow3passed,full42pending. No productpitchcontrols/backendqualification.
+
+Final optimized v4 strict O2 cores also passed1,211/0 each: Live31.273s,
+Studio47.711s,Offline108.308s in this cloud session. All three profiles executed
+the full fixed/reference/complex matrices. Full dense scans remain pending CI.
