@@ -542,10 +542,15 @@ claim; Decay has no seconds/RT60label. Mix0 exactnormalfinite dry, sanitize
 nonfinite/true subnormal and protectfinitefloat extremes. Globalbypassfreezesall.
 
 Stability: normalizedHadamard/signedswap norm1, fixed delays/allpasses/LP l2gain
-<=1; automatedfeedbackg<=.95 strictsmallgain. Not instantpeaklimiting. Retain40s
-hosttail (240s musicaldelay dominates), verify actualroundedlength weighted
-feedbackbounds at exponent.4/second remain<1 and long48k maxdecay tail; no
-exactsilenceclaim. NewDSP adds noalgorithmichostlatency; predelay is musical.
+<=1; automatedfeedbackg<=.95 strictsmallgain. Not instantpeaklimiting. ActiveSpace
+reports60s hosttail (240s musicaldelay dominates;Spaceoffretainsold40s). Actual
+roundedlength weightedfeedbackbounds at exponent.4/second remain<1. Universal
+40s/-90dBclaim was corrected beforeintegration: automatedpredelay canrepeatinput
+energy. With zero initialstate/finiteinputenergy, prescribedlinearnetwork bound
+includes sqrt(Dmax+2) predelaySchurfactor; conservativewet60s bound<-127dB
+relativeinputl2, notexactsilence/inaudibility. Modelweights/tone preserve a
+pointwiseexponentialenvelope, notarbitrarytimevaryingfilterl2passivity. Static
+48k40staildiagnostic remainsuseful; nospecialdecayseconds/RT60 claim. NewDSP adds noalgorithmichostlatency; predelay is musical.
 
 Insert after StereoDelay before globalmix/output/limiter. Append AUhint10/schema10
 IDs spaceModel0..2 step1(default0),spaceDecay0..1 step.001(.5),spaceToneHz

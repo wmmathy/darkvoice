@@ -95,6 +95,11 @@ void stateTests() {
     set(source, "doublerVariationMs", 4.5f);
     set(source, "doublerRateHz", 1.3f);
     set(source, "doublerMix", .3f);
+    set(source, "spaceModel", 2);
+    set(source, "spaceDecay", .7f);
+    set(source, "spaceToneHz", 5300);
+    set(source, "spacePreDelayMs", 17.5f);
+    set(source, "spaceMix", .2f);
     juce::MemoryBlock state;
     source.getStateInformation(state);
     require(state.getSize() > 0, "State serialization empty");
@@ -114,10 +119,11 @@ void stateTests() {
                                                                               : i < 35 ? 6
                                                                               : i < 38 ? 7
                                                                               : i < 46 ? 8
-                                                                                       : 9),
+                                                                              : i < 50 ? 9
+                                                                                       : 10),
                 "AU version hint changed");
         require(std::abs(raw(restored, spec.id) - raw(source, spec.id)) < 0.001f,
-                "Full v9 state roundtrip failed");
+                "Full v10 state roundtrip failed");
     }
     require(source.getTailLengthSeconds() == 240.0, "Stereo musical delay tail not reported");
 
@@ -125,7 +131,7 @@ void stateTests() {
     restored.setStateInformation(garbage, sizeof(garbage));
     require(raw(restored, "inputDb") == raw(source, "inputDb"),
             "Malformed state changed parameters");
-    for (const char *version : {"10", "1junk"}) {
+    for (const char *version : {"11", "1junk"}) {
         auto xml = source.parameters.copyState().createXml();
         xml->setAttribute("schemaVersion", version);
         juce::MemoryBlock invalid;
@@ -166,6 +172,9 @@ void stateTests() {
     auto legacy = source.parameters.copyState();
     legacy.setProperty("schemaVersion", 1, nullptr);
     for (int child = legacy.getNumChildren() - 1; child >= 0; --child)
+        if (legacy.getChild(child).getProperty("id").toString().startsWith("space"))
+            legacy.removeChild(child, nullptr);
+    for (int child = legacy.getNumChildren() - 1; child >= 0; --child)
         if (legacy.getChild(child).getProperty("id").toString().startsWith("doubler"))
             legacy.removeChild(child, nullptr);
     for (int child = legacy.getNumChildren() - 1; child >= 0; --child)
@@ -196,6 +205,9 @@ void stateTests() {
     }
     auto v2 = source.parameters.copyState();
     v2.setProperty("schemaVersion", 2, nullptr);
+    for (int child = v2.getNumChildren() - 1; child >= 0; --child)
+        if (v2.getChild(child).getProperty("id").toString().startsWith("space"))
+            v2.removeChild(child, nullptr);
     for (int child = v2.getNumChildren() - 1; child >= 0; --child)
         if (v2.getChild(child).getProperty("id").toString().startsWith("doubler"))
             v2.removeChild(child, nullptr);
@@ -234,6 +246,9 @@ void stateTests() {
     auto v3 = source.parameters.copyState();
     v3.setProperty("schemaVersion", 3, nullptr);
     for (int child = v3.getNumChildren() - 1; child >= 0; --child)
+        if (v3.getChild(child).getProperty("id").toString().startsWith("space"))
+            v3.removeChild(child, nullptr);
+    for (int child = v3.getNumChildren() - 1; child >= 0; --child)
         if (v3.getChild(child).getProperty("id").toString().startsWith("doubler"))
             v3.removeChild(child, nullptr);
     for (int child = v3.getNumChildren() - 1; child >= 0; --child)
@@ -266,6 +281,9 @@ void stateTests() {
     auto v4 = source.parameters.copyState();
     v4.setProperty("schemaVersion", 4, nullptr);
     for (int child = v4.getNumChildren() - 1; child >= 0; --child)
+        if (v4.getChild(child).getProperty("id").toString().startsWith("space"))
+            v4.removeChild(child, nullptr);
+    for (int child = v4.getNumChildren() - 1; child >= 0; --child)
         if (v4.getChild(child).getProperty("id").toString().startsWith("doubler"))
             v4.removeChild(child, nullptr);
     for (int child = v4.getNumChildren() - 1; child >= 0; --child)
@@ -290,6 +308,9 @@ void stateTests() {
             "V4 state retains de-esser and resets modulation defaults");
     auto v5 = source.parameters.copyState();
     v5.setProperty("schemaVersion", 5, nullptr);
+    for (int child = v5.getNumChildren() - 1; child >= 0; --child)
+        if (v5.getChild(child).getProperty("id").toString().startsWith("space"))
+            v5.removeChild(child, nullptr);
     for (int child = v5.getNumChildren() - 1; child >= 0; --child)
         if (v5.getChild(child).getProperty("id").toString().startsWith("doubler"))
             v5.removeChild(child, nullptr);
@@ -426,6 +447,59 @@ void stateTests() {
             require(restored.snapshotPresetValues() == before,
                     "Invalid doubler state changes no live controls");
         }
+    for (int version = 1; version <= 9; ++version) {
+        auto old = source.parameters.copyState();
+        old.setProperty("schemaVersion", version, nullptr);
+        for (int child = old.getNumChildren() - 1; child >= 0; --child) {
+            bool keep = false;
+            for (std::size_t i = 0; i < darkvoice::parameterCountForVersion(version); ++i)
+                keep = keep || old.getChild(child).getProperty("id").toString() ==
+                                   darkvoice::parameterSchema[i].id;
+            if (!keep)
+                old.removeChild(child, nullptr);
+        }
+        set(restored, "spaceModel", 2);
+        set(restored, "spaceDecay", 1);
+        set(restored, "spaceToneHz", 16000);
+        set(restored, "spacePreDelayMs", 100);
+        set(restored, "spaceMix", .5f);
+        juce::MemoryBlock bytes;
+        juce::AudioProcessor::copyXmlToBinary(*old.createXml(), bytes);
+        restored.setStateInformation(bytes.getData(), static_cast<int>(bytes.getSize()));
+        for (std::size_t i = 50; i < darkvoice::parameterSchema.size(); ++i) {
+            const auto &spec = darkvoice::parameterSchema[i];
+            require(std::abs(raw(restored, spec.id) - spec.defaultValue) < .001f,
+                    "Every legacy state initializes five Space Reverb defaults");
+        }
+        if (version == 9)
+            require(std::abs(raw(restored, "doublerMix") - .3f) < .001f &&
+                        std::abs(raw(restored, "stereoDelayMix") - .2f) < .001f &&
+                        raw(restored, "limiterEnabled") == 1,
+                    "V9 migration preserves prior effects");
+    }
+    for (const auto *invalid : {"0.5", "1.00000001", "1e-500", "NaN", "3", "-1"}) {
+        auto bad = source.parameters.copyState();
+        bad.setProperty("schemaVersion", darkvoice::currentSchemaVersion, nullptr);
+        bad.getChildWithProperty("id", "spaceModel").setProperty("value", invalid, nullptr);
+        const auto before = restored.snapshotPresetValues();
+        juce::MemoryBlock bytes;
+        juce::AudioProcessor::copyXmlToBinary(*bad.createXml(), bytes);
+        restored.setStateInformation(bytes.getData(), static_cast<int>(bytes.getSize()));
+        require(restored.snapshotPresetValues() == before,
+                "Invalid Space model lexical state changed live snapshot");
+    }
+    for (const auto *id : {"spaceDecay", "spaceToneHz", "spacePreDelayMs", "spaceMix"})
+        for (const auto *invalid : {"NaN", "1e100", "-1", "100000"}) {
+            auto bad = source.parameters.copyState();
+            bad.setProperty("schemaVersion", darkvoice::currentSchemaVersion, nullptr);
+            bad.getChildWithProperty("id", id).setProperty("value", invalid, nullptr);
+            const auto before = restored.snapshotPresetValues();
+            juce::MemoryBlock bytes;
+            juce::AudioProcessor::copyXmlToBinary(*bad.createXml(), bytes);
+            restored.setStateInformation(bytes.getData(), static_cast<int>(bytes.getSize()));
+            require(restored.snapshotPresetValues() == before,
+                    "Invalid Space float state changed live snapshot");
+        }
     set(restored, "gateRatio", 1);
     for (const char *badGate : {"NaN", "21", "0"}) {
         auto bad = source.parameters.copyState();
@@ -478,7 +552,7 @@ void stateTests() {
                 "Invalid ID set partially changed state");
     }
     auto values = source.snapshotPresetValues();
-    require(values.size() == 49 && values.count("bypass") == 0,
+    require(values.size() == 54 && values.count("bypass") == 0,
             "Preset must contain only sound parameters");
     values["inputDb"] = 10.0f;
     values["delayMix"] = 0.2f;
@@ -493,6 +567,90 @@ void stateTests() {
     require(std::abs(raw(restored, "inputDb") - 10.0f) < 0.01f,
             "Invalid preset partially changed state");
 }
+void spaceReverbAudioTests() {
+    for (double rate : {44100., 48000., 88200., 96000.})
+        for (int channels : {1, 2})
+            for (int model : {0, 1, 2})
+                for (float predelay : {0.f, 2.5f, 10.f}) {
+                    DarkVoiceProcessor subject, reference;
+                    layout(subject, channels);
+                    layout(reference, channels);
+                    set(subject, "spaceModel", static_cast<float>(model));
+                    set(subject, "spaceMix", .5f);
+                    set(subject, "spacePreDelayMs", predelay);
+                    set(reference, "spaceModel", static_cast<float>(model));
+                    subject.prepareToPlay(rate, 257);
+                    reference.prepareToPlay(rate, 257);
+                    juce::MidiBuffer midi;
+                    const double preSamples = rate * raw(subject, "spacePreDelayMs") * .001;
+                    const auto base = std::llround(rate * (model == 0   ? .003
+                                                           : model == 1 ? .012
+                                                                        : .0239));
+                    const int first = static_cast<int>(base + std::floor(preSamples));
+                    std::vector<float> recovered(static_cast<std::size_t>(rate * .08)),
+                        dry = recovered;
+                    for (int position = 0; position < static_cast<int>(recovered.size());) {
+                        const int frames = std::min(position % 2 ? 191 : 257,
+                                                    static_cast<int>(recovered.size()) - position);
+                        juce::AudioBuffer<float> a(channels, frames), b(channels, frames);
+                        a.clear();
+                        b.clear();
+                        if (position == 0)
+                            for (int c = 0; c < channels; ++c) {
+                                a.setSample(c, 0, .8f);
+                                b.setSample(c, 0, .8f);
+                            }
+                        subject.processBlock(a, midi);
+                        reference.processBlock(b, midi);
+                        for (int i = 0; i < frames; ++i) {
+                            recovered[static_cast<std::size_t>(position + i)] =
+                                2 * a.getSample(0, i) - b.getSample(0, i);
+                            dry[static_cast<std::size_t>(position + i)] = b.getSample(0, i);
+                            for (int c = 0; c < channels; ++c)
+                                require(std::isfinite(a.getSample(c, i)),
+                                        "Space model host render must remain finite");
+                        }
+                        position += frames;
+                    }
+                    for (int i = 0; i < first; ++i)
+                        require(std::abs(recovered[static_cast<std::size_t>(i)]) < 2e-6f,
+                                "Space predelay/model emitted an early wet arrival");
+                    const double pole = std::exp(-2 * juce::MathConstants<double>::pi *
+                                                 raw(subject, "spaceToneHz") / rate);
+                    const double rawCoefficient =
+                        model == 0   ? .18
+                        : model == 1 ? .08
+                                     : (1 - (.25 + .70 * raw(subject, "spaceDecay"))) / 8;
+                    const double expected = dry[0] * rawCoefficient * (1 - pole) *
+                                            (1 - (preSamples - std::floor(preSamples)));
+                    require(std::abs(recovered[static_cast<std::size_t>(first)] - expected) < 3e-6,
+                            "Actual Space model/predelay/tone arrival differs from independent "
+                            "coefficient oracle");
+                    require(subject.getLatencySamples() == 0 &&
+                                subject.getTailLengthSeconds() == 60,
+                            "Space musical predelay must not invent host latency or alter existing "
+                            "tail");
+                }
+}
+
+void spaceTailTests() {
+    DarkVoiceProcessor p;
+    require(p.getTailLengthSeconds() == 40, "Neutral effects preserve original forty-second tail");
+    set(p, "spaceMix", .1f);
+    require(p.getTailLengthSeconds() == 60, "Audible Space Reverb reports sixty-second tail");
+    set(p, "stereoDelayMix", .1f);
+    require(p.getTailLengthSeconds() == 240,
+            "Musical stereo delay tail has precedence over Space Reverb");
+    set(p, "spaceMix", 0);
+    require(p.getTailLengthSeconds() == 240,
+            "Neutral Space must not shorten audible musical delay tail");
+    set(p, "spaceMix", .1f);
+    set(p, "stereoDelayMix", 0);
+    require(p.getTailLengthSeconds() == 60, "Disabling musical delay restores active Space tail");
+    set(p, "spaceMix", 0);
+    require(p.getTailLengthSeconds() == 40, "Neutral Space restores original forty-second tail");
+}
+
 void doublerAudioTests() {
     for (double rate : {44100., 48000., 88200., 96000.})
         for (int channels : {1, 2}) {
@@ -652,7 +810,7 @@ void stereoDelayAudioTests() {
     require(p.getTailLengthSeconds() == 40, "Disabled delay tail did not restore");
     // Compare against the held valid snapshot, not nominal exact 0dB: JUCE's
     // start-relative .1dB snapping can leave a small residual under FMA.
-    for (const char *id : {"stereoDelayMode", "stereoDelayDivision"}) {
+    for (const char *id : {"stereoDelayMode", "stereoDelayDivision", "spaceModel"}) {
         DarkVoiceProcessor subject, control;
         for (auto *processor : {&subject, &control}) {
             set(*processor, "mix", 0);
@@ -686,8 +844,10 @@ void stereoDelayAudioTests() {
                             "Invalid raw enum must hold entire valid snapshot");
             }
         }
-        subject.parameters.getRawParameterValue(id)->store(
-            juce::String(id) == "stereoDelayMode" ? 2.f : 5.f);
+        const float valid = juce::String(id) == "stereoDelayDivision" ? 5.f
+                            : juce::String(id) == "stereoDelayMode"   ? 2.f
+                                                                      : 0.f;
+        subject.parameters.getRawParameterValue(id)->store(valid);
         float difference = 0;
         for (int block = 0; block < 32; ++block) {
             input();
@@ -1023,6 +1183,8 @@ int main() {
         limiterAudioTests();
         stereoDelayAudioTests();
         doublerAudioTests();
+        spaceReverbAudioTests();
+        spaceTailTests();
         std::cout
             << "PASS plugin state, automation/render, rates/layouts, lifecycle and identity\n";
         return 0;

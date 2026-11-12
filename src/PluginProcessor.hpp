@@ -20,8 +20,13 @@ class DarkVoiceProcessor final : public juce::AudioProcessor {
         return true;
     }
     double getTailLengthSeconds() const override {
-        return raw_[41] && raw_[41]->load(std::memory_order_relaxed) > 0 ? 240.0 : 40.0;
+        if (raw_[41] && raw_[41]->load(std::memory_order_relaxed) > 0)
+            return 240.0;
+        if (raw_[54] && raw_[54]->load(std::memory_order_relaxed) > 0)
+            return 60.0;
+        return 40.0;
     }
+
     bool acceptsMidi() const override {
         return false;
     }

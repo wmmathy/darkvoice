@@ -128,6 +128,11 @@ darkvoice::EngineParameters DarkVoiceProcessor::snapshot() const noexcept {
     p.doublerVariationMs = raw_[47]->load(std::memory_order_relaxed);
     p.doublerRateHz = raw_[48]->load(std::memory_order_relaxed);
     p.doublerMix = raw_[49]->load(std::memory_order_relaxed);
+    p.spaceModel = discrete(raw_[50]->load(std::memory_order_relaxed), 2);
+    p.spaceDecay = raw_[51]->load(std::memory_order_relaxed);
+    p.spaceToneHz = raw_[52]->load(std::memory_order_relaxed);
+    p.spacePreDelayMs = raw_[53]->load(std::memory_order_relaxed);
+    p.spaceMix = raw_[54]->load(std::memory_order_relaxed);
     return p;
 }
 void DarkVoiceProcessor::prepareToPlay(double rate, int maxFrames) {
@@ -225,7 +230,7 @@ void DarkVoiceProcessor::setStateInformation(const void *data, int bytes) {
         return;
     const auto version = xml->getStringAttribute("schemaVersion");
     if (version != "1" && version != "2" && version != "3" && version != "4" && version != "5" &&
-        version != "6" && version != "7" && version != "8" && version != "9")
+        version != "6" && version != "7" && version != "8" && version != "9" && version != "10")
         return;
     const auto count = darkvoice::parameterCountForVersion(version.getIntValue());
     const auto state = juce::ValueTree::fromXml(*xml);
@@ -250,7 +255,8 @@ void DarkVoiceProcessor::setStateInformation(const void *data, int bytes) {
         if (spec.boolean && !darkvoice::exactBooleanNumber(numberText))
             return;
         if ((id == "stereoDelayMode" && !darkvoice::exactSmallIntegerNumber(numberText, 2)) ||
-            (id == "stereoDelayDivision" && !darkvoice::exactSmallIntegerNumber(numberText, 5)))
+            (id == "stereoDelayDivision" && !darkvoice::exactSmallIntegerNumber(numberText, 5)) ||
+            (id == "spaceModel" && !darkvoice::exactSmallIntegerNumber(numberText, 2)))
             return;
         std::istringstream parser(numberText);
         parser.imbue(std::locale::classic());
@@ -260,7 +266,8 @@ void DarkVoiceProcessor::setStateInformation(const void *data, int bytes) {
             value < spec.minimum || value > spec.maximum ||
             (spec.boolean && value != 0 && value != 1))
             return;
-        if ((id == "stereoDelayMode" || id == "stereoDelayDivision") && std::trunc(value) != value)
+        if ((id == "stereoDelayMode" || id == "stereoDelayDivision" || id == "spaceModel") &&
+            std::trunc(value) != value)
             return;
         seen[index] = true;
         values[index] = value;
