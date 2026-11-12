@@ -875,7 +875,9 @@ nonfinite state after recurrence, no epsilon snap.
 
 One deterministic shared xorshift32: seed0x4e4f4953; per frame xor<<13,xor>>17,
 xor<<5 with uint32 wrap. u=((word>>8)+.5)/8388608.-1 (24-bit midpoint uniform),
-exact variance (1-2^-48)/3. Advance every valid nonempty frame even at amount0.
+ideal midpoint-uniform variance (1-2^-48)/3 for normalization. Finite PRNG
+realizations are checked statistically, not asserted IID or exactly uniform.
+Advance every valid nonempty frame even at amount0.
 Excitation v=.1*smoothedAmount*e*g*u. Filter excitation AFTER this multiplication
 with a fixed129tap symmetric Blackman-windowed ideal2k..10k bandpass:
 k=n-64, window=.42-.5cos(2pi*n/128)+.08cos(4pi*n/128), ideal(k0)=2*(10000-2000)/rate,
@@ -888,10 +890,12 @@ Add same filtered b to mono or both stereo dry channels. Dry has no added delay;
 texture FIR groupdelay64 is generation timing, not host alignment latency. API
 latency0, eventual engine remains56. Reset clears tree/rings, resets seed and weight.
 
-Stereo intent: center-driven addition, dry Side preserved within float rounding;
+Stereo intent: center-driven addition, dry Side preserved within float rounding
+when neither output reaches the finite float clamp;
 pure antiphase input generates none after finite old-history tail. A silent channel
 can receive center texture from the other channel: intentional crossfeed, not
-channel isolation. Mono fold compares to processing M within declared rounding.
+channel isolation. Mono fold compares to processing M within declared rounding in the unclamped
+range; saturation can change the stereo algebra.
 Initial silence exact; after zero-M input, by N+128 zero frames addition exactly0.
 Do not claim instantaneous zero after active audio or a physically recovered breath.
 FIR l1<=8.20 at all rates => added peak<=.820*recent peak over N+128 history frames
