@@ -53,6 +53,9 @@ SpaceReverbParameters spaceParameters(const EngineParameters &p) noexcept {
     return result;
 }
 
+VoiceSculptorParameters sculptorParameters(const EngineParameters &p) noexcept {
+    return {p.sculptBodyDb, p.sculptWarmthDb, p.sculptPresenceDb};
+}
 ColourParameters colourParameters(const EngineParameters &p) noexcept {
     return {p.colourModel, p.colourDrive, p.colourToneHz, p.colourMix};
 }
@@ -91,6 +94,7 @@ bool AudioEngine::prepare(double sampleRate, std::size_t maxFrames, std::size_t 
     if (!effects_.prepare(sampleRate, maxFrames, channels) ||
         !gate_.prepare(sampleRate, maxFrames, channels) ||
         !deEsser_.prepare(sampleRate, maxFrames, channels) ||
+        !sculptor_.prepare(sampleRate, maxFrames, channels) ||
         !modulation_.prepare(sampleRate, maxFrames, channels) ||
         !flanger_.prepare(sampleRate, maxFrames, channels) ||
         !doubler_.prepare(sampleRate, maxFrames, channels) ||
@@ -118,7 +122,8 @@ bool AudioEngine::setParameters(const EngineParameters &p) noexcept {
         !Flanger::valid({p.flangerRateHz, p.flangerDepthMs, p.flangerFeedback, p.flangerMix}) ||
         !VocalLimiter::valid({p.limiterCeilingDb, p.limiterReleaseMs}) ||
         !StereoDelay::valid(stereoDelayParameters(p)) || !Doubler::valid(doublerParameters(p)) ||
-        !SpaceReverb::valid(spaceParameters(p)) || !Colour::valid(colourParameters(p)))
+        !SpaceReverb::valid(spaceParameters(p)) || !Colour::valid(colourParameters(p)) ||
+        !VoiceSculptor::valid(sculptorParameters(p)))
         return false;
     // All snapshots are fully validated before any target is replaced.
     if (!effects_.setParameters(toneParameters(p)))
@@ -133,6 +138,7 @@ bool AudioEngine::setParameters(const EngineParameters &p) noexcept {
     (void)stereoDelay_.setParameters(stereoDelayParameters(p));
     (void)limiter_.setParameters({p.limiterCeilingDb, p.limiterReleaseMs});
     (void)colour_.setParameters(colourParameters(p));
+    (void)sculptor_.setParameters(sculptorParameters(p));
     if (p.limiterEnabled != target_.limiterEnabled)
         limiterResetPending_ = true;
     target_ = p;
@@ -162,6 +168,7 @@ void AudioEngine::reset() noexcept {
     effects_.reset();
     gate_.reset();
     deEsser_.reset();
+    sculptor_.reset();
     modulation_.reset();
     flanger_.reset();
     doubler_.reset();
@@ -260,6 +267,7 @@ bool AudioEngine::processInternal(std::span<float *> channels, std::size_t frame
     std::array<float *, 2> wetChannels{wet_[0].data(), wet_[1].data()};
     if (!gate_.process(std::span<float *>(wetChannels.data(), channels_), frames) ||
         !deEsser_.process(std::span<float *>(wetChannels.data(), channels_), frames) ||
+        !sculptor_.process(std::span<float *>(wetChannels.data(), channels_), frames) ||
         !effects_.process(std::span<float *>(wetChannels.data(), channels_), frames) ||
         !modulation_.process(std::span<float *>(wetChannels.data(), channels_), frames) ||
         !flanger_.process(std::span<float *>(wetChannels.data(), channels_), frames) ||
