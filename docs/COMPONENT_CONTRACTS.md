@@ -962,6 +962,167 @@ writer owns ONLY ParameterSchema.hpp, PluginProcessor.hpp/.cpp, PluginEditor.hpp
 .cpp, PresetBank.cpp, tests/plugin_tests.cpp, preset_tests.cpp, gui_smoke.cpp in
 separate worktrees. Lead owns contracts/CMake/docs/integration; core files frozen.
 
+## Bandlimited Colour / actual quality profiles v1 — 2026-10-28
+
+User priority is finalized VoiceSculptor Character, qualified pitch/formant,
+quality modes and stronger Colour alias suppression. Independent32-case audit
+confirmed off-mask folded energy as high as-22.947dB/inputRMS in legacy Colour.
+Historical8vs32 comparison remains valid agreement with a shared-final-filter
+reference, not an absolute bound. Keep legacy Colour/header/helper/tests frozen.
+Do not add wet-only minimum-phase LP8 filters: their phase creates major parallel
+mix cancellation. New component uses sharper LINEAR-PHASE boundary filters and
+reports the real additional latency. It stays outside AudioEngine until a separate
+aligned-host contract is implemented and checked.
+
+New include/darkvoice/QualityMode.hpp: enum class QualityMode:int {Live=0,Studio=1,
+Offline=2}; constexpr validQualityMode(QualityMode) noexcept. New BandlimitedColour
+API reuses existing ColourParameters (same4fields/ranges/defaults), constructor
+noexcept/destructor/deleted copy; prepare(double,size_t,size_t,QualityMode=Live)
+noexcept; static valid(params),setParameters,process(span<float*>,size_t),reset,
+latencySamples all existing signatures/noexcept. Add qualityMode() returning
+optional<QualityMode> (none unprepared), static constexpr maximumLatencySamples=352
+and latencyForQuality(mode) returning120/176/352 or0invalid. Four rates,mono/stereo,
+maxFrames1..65536; failed prepare unprepares, invalid snapshots/buffers atomic,
+empty advances nothing. Prepare resets defaults; reset settles accepted targets.
+No callback allocation/locks/I/O. Quality is immutable until prepare, not a
+per-block sound parameter.
+
+Predeclared profiles (native-boundary taps / higher-stage taps / native latency):
+Live193/65/120, Studio257/129/176, Offline513/257/352. Fixed8x, three cascaded2x
+stages. Sharpen FIRST interpolator and LAST decimator with boundary kernel; other
+four banks use higher-stage kernel. Each kernel is the existing normalized
+Blackman-window halfband design, with exact structural zero taps and independent
+reference recalculation. Group delay L=(boundaryTaps-1)/2+3*(higherTaps-1)/8.
+New private BandlimitedColourOversampling.hpp may reuse frozen primitives or use
+explicit-size templates; do not mutate ColourOversampling.hpp. Ensure explicit
+stateful processing order; shaper callbacks stateless. Compare generic reference
+with explicit zero insertion/convolution rather than production polyphase.
+
+Port the exact existing Tape/Tube/pre-emphasis/de-emphasis/DC/HF-tone/mix equations
+and10ms/20ms smoothing, changing only FIR profile/dry alignment. Native dry queue
+uses selected L. Mix0 returns old sanitized NORMAL input bits delayed L, without
+filter coloration; all wet histories remain active at mix0. Nonfinite/true float
+subnormal handling and finite clamping remain as legacy. L is buffered/FIR group
+delay, not a claim no active-wet pre-ringing or no IIR phase. Native controls keep
+their existing timing; no arbitrary output normalization or gain-floor changes.
+
+Acceptance per mode preserves all legacy core numerical intents/gates: neutral
+identity/delay/extremes, partial mix with independent reference, Tape HF memory/
+compression, Tube H2/DC, stereo isolation, variable partitions/automation/reset,
+invalid atomicity/allocation failures/callback guards. Retain all48 declared
+reference-comparison fixtures:4096coherent frames after4096warm, bins719/1597 and
+two-tone683+1129, amps.15/.5, styles0/1, drive1,tone16000. Independent32x reference
+uses the same profile kernels but generic convolution and recalculates constants;
+its latency is boundaryM/2+15*higherM/32, i.e126/188/376 (crop6/12/24 vs8x).
+Residual normalized to inputRMS<-55dB and>=20dB improvement vs1x, unchanged.
+Label these as reference agreement, not absolute alias suppression.
+
+Separately require all32 pure-tone absolute-mask fixtures PER MODE <=-55dB/inputRMS:
+four rates,styles0/1,amps.15/.5,bins719/1597,N4096,drive1,tone16000,mix1,
+warm ceil(rate/N)*N>=1sec. Rectangular FFT: only true integer harmonics below
+Nyquist allowed; DC excluded, Nyquist weighted separately. Verify actual input
+single-bin power and nominalRMS as well as finite/exact output, not a shared-filter
+comparison. No multitone/universal alias claim. Allcases and thresholds fixed;
+report failures rather than tuning fixtures. Measure mode latency/filter responses
+and Release CPU without calling cloud results deadline/target-machine validation.
+IndependentQA/Release/ASan/native required; manual testing deferred.
+
+Writer owns ONLY new QualityMode.hpp,BandlimitedColour.hpp,
+src/BandlimitedColour.cpp,src/BandlimitedColourOversampling.hpp,
+tests/bandlimited_colour_tests.cpp. Lead owns CMake/docs/integration. Existing
+Color/engine/host/core tests stay frozen. Test executable may accept --quality
+live/studio/offline for separate CTest budgets, default all3; no hidden skipped
+empty suite. Future host uses prepared-mode latency, raw alignment and full resume
+oracles; lifecycle-safe global quality selection is separate from sound presets.
+
+### Bandlimited Colour v2 Nyquist guard correction — 2026-10-28
+
+Independent supplemental bin683 at48k (H3 justaboveNyquist) showed ~-14.7dB
+alias in allv1modes, outside original32fixtures. V1 passing results remain true
+but are insufficient for stronger boundary suppression. Do not exposev1bank.
+Retain native firstinterpolation halfband193/257/513 and allhigher halfband65/129/257.
+Change ONLY native LAST decimation kernel to normalized Blackman-windowed sinc
+lowpass cutoff .225 cycles per2xsample (.45*nativeFs). All coefficients participate
+(no structural-even-zero assumption). Same symmetrictapcount, same exactlatency
+120/176/352; dryqueue untouched, noIIRphase. Header/publicAPI unchanged.
+Wet band now explicitly guarded belowNyquist; toneHz remains additional HF filter
+under that band. Independent32x reference must use firsthalfband,lastguardedLP
+without copying productionhelper. Reference1x remains actualnativecurve oldpolicy,
+alloriginal48agreement and32absolute gates unchanged.
+
+Add absolute nearboundary fixtures bothmodels,2amps,4rates atbins683/1025 (H3/H2
+justaboveNyquist respectively), as well as prior719/1597. ActualinputRMS/FFT and
+DC/Nyquist masks retained; gate <=-55dB/inputRMS each. Report generic scan of
+purebins17..2031 step17 at48k/.5drive1tone16k bothmodels allmodes, no per-bin tuning;
+scan outcomes not silently skipped. Also compare small-signal partialmix amplitude
+and phase to independent complex linear FIR response including newguard (e.g
+100,1k,8k,16k,20k), explicit expected HF attenuation, not zero-phase cancellations.
+Do not claim universalaliasbound even if scanpasses; fixed8x andfinitefilters.
+This correction changes helper Decimator to supportallkernelcoefficients; preserve
+oldhelper/tests frozen and preparedallocation/noRTalloc. Lead handles CMake/docs,
+writer samefivefiles. New180spermodeSAN budgets provisional until measured;
+Offline may require360s from measuredcost, documentalltimeoutevidence.
+
+### Bandlimited Colour v3 input-image guard — 2026-10-31
+
+V2 Live scan found17/238 absolute failures, worst-13.954841dB atTube bin2023:
+first-interpolation images mix down inside nonlinear shaping and cannot be removed
+by final filtering. Preserve negative logs. Replace BOTH native-boundary kernels
+(first interpolation and last decimation) with normalized Blackman sinc cutoff
+.225 cycles/2xsample. Higher stages unchanged. Interpolator must compute both
+polyphase branches using all coefficients, with gain2, no halfband even shortcut.
+Same tapcounts/group delays120/176/352, public API and dry queues unchanged.
+Reference independently computes both guarded kernels; all original gates, v2
+edge fixtures,238-bin scan per mode and complex partialmix checks remain. Explicit
+wet bandwidth guard applies also to near-Nyquist inputs; document attenuation.
+No output clipping, fixture tuning, exclusions or threshold relaxation. Writer
+retains same five-file ownership. Character dependency must adopt both guards
+and retain its independently generated reference and negative v1 evidence.
+
+### Bandlimited Colour v4 intrinsic alias correction — 2026-10-31
+
+Independent adjacent-bin QA found Tape48k/.5 bins1720..1724 fail-55dB in allv3
+modes (bin1724 worst~-53.65). Outputbin12 matches19th harmonic folding at8x;
+longer boundaries cannot remove it. Preserve v3passing fixed/grid results and
+negative additionalcases. Do not exposev3. Increase nonlinear oversampling to16x
+(fourup/fourdownstages), retaining guarded193/257/513 native boundaries and
+higher halfband65/129/257 at remaining stages. Preserve existing NATIVE-rate pre/deemphasis/DC/tone placement and coefficients
+exactly; only stateless nonlinear shaping runs16x. There are no high-rate memory
+coefficients in the retained algorithm. Curves/native smoothing unchanged.
+Generichelper named Oversampler16; no legacyhelper mutation.
+
+Actual profile delay=nativeM/2+7*higherM/16: Live124,Studio184,Offline368; maximum368.
+No hidden compensation retaining oldreportedlatency. Independent32x reference
+latency126/188/376, alignmentdelta2/4/8. Keep all numericgates; add explicit
+1720..1724 absolute fixtures acrossbothstyles/amps/rates and allmodes and dense
+48k/.5 scan EVERY integerbin17..2031, notstep17. Run dense scan as separate
+--scan mode tests (Release CI required), corefixtures/complex/lifecycle also
+separate --core mode for Debug/SAN budgets. Default runs all, neveremptysuites.
+No claim of universalaliasbound; all new observed negativecases retained.
+
+Preparedquality engine/globalv15 contract now uses124/184/368 throughout, max368,
+guardL andfade2L; all API/state semantics and65definitions unchanged. Character
+uses same16xhelper/delays and independent32xref2/4/8, guardedboundaries. Higher
+CPU must be measured; no deadlinesclaim. All dependentengine/host tests must
+explicitly adopt measuredlatencies, preserve routing/controlclock/atomicgates.
+
+### Qualification execution and prepared-kernel optimization
+
+Dense scans are distinct Release qualification gates, deterministically sharded
+over inclusive17..2031 with completecoverage/nooverlap. Debug/SAN execute a
+nonempty --safety mode covering validation/lifecycle/reset/partition/automation/
+allocation/extremes; Release --core retains ALLfixedalias/reference/complex gates,
+and all dense shards required before integration. Default stillALLtests. Do not
+report safety-only as numeric qualification. Existing legacytests/gates unchanged.
+New testbudgets based measuredmodecost, separate actual outcomes documented.
+
+Prepared sparse polyphase coefficient/index arrays are permitted to avoid looping
+through known halfbandzero coefficients in16x higherstages. All allocation only
+prepare; fixedarrays acceptable. Preserve exact accumulationorder of nonzeros
+and demonstrate same-platform bitwise equivalence to frozenv4helper on random/
+impulse/constant/extr inputs both nonlinearcurves/allprofiles. This is performance
+work, notfilter redesign; allnumericgates remain. No fastmath or coefficientpruning.
+
 ## VoiceSculptor tone core v2: Depth and Resonance — 2026-10-26
 
 Interpretation: independently adjustable tonal operations, not pitch lowering or
