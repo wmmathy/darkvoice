@@ -93,3 +93,14 @@ Live/Studio/Offline profiles and stronger absolute Colour alias suppression.
 Bandlimited Colour profile implementation and isolated WORLD diagnostic active;
 no production pitch controls until retained gates pass. Earlier pitch failures
 and shared-filter reference limitation remain recorded. Manual tests deferred.
+
+## Voice Sculptor integration checkpoint — 2026-11-12
+
+Colour library PR44 is merged after complete native and dense qualification.
+Quality-mode engine/UI/state15 changes are committed on their integration branch;
+product timeout diagnosis and exact-head native validation remain. Character DSP
+is committed separately and needs application routing/control/state integration.
+Latest waveform-periodicity pitch experiment records42/42 retained synthetic
+passes; independent verification, broader and streaming qualification are still
+required. Manual tests remain deferred. Older writer snapshots are preserved on
+feature/archive/*-20261112 branches; they are not new product merges.

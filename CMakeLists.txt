@@ -11,7 +11,7 @@ target_compile_features(darkvoice_core INTERFACE cxx_std_20)
 target_include_directories(darkvoice_core INTERFACE
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>")
 
-add_library(darkvoice_engine STATIC src/AudioEngine.cpp src/ToneEffects.cpp src/PitchDetector.cpp src/NoiseGate.cpp src/DeEsser.cpp src/ModulationEffects.cpp src/Flanger.cpp src/VocalLimiter.cpp src/StereoDelay.cpp src/Doubler.cpp src/SpaceReverb.cpp src/Colour.cpp src/VoiceSculptor.cpp src/Breathiness.cpp)
+add_library(darkvoice_engine STATIC src/AudioEngine.cpp src/ToneEffects.cpp src/PitchDetector.cpp src/NoiseGate.cpp src/DeEsser.cpp src/ModulationEffects.cpp src/Flanger.cpp src/VocalLimiter.cpp src/StereoDelay.cpp src/Doubler.cpp src/SpaceReverb.cpp src/Colour.cpp src/BandlimitedColour.cpp src/VoiceSculptor.cpp src/Breathiness.cpp)
 add_library(DarkVoice::Engine ALIAS darkvoice_engine)
 target_link_libraries(darkvoice_engine PUBLIC DarkVoice::Core)
 set_target_properties(darkvoice_engine PROPERTIES POSITION_INDEPENDENT_CODE ON CXX_EXTENSIONS OFF)
@@ -54,6 +54,20 @@ if(BUILD_TESTING)
     darkvoice_strict_warnings(darkvoice_voice_sculptor_tests)
     add_test(NAME sculptor.tone COMMAND darkvoice_voice_sculptor_tests)
     set_tests_properties(sculptor.tone PROPERTIES TIMEOUT 60)
+
+    add_executable(darkvoice_bandlimited_colour_tests tests/bandlimited_colour_tests.cpp)
+    target_link_libraries(darkvoice_bandlimited_colour_tests PRIVATE DarkVoice::Engine)
+    set_target_properties(darkvoice_bandlimited_colour_tests PROPERTIES CXX_EXTENSIONS OFF)
+    darkvoice_strict_warnings(darkvoice_bandlimited_colour_tests)
+    foreach(quality live studio offline)
+        if(CMAKE_BUILD_TYPE STREQUAL "Release" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
+            add_test(NAME effects.bandlimited_colour.core.${quality} COMMAND darkvoice_bandlimited_colour_tests --core ${quality})
+            set_tests_properties(effects.bandlimited_colour.core.${quality} PROPERTIES TIMEOUT 900)
+        else()
+            add_test(NAME effects.bandlimited_colour.safety.${quality} COMMAND darkvoice_bandlimited_colour_tests --safety ${quality})
+            set_tests_properties(effects.bandlimited_colour.safety.${quality} PROPERTIES TIMEOUT 300)
+        endif()
+    endforeach()
 
     add_executable(darkvoice_colour_tests tests/colour_tests.cpp)
     target_link_libraries(darkvoice_colour_tests PRIVATE DarkVoice::Engine)
@@ -257,7 +271,7 @@ if(DARKVOICE_BUILD_PRODUCTS)
         target_compile_features(darkvoice_gui_smoke PRIVATE cxx_std_20)
         target_compile_definitions(darkvoice_gui_smoke PRIVATE JUCE_GLOBAL_MODULE_SETTINGS_INCLUDED=1)
         add_test(NAME plugin.state_and_audio COMMAND darkvoice_plugin_tests)
-        # Continuous 8x Colour processing plus the expanded alignment/audio fixtures
+        # Continuous 16x Colour processing plus the expanded alignment/audio fixtures
         # measured 70s in an isolated cloud Debug run. This is a test runtime
         # budget, not a real-time performance requirement or a numerical waiver.
         set_tests_properties(plugin.state_and_audio PROPERTIES TIMEOUT 180

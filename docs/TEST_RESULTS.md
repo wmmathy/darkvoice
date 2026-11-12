@@ -805,3 +805,32 @@ raw bypass/limiter behavior retained. Native checks required on committed head.
 Manual host/mic/listening remains deferred, not passed.
 
 Manual host/microphone/listening qualification remains deferred.
+
+## In-progress Voice Sculptor qualification — 2026-10-31
+
+Depth/resonance schema14 host PR43 mergedcbfe8fd after exacthead4564c4c passed
+all7native/source checks40666786309/40666786514. Manual qualification deferred.
+
+Colour v1 fixedmatrix passed, but independent nearNyquist683 revealed~-14.7dB
+alias. Outputguardv2 stillfailed17/238Live scan cases from inputimages. Bothguard
+v3 passeddeclaredstep17scan but independent1720..1724 neighbors failed~-53.64dB
+from8x19thharmonicfold. Preserveallnegative logs; noneexposed asqualifiedbank.
+V4 uses16x shaping/nativeguardedboundaries and actualdelay124/184/368. Initial
+Live/Studio core1211checks each pass; remaining/optimized/SAN/native/full dense
+qualification pending. DenseRelease scan is all2015bins perstyle/profile, split
+eight disjointinclusive ranges for24CIjobs; every shard required beforemerge.
+Debug/SAN safety tests are separately named, never reported as numericalmatrix.
+
+Qualityengine v4 strictO2 passed26444checks/0,36composedroutes exact0,51.49s
+cloudwalltime. No deadlineclaim. Hostpreset tests passed. Firstvalidlegacystate
+fixture incorrectly selected APVTSchildrenbyposition; now uses stableIDs and
+productionvalidation isunchanged. Priorpartialbuild hadstaletesthelperAPI and
+is not a successfulfreshvalidation. Subsequentfresh16xDebugproductbuild passed,
+presets passed.75s butplugin suite TIMEOUT180.10sec (no assertion reported).
+This is test-runtime failure, notpassed or evidence of acceptable targetCPU.
+Preparedsparse-kernel performance work and measured rerun remainpending.
+V1SANLive100.66s/Studio161.82s passed,OfflineTIMEOUT180.12s; these were obsolete
+8xprofiles and do NOT validatecurrent16xbank.
+
+WORLD fixedcomparators remainednegative: DIO40/42,Harvest24/42,YIN31/42. Fixed
+REAPERnarrow3passed,full42pending. No productpitchcontrols/backendqualification.

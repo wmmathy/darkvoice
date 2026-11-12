@@ -76,11 +76,13 @@ void measure(float value, float &peak) noexcept {
 
 } // namespace
 
-bool AudioEngine::prepare(double sampleRate, std::size_t maxFrames, std::size_t channels) noexcept {
+bool AudioEngine::prepare(double sampleRate, std::size_t maxFrames, std::size_t channels,
+                          QualityMode quality) noexcept {
     release();
     if ((sampleRate != 44100.0 && sampleRate != 48000.0 && sampleRate != 88200.0 &&
          sampleRate != 96000.0) ||
-        maxFrames == 0 || maxFrames > 65536 || (channels != 1 && channels != 2))
+        maxFrames == 0 || maxFrames > 65536 || (channels != 1 && channels != 2) ||
+        !validQualityMode(quality))
         return false;
     // Preparation is explicitly non-real-time. All storage required by process
     // is allocated here; failed allocation leaves the engine unprepared.
@@ -102,9 +104,11 @@ bool AudioEngine::prepare(double sampleRate, std::size_t maxFrames, std::size_t 
         !doubler_.prepare(sampleRate, maxFrames, channels) ||
         !stereoDelay_.prepare(sampleRate, maxFrames, channels) ||
         !spaceReverb_.prepare(sampleRate, maxFrames, channels) ||
-        !colour_.prepare(sampleRate, maxFrames, channels) ||
+        !colour_.prepare(sampleRate, maxFrames, channels, quality) ||
         !limiter_.prepare(sampleRate, maxFrames, channels))
         return false;
+    latency_ = colour_.latencySamples();
+    resumeFadeLength_ = std::max(std::size_t{128}, 2 * latency_);
     rate_ = sampleRate;
     maxFrames_ = maxFrames;
     channels_ = channels;
@@ -124,7 +128,7 @@ bool AudioEngine::setParameters(const EngineParameters &p) noexcept {
         !Flanger::valid({p.flangerRateHz, p.flangerDepthMs, p.flangerFeedback, p.flangerMix}) ||
         !VocalLimiter::valid({p.limiterCeilingDb, p.limiterReleaseMs}) ||
         !StereoDelay::valid(stereoDelayParameters(p)) || !Doubler::valid(doublerParameters(p)) ||
-        !SpaceReverb::valid(spaceParameters(p)) || !Colour::valid(colourParameters(p)) ||
+        !SpaceReverb::valid(spaceParameters(p)) || !BandlimitedColour::valid(colourParameters(p)) ||
         !VoiceSculptor::valid(sculptorParameters(p)) || !Breathiness::valid({p.sculptBreathiness}))
         return false;
     // All snapshots are fully validated before any target is replaced.
@@ -150,10 +154,12 @@ bool AudioEngine::setParameters(const EngineParameters &p) noexcept {
 
 void AudioEngine::release() noexcept {
     rate_ = 0;
+    latency_ = 0;
+    resumeFadeLength_ = 2 * BandlimitedColour::latencyForQuality(QualityMode::Live);
     maxFrames_ = channels_ = 0;
     rawQueue_ = {};
     rawPosition_ = resumeGuard_ = 0;
-    resumeFade_ = 128;
+    resumeFade_ = resumeFadeLength_;
     bypassed_ = limiterResetPending_ = false;
     meters_ = {};
 }
@@ -166,7 +172,7 @@ void AudioEngine::reset() noexcept {
     current_ = target_;
     rawQueue_ = {};
     rawPosition_ = resumeGuard_ = 0;
-    resumeFade_ = 128;
+    resumeFade_ = resumeFadeLength_;
     bypassed_ = limiterResetPending_ = false;
     effects_.reset();
     gate_.reset();
@@ -218,7 +224,7 @@ bool AudioEngine::processInternal(std::span<float *> channels, std::size_t frame
                 measure(fromBits(delayed), meters_.outputPeak);
             }
         }
-        rawPosition_ = rawPosition_ + 1 == 56 ? 0 : rawPosition_ + 1;
+        rawPosition_ = rawPosition_ + 1 == latency_ ? 0 : rawPosition_ + 1;
     }
     if (bypass) {
         bypassed_ = true;
@@ -226,7 +232,7 @@ bool AudioEngine::processInternal(std::span<float *> channels, std::size_t frame
     }
     if (bypassed_) {
         colour_.reset();
-        resumeGuard_ = 56;
+        resumeGuard_ = latency_;
         resumeFade_ = 0;
         bypassed_ = false;
     }
@@ -289,8 +295,8 @@ bool AudioEngine::processInternal(std::span<float *> channels, std::size_t frame
         if (resumeGuard_ != 0) {
             weight = 0;
             --resumeGuard_;
-        } else if (resumeFade_ < 128) {
-            weight = static_cast<double>(++resumeFade_) / 128;
+        } else if (resumeFade_ < resumeFadeLength_) {
+            weight = static_cast<double>(++resumeFade_) / resumeFadeLength_;
         }
         for (std::size_t c = 0; c < channels.size(); ++c) {
             const float dry = processedDry(aligned_[c][i]);
