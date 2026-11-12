@@ -5,7 +5,9 @@
 #include <atomic>
 #include <darkvoice/AudioEngine.hpp>
 #include <darkvoice/ParameterSchema.hpp>
+#include <darkvoice/QualityMode.hpp>
 #include <juce_audio_processors/juce_audio_processors.h>
+#include <optional>
 
 class DarkVoiceProcessor final : public juce::AudioProcessor {
   public:
@@ -59,6 +61,15 @@ class DarkVoiceProcessor final : public juce::AudioProcessor {
     float outputPeak() const noexcept {
         return outputPeak_.load(std::memory_order_relaxed);
     }
+    bool requestQualityMode(darkvoice::QualityMode mode) noexcept;
+    darkvoice::QualityMode requestedQualityMode() const noexcept {
+        return static_cast<darkvoice::QualityMode>(
+            requestedQuality_.load(std::memory_order_relaxed));
+    }
+    std::optional<darkvoice::QualityMode> activeQualityMode() const noexcept {
+        const int mode = activeQuality_.load(std::memory_order_relaxed);
+        return mode < 0 ? std::nullopt : std::optional{static_cast<darkvoice::QualityMode>(mode)};
+    }
     darkvoice::PresetValues snapshotPresetValues() const;
     bool applyPreset(const darkvoice::PresetValues &);
     float dryPitchHz() const noexcept {
@@ -80,6 +91,7 @@ class DarkVoiceProcessor final : public juce::AudioProcessor {
     darkvoice::AudioEngine engine_;
     darkvoice::DryPitchAnalyzer dryAnalysis_;
     std::array<std::atomic<float> *, darkvoice::parameterSchema.size()> raw_{};
+    std::atomic<int> requestedQuality_{0}, activeQuality_{-1};
     std::atomic<float> hostTempoBpm_{0};
     std::atomic<float> inputPeak_{0}, outputPeak_{0};
     std::size_t maximumFrames_ = 0;

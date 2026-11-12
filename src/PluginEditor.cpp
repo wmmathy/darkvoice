@@ -215,7 +215,7 @@ DarkVoiceEditor::DarkVoiceEditor(DarkVoiceProcessor &p, juce::File root)
                 ? "Vocal tone shaping: Body at 180 Hz and Presence at 3 kHz. Zero dB is neutral."
             : i >= 54
                 ? "Tape/tube-style saturation with 8x oversampling, HF tone and parallel mix. "
-                  "Fixed 56-sample alignment."
+                  "Quality-dependent alignment."
             : i >= 49 ? "Distinct algorithmic Room / Hall / Plate networks. HF tone is output "
                         "filtering; Decay is not an RT60 time."
             : i >= 45
@@ -277,6 +277,23 @@ DarkVoiceEditor::DarkVoiceEditor(DarkVoiceProcessor &p, juce::File root)
         return juce::String(value < .5 ? "Tape" : "Tube");
     };
     sliders_[54].setTextBoxStyle(juce::Slider::TextBoxRight, true, 110, 28);
+    quality_.setName("Processing quality");
+    quality_.addItem("Live", 1);
+    quality_.addItem("Studio", 2);
+    quality_.addItem("Offline", 3);
+    quality_.setTooltip(
+        "Changes apply when processing is prepared again or the plugin is reopened.");
+    quality_.onChange = [this] {
+        (void)processor_.requestQualityMode(
+            static_cast<darkvoice::QualityMode>(quality_.getSelectedId() - 1));
+        timerCallback();
+    };
+    qualityStatus_.setName("Processing quality status");
+    qualityStatus_.setColour(juce::Label::textColourId, juce::Colour(0xffb5bdc7));
+    qualityStatus_.setFont(juce::Font(juce::FontOptions(11.0f)));
+    qualityStatus_.setJustificationType(juce::Justification::centredRight);
+    addAndMakeVisible(quality_);
+    addAndMakeVisible(qualityStatus_);
     tempo_.setName("Stereo delay tempo status");
     tempo_.setColour(juce::Label::textColourId, juce::Colour(0xffb5bdc7));
     tempo_.setFont(juce::Font(juce::FontOptions(12.0f)));
@@ -444,12 +461,12 @@ void DarkVoiceEditor::paint(juce::Graphics &g) {
     g.fillRect(24, 24, 4, 45);
     g.setColour(text);
     g.setFont(juce::Font(juce::FontOptions(27.0f, juce::Font::bold)));
-    g.drawText(processor_.getName().toUpperCase(), 40, 19, getWidth() - 65, 34,
+    g.drawText(processor_.getName().toUpperCase(), 40, 19, getWidth() - 275, 34,
                juce::Justification::centredLeft);
     g.setFont(juce::Font(juce::FontOptions(13.0f)));
     g.setColour(juce::Colour(0xff9ba6b4));
     g.drawText("DEVELOPMENT BUILD  /  Real DSP / Local presets / Editable sound", 40, 55,
-               getWidth() - 65, 24, juce::Justification::centredLeft);
+               getWidth() - 420, 24, juce::Justification::centredLeft);
     g.setFont(juce::Font(juce::FontOptions(12.0f)));
     g.drawText(
         "Latency: " + juce::String(processor_.getLatencySamples()) +
@@ -457,6 +474,8 @@ void DarkVoiceEditor::paint(juce::Graphics &g) {
         24, getHeight() - 30, getWidth() - 48, 22, juce::Justification::centredLeft);
 }
 void DarkVoiceEditor::resized() {
+    quality_.setBounds(getWidth() - 190, 22, 166, 28);
+    qualityStatus_.setBounds(getWidth() - 360, 54, 336, 30);
     const int width = getWidth() - 48;
     search_.setBounds(24, 99, 180, 30);
     presets_.setBounds(216, 99, width - 390, 30);
@@ -510,6 +529,19 @@ void DarkVoiceEditor::resized() {
     pitch_.setBounds(24, getHeight() - 56, getWidth() - 48, 22);
 }
 void DarkVoiceEditor::timerCallback() {
+    constexpr const char *qualityNames[]{"Live", "Studio", "Offline"};
+    const auto requested = processor_.requestedQualityMode();
+    const auto active = processor_.activeQualityMode();
+    quality_.setSelectedId(static_cast<int>(requested) + 1, juce::dontSendNotification);
+    const auto requestedName = juce::String(qualityNames[static_cast<int>(requested)]);
+    qualityStatus_.setText(
+        active && *active == requested
+            ? "Active: " + requestedName
+            : (active ? "Active: " + juce::String(qualityNames[static_cast<int>(*active)]) + " / "
+                      : juce::String("Not prepared / ")) +
+                  requestedName + " pending (reopen/reprepare)",
+        juce::dontSendNotification);
+
     const auto actualBpm = processor_.hostTempoBpm();
     const auto manualBpm = processor_.parameters.getRawParameterValue("stereoDelayBpm")->load();
     const bool useHost =
@@ -535,6 +567,7 @@ void DarkVoiceEditor::timerCallback() {
     } else
         pitch_.setText("Dry input pitch: -- (analysis only, no correction)",
                        juce::dontSendNotification);
+    repaint(24, getHeight() - 30, getWidth() - 48, 22);
     const auto db = [](float value) {
         return value > 0 ? juce::String(juce::Decibels::gainToDecibels(value), 1)
                          : juce::String("-inf");

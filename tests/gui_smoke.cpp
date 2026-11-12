@@ -49,8 +49,16 @@ int main(int argc, char **argv) {
         juce::Slider *input = nullptr;
         juce::ToggleButton *bypass = nullptr;
         juce::ComboBox *presetSelection = nullptr;
+        juce::ComboBox *quality = nullptr;
+        juce::Label *qualityStatus = nullptr;
         juce::TextButton *load = nullptr;
         for (auto *child : components) {
+            if (auto *combo = dynamic_cast<juce::ComboBox *>(child);
+                combo && combo->getName() == "Processing quality")
+                quality = combo;
+            if (auto *label = dynamic_cast<juce::Label *>(child);
+                label && label->getName() == "Processing quality status")
+                qualityStatus = label;
             if (auto *slider = dynamic_cast<juce::Slider *>(child)) {
                 ++controls;
                 if (slider->getName() == "INPUT GAIN")
@@ -68,6 +76,20 @@ int main(int argc, char **argv) {
         }
         if (controls != 64 || !input || !bypass || !presetSelection || !load)
             return 2;
+        if (!quality || !qualityStatus || quality->getNumItems() != 3 ||
+            !editor->getLocalBounds().contains(quality->getBounds()) ||
+            !editor->getLocalBounds().contains(qualityStatus->getBounds()))
+            return 36;
+        processor.prepareToPlay(48000, 64);
+        quality->setSelectedId(3, juce::sendNotificationSync);
+        if (processor.requestedQualityMode() != darkvoice::QualityMode::Offline ||
+            processor.activeQualityMode() != darkvoice::QualityMode::Live ||
+            processor.getLatencySamples() !=
+                static_cast<int>(darkvoice::BandlimitedColour::latencyForQuality(
+                    darkvoice::QualityMode::Live)) ||
+            !qualityStatus->getText().contains("pending"))
+            return 37;
+        quality->setSelectedId(1, juce::sendNotificationSync);
         input->setValue(6.0, juce::sendNotificationSync);
         if (std::abs(processor.parameters.getRawParameterValue("inputDb")->load() - 6.0f) > 0.01f)
             return 3;
@@ -291,7 +313,10 @@ int main(int argc, char **argv) {
                 slider && slider->getName() == "COLOUR STYLE")
                 colourModel = slider;
         if (!colourModel || colourModel->textFromValueFunction(0) != "Tape" ||
-            colourModel->textFromValueFunction(1) != "Tube" || processor.getLatencySamples() != 56)
+            colourModel->textFromValueFunction(1) != "Tube" ||
+            processor.getLatencySamples() !=
+                static_cast<int>(
+                    darkvoice::BandlimitedColour::latencyForQuality(darkvoice::QualityMode::Live)))
             return 25;
         juce::Slider *warmth = nullptr;
         for (auto *component : components)
