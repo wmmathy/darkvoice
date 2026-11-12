@@ -400,3 +400,12 @@ Independent read-only QA approved core/engine/host/migration/UI source and
 separately reproduced388core and5839engine checks. Real GUI smoke passes45controls
 and all attachments; ninth-tab screenshot inspected. Preset suite passes1000checks.
 Native CI and normal PR integration remain pending; no actual DAW/listening claim.
+
+## Simulated double tracking work package — 2026-10-23
+
+Lead established Doubler v1/schema9 before implementation. Architecture proposed
+a dual independently wandering tap effect, not a relabeled chorus or harmony.
+Agent deesser_review owns core/header/tests in doubler-core; host owns engine/
+parameters/presets/processor/editor and regressions in doubler-host. Lead owns
+CMake/static coverage/docs/integration; independent QA and native checks remain
+required. Defaults neutral, old IDs retained, manual listening deferred.
