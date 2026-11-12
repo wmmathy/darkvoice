@@ -687,7 +687,10 @@ normal and bypassed audio. Sanitize processed branches, not raw bypass.
 Enabled route: legacywet -> SpaceReverb -> Colour -> aligned globaldry/wet ->
 outputgain -> limiter -> outputmeters. Module colourMix0 returns the old wet
 chain delayed56, without added filter coloration. Globaldry is the rawqueue's
-sanitized delayed input. Existing inputgain/HP/compressor/FX processing remains
+sanitized delayed input. Here sanitization clears only nonfinite/true-float-
+subnormal values, preserving ALL normal finite amplitudes before final gain.
+Do not move the old1e-20 final cleanup ahead of possible positive output gain:
+9e-22 at+24dB must survive the final threshold. Existing inputgain/HP/compressor/FX processing remains
 at input-frame time; finalglobalmix/outputgain automation remains at output-frame
 time. Do not simply delay the complete old automated output.
 
