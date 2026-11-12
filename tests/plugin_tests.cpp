@@ -65,7 +65,8 @@ void stateTests() {
     }
     std::cout << "Start-relative fused feedback rounding residual: "
               << std::fma(.001f, 850.f, -.85f) << '\n';
-    for (const auto *id : {"sculptBodyDb", "sculptWarmthDb", "sculptPresenceDb"}) {
+    for (const auto *id : {"sculptBodyDb", "sculptWarmthDb", "sculptPresenceDb", "sculptDepthDb",
+                           "sculptResonanceDb"}) {
         require(raw(source, id) == 0, "Tone defaults must be exactly neutral");
         const auto &range = source.parameters.getParameter(id)->getNormalisableRange();
         require(range.convertTo0to1(0) == .5f && range.convertFrom0to1(.5f) == 0 &&
@@ -130,6 +131,8 @@ void stateTests() {
     set(source, "sculptWarmthDb", 2.3f);
     set(source, "sculptPresenceDb", 5.2f);
     set(source, "sculptBreathiness", .731f);
+    set(source, "sculptDepthDb", -3.2f);
+    set(source, "sculptResonanceDb", 4.7f);
     juce::MemoryBlock state;
     source.getStateInformation(state);
     require(state.getSize() > 0, "State serialization empty");
@@ -153,10 +156,11 @@ void stateTests() {
                                                                               : i < 55 ? 10
                                                                               : i < 59 ? 11
                                                                               : i < 62 ? 12
-                                                                                       : 13),
+                                                                              : i < 63 ? 13
+                                                                                       : 14),
                 "AU version hint changed");
         require(std::abs(raw(restored, spec.id) - raw(source, spec.id)) < 0.001f,
-                "Full v13 state roundtrip failed");
+                "Full v14 state roundtrip failed");
     }
     require(source.getTailLengthSeconds() == 240.0, "Stereo musical delay tail not reported");
 
@@ -164,7 +168,8 @@ void stateTests() {
     restored.setStateInformation(garbage, sizeof(garbage));
     require(raw(restored, "inputDb") == raw(source, "inputDb"),
             "Malformed state changed parameters");
-    for (const char *version : {"14", "1junk"}) {
+    for (const auto &version :
+         {juce::String(darkvoice::currentSchemaVersion + 1), juce::String("1junk")}) {
         auto xml = source.parameters.copyState().createXml();
         xml->setAttribute("schemaVersion", version);
         juce::MemoryBlock invalid;
@@ -580,7 +585,8 @@ void stateTests() {
             if (!keep)
                 old.removeChild(child, nullptr);
         }
-        for (const auto *id : {"sculptBodyDb", "sculptWarmthDb", "sculptPresenceDb"})
+        for (const auto *id : {"sculptBodyDb", "sculptWarmthDb", "sculptPresenceDb",
+                               "sculptDepthDb", "sculptResonanceDb"})
             set(restored, id, 6);
         juce::MemoryBlock bytes;
         juce::AudioProcessor::copyXmlToBinary(*old.createXml(), bytes);
@@ -616,6 +622,32 @@ void stateTests() {
                              raw(source, darkvoice::parameterSchema[i].id)) < .001f,
                     "Breath migration preserves every prior state value");
     }
+    for (int version = 1; version <= 13; ++version) {
+        auto old = source.parameters.copyState();
+        old.setProperty("schemaVersion", version, nullptr);
+        const auto count = darkvoice::parameterCountForVersion(version);
+        for (int child = old.getNumChildren() - 1; child >= 0; --child) {
+            const auto id = old.getChild(child).getProperty("id").toString();
+            bool retained = false;
+            for (std::size_t i = 0; i < count; ++i)
+                retained = retained || id == darkvoice::parameterSchema[i].id;
+            if (!retained)
+                old.removeChild(child, nullptr);
+        }
+        juce::MemoryBlock legacyBytes;
+        juce::AudioProcessor::copyXmlToBinary(*old.createXml(), legacyBytes);
+        set(restored, "sculptDepthDb", 6);
+        set(restored, "sculptResonanceDb", -6);
+        restored.setStateInformation(legacyBytes.getData(),
+                                     static_cast<int>(legacyBytes.getSize()));
+        require(raw(restored, "sculptDepthDb") == 0 && raw(restored, "sculptResonanceDb") == 0,
+                "All pre-v14 state initializes exact-neutral depth and resonance");
+        for (std::size_t i = 0; i < count; ++i) {
+            const auto *id = darkvoice::parameterSchema[i].id;
+            require(std::abs(raw(restored, id) - raw(source, id)) < .001f,
+                    "Depth/resonance migration preserves every prior state parameter");
+        }
+    }
     for (const auto *invalid : {"NaN", "1e100", "-0.001", "1.001"}) {
         auto bad = source.parameters.copyState();
         bad.setProperty("schemaVersion", darkvoice::currentSchemaVersion, nullptr);
@@ -627,7 +659,8 @@ void stateTests() {
         require(restored.snapshotPresetValues() == before,
                 "Invalid breath texture state must be rejected atomically");
     }
-    for (const auto *id : {"sculptBodyDb", "sculptWarmthDb", "sculptPresenceDb"})
+    for (const auto *id : {"sculptBodyDb", "sculptWarmthDb", "sculptPresenceDb", "sculptDepthDb",
+                           "sculptResonanceDb"})
         for (const auto *invalid : {"NaN", "1e100", "-6.01", "6.01"}) {
             auto bad = source.parameters.copyState();
             bad.setProperty("schemaVersion", darkvoice::currentSchemaVersion, nullptr);
@@ -714,7 +747,7 @@ void stateTests() {
                 "Invalid ID set partially changed state");
     }
     auto values = source.snapshotPresetValues();
-    require(values.size() == 62 && values.count("bypass") == 0,
+    require(values.size() == 64 && values.count("bypass") == 0,
             "Preset must contain only sound parameters");
     values["inputDb"] = 10.0f;
     values["delayMix"] = 0.2f;
@@ -728,9 +761,19 @@ void stateTests() {
     require(!restored.applyPreset(values), "Invalid preset applied");
     require(std::abs(raw(restored, "inputDb") - 10.0f) < 0.01f,
             "Invalid preset partially changed state");
+    for (const auto *id : {"sculptDepthDb", "sculptResonanceDb"})
+        for (float invalid : {-6.01f, 6.01f, std::numeric_limits<float>::quiet_NaN(),
+                              std::numeric_limits<float>::infinity()}) {
+            const auto before = restored.snapshotPresetValues();
+            auto rejected = before;
+            rejected[id] = invalid;
+            rejected["inputDb"] = -20;
+            require(!restored.applyPreset(rejected) && restored.snapshotPresetValues() == before,
+                    "Invalid depth/resonance memory preset is rejected atomically");
+        }
 }
 std::complex<double> toneTransfer(double rate, double frequency, double body, double warmth,
-                                  double presence) {
+                                  double presence, double depth = 0, double resonance = 0) {
     const auto z =
         std::exp(std::complex<double>(0, -2 * juce::MathConstants<double>::pi * frequency / rate));
     const auto band = [&](double center, double q) {
@@ -741,20 +784,27 @@ std::complex<double> toneTransfer(double rate, double frequency, double body, do
     const double k = std::tan(juce::MathConstants<double>::pi * 450 / rate);
     const auto low = k * (1. + z) / ((1 + k) + (k - 1) * z);
     const double a = std::pow(10., warmth / 40), b = std::pow(10., -warmth / 40);
-    return (1. + (std::pow(10., body / 20) - 1) * band(180, .85)) * (b + (a - b) * low) *
+    const double kd = std::tan(juce::MathConstants<double>::pi * 90 / rate);
+    const auto depthLow = kd * (1. + z) / ((1 + kd) + (kd - 1) * z);
+    return (1. + (std::pow(10., depth / 20) - 1) * depthLow) *
+           (1. + (std::pow(10., body / 20) - 1) * band(180, .85)) * (b + (a - b) * low) *
+           (1. + (std::pow(10., resonance / 20) - 1) * band(700, 1.6)) *
            (1. + (std::pow(10., presence / 20) - 1) * band(3000, .7));
 }
 void sculptorToneAudioTests() {
     juce::MidiBuffer midi;
     for (double rate : {44100., 48000., 88200., 96000.})
         for (int channels : {1, 2})
-            for (double frequency : {180., 450., 3000.}) {
-                const auto render = [&](float body, float warmth, float presence) {
+            for (double frequency : {70., 180., 450., 700., 3000.}) {
+                const auto render = [&](float body, float warmth, float presence, float depth = 0,
+                                        float resonance = 0) {
                     DarkVoiceProcessor processor;
                     layout(processor, channels);
                     set(processor, "sculptBodyDb", body);
                     set(processor, "sculptWarmthDb", warmth);
                     set(processor, "sculptPresenceDb", presence);
+                    set(processor, "sculptDepthDb", depth);
+                    set(processor, "sculptResonanceDb", resonance);
                     processor.prepareToPlay(rate, 73);
                     // Let the mandatory 20Hz high-pass and tonal filters settle before
                     // fitting steady-state transfer. A fixed 2048-frame preroll was
@@ -801,26 +851,46 @@ void sculptorToneAudioTests() {
                                                              (yc * ss - ys * sc) / determinant);
                     const auto expected = toneTransfer(
                         rate, frequency, raw(processor, "sculptBodyDb"),
-                        raw(processor, "sculptWarmthDb"), raw(processor, "sculptPresenceDb"));
+                        raw(processor, "sculptWarmthDb"), raw(processor, "sculptPresenceDb"),
+                        raw(processor, "sculptDepthDb"), raw(processor, "sculptResonanceDb"));
                     return std::pair{fitted, expected};
                 };
                 const auto neutral = render(0, 0, 0).first;
                 require(std::abs(neutral) > .01,
                         "Neutral paired host tone reference remains audible");
-                for (const auto settings :
-                     {std::array<float, 3>{6, 0, 0}, {0, 6, 0}, {0, 0, 6}, {-3, 4, -5}}) {
-                    const auto [actual, expected] = render(settings[0], settings[1], settings[2]);
-                    if (std::abs(actual / neutral - expected) >= 2e-5)
-                        std::cerr << "Tone oracle case rate=" << rate << " channels=" << channels
-                                  << " frequency=" << frequency << " settings=" << settings[0]
-                                  << ',' << settings[1] << ',' << settings[2]
-                                  << " neutral=" << neutral << " actual=" << actual
-                                  << " ratio=" << actual / neutral << " expected=" << expected
-                                  << " error=" << std::abs(actual / neutral - expected) << '\n';
-                    require(std::abs(actual / neutral - expected) < 2e-5,
+                if (frequency != 70 && frequency != 700)
+                    for (const auto settings :
+                         {std::array<float, 3>{6, 0, 0}, {0, 6, 0}, {0, 0, 6}, {-3, 4, -5}}) {
+                        const auto [actual, expected] =
+                            render(settings[0], settings[1], settings[2]);
+                        if (std::abs(actual / neutral - expected) >= 2e-5)
+                            std::cerr << "Tone oracle case rate=" << rate
+                                      << " channels=" << channels << " frequency=" << frequency
+                                      << " settings=" << settings[0] << ',' << settings[1] << ','
+                                      << settings[2] << " neutral=" << neutral
+                                      << " actual=" << actual << " ratio=" << actual / neutral
+                                      << " expected=" << expected
+                                      << " error=" << std::abs(actual / neutral - expected) << '\n';
+                        require(
+                            std::abs(actual / neutral - expected) < 2e-5,
                             "Actual host tone transfer differs from independent paired analytic "
                             "oracle");
-                }
+                    }
+                if (frequency == 70 || frequency == 700)
+                    for (const auto settings : {std::array<float, 5>{0, 0, 0, 6, 0},
+                                                {0, 0, 0, 0, 6},
+                                                {-3, 4, -5, -4, 5}}) {
+                        const auto [actual, expected] =
+                            render(settings[0], settings[1], settings[2], settings[3], settings[4]);
+                        if (std::abs(actual / neutral - expected) >= 2e-5)
+                            std::cerr << "Depth/resonance oracle rate=" << rate
+                                      << " channels=" << channels << " frequency=" << frequency
+                                      << " ratio=" << actual / neutral << " expected=" << expected
+                                      << " error=" << std::abs(actual / neutral - expected) << '\n';
+                        require(
+                            std::abs(actual / neutral - expected) < 2e-5,
+                            "Depth/resonance host transfer differs from paired analytic oracle");
+                    }
             }
 }
 
@@ -1541,7 +1611,8 @@ void factoryAudioTests() {
                 DarkVoiceProcessor processor;
                 layout(processor, channels);
                 require(processor.applyPreset(preset.values), "Factory application failed");
-                for (const auto *id : {"sculptBodyDb", "sculptWarmthDb", "sculptPresenceDb"})
+                for (const auto *id : {"sculptBodyDb", "sculptWarmthDb", "sculptPresenceDb",
+                                       "sculptDepthDb", "sculptResonanceDb"})
                     require(raw(processor, id) == 0,
                             "All factory preset loads retain exact neutral tone");
                 require(raw(processor, "sculptBreathiness") == 0,
