@@ -563,3 +563,22 @@ pendingnative; productcapability follows itsmergedrevision,not thislibraryalone.
 IndependentQA actuallyrebuilt strictO2suite4241/0 andran224ownimpulsetransform
 comparisons maxcomplexerror7.69278e-8<2e-7 plusstereoscaling. Approvedfinalcore;
 lead Release/ASan alreadycompleted above. Trackedsecret/dependencyscans pass.
+
+## Active finite tone integration assignments — 2026-10-24
+
+Leadestablishedtonecorecontractd759e74 anddependenthostcontract25f7f93; basea5bb182
+combinesColour41c270andqualifiedtonecore. Actualengineagentcolour_engine_finish
+worksfeature/sculptor/tone-engine in/workspace/worktrees/sculptor-tone-engine,
+exclusiveAudioEngine.hpp/.cpp,tests/engine_tests.cpp. Actualhostagent
+colour_host_finish worksfeature/sculptor/tone-host in/workspace/worktrees/
+sculptor-tone-host, exclusiveParameterSchema,PluginProcessor/Editor,PresetBank,
+plugin/preset/gui tests. Exactownership/acceptance islastCOMPONENT_CONTRACTSsection.
+Engineheaderpublishedbeforehostsnapshotwork. Readonlycolour_qa independently
+qualifiedcore4241tests+224transforms; leadowns CMake/docs/integration/nativegates.
+StrictO2testcommands link correspondingengine/sourcestandalonetests; fulllead
+product/Release/ASan suites runsequentially afterfreeze. No perpetualscheduler.
+
+Separatelypitch_failure_design runsbounded developer-only couplingdiagnostics
+in/workspace/worktrees/pitch-coupling-audit (basefa4af29), newqualificationtools/
+reportonly. Existingfailedbackend/tests remainunchanged. Neither diagnosticnor
+finiteagents imply functionalpitchcorrection ormanualhost/listeningqualification.
