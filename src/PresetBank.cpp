@@ -416,6 +416,21 @@ std::vector<Preset> factories() {
          {"eqMidGainDb", -0.5f},
          {"eqHighGainDb", -0.5f},
          {"reverbMix", 0.04f}});
+    // Simulated automatic double tracking, not a second recorded performance.
+    add("double-tracked-rock", "Double Tracked Rock",
+        {{"highPassHz", 80},
+         {"drive", .22f},
+         {"thresholdDb", -20},
+         {"ratio", 2.8f},
+         {"eqLowGainDb", -1},
+         {"eqMidHz", 2200},
+         {"eqMidGainDb", 2.5f},
+         {"eqHighGainDb", 1},
+         {"reverbMix", .04f},
+         {"doublerSeparationMs", 21},
+         {"doublerVariationMs", 2.7f},
+         {"doublerRateHz", .45f},
+         {"doublerMix", .28f}});
     return presets;
 }
 juce::Result readFavorites(const juce::File &directory, std::set<std::string> &ids) {
@@ -431,7 +446,7 @@ juce::Result readFavorites(const juce::File &directory, std::set<std::string> &i
         static_cast<int>(object->getProperty("schemaVersion")) != 1)
         return fail("Invalid favorites metadata");
     const auto *entries = object->getProperty("ids").getArray();
-    if (!entries || entries->size() > maximumUsers + 6)
+    if (!entries || entries->size() > maximumUsers + static_cast<int>(factories().size()))
         return fail("Invalid favorites list");
     for (const auto &id : *entries)
         if (!id.isString() || !acceptableId(id.toString()) ||
