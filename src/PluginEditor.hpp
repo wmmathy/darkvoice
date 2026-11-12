@@ -34,9 +34,9 @@ class DarkVoiceEditor final : public juce::AudioProcessorEditor, private juce::T
     DarkVoiceLookAndFeel look_;
     juce::TabbedComponent tabs_{juce::TabbedButtonBar::TabsAtLeft};
     std::array<juce::Component, 13> pages_;
-    std::array<juce::Slider, 61> sliders_;
-    std::array<juce::Label, 61> labels_;
-    std::array<std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>, 61>
+    std::array<juce::Slider, 62> sliders_;
+    std::array<juce::Label, 62> labels_;
+    std::array<std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>, 62>
         attachments_;
     juce::ToggleButton bypass_{"Bypass processing"};
     std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> bypassAttachment_;

@@ -129,6 +129,7 @@ void stateTests() {
     set(source, "sculptBodyDb", -4.5f);
     set(source, "sculptWarmthDb", 2.3f);
     set(source, "sculptPresenceDb", 5.2f);
+    set(source, "sculptBreathiness", .731f);
     juce::MemoryBlock state;
     source.getStateInformation(state);
     require(state.getSize() > 0, "State serialization empty");
@@ -151,10 +152,11 @@ void stateTests() {
                                                                               : i < 50 ? 9
                                                                               : i < 55 ? 10
                                                                               : i < 59 ? 11
-                                                                                       : 12),
+                                                                              : i < 62 ? 12
+                                                                                       : 13),
                 "AU version hint changed");
         require(std::abs(raw(restored, spec.id) - raw(source, spec.id)) < 0.001f,
-                "Full v12 state roundtrip failed");
+                "Full v13 state roundtrip failed");
     }
     require(source.getTailLengthSeconds() == 240.0, "Stereo musical delay tail not reported");
 
@@ -162,7 +164,7 @@ void stateTests() {
     restored.setStateInformation(garbage, sizeof(garbage));
     require(raw(restored, "inputDb") == raw(source, "inputDb"),
             "Malformed state changed parameters");
-    for (const char *version : {"13", "1junk"}) {
+    for (const char *version : {"14", "1junk"}) {
         auto xml = source.parameters.copyState().createXml();
         xml->setAttribute("schemaVersion", version);
         juce::MemoryBlock invalid;
@@ -592,6 +594,39 @@ void stateTests() {
                     "Tone migration preserves every accepted prior state field");
         }
     }
+    for (int version = 1; version <= 12; ++version) {
+        auto old = source.parameters.copyState();
+        old.setProperty("schemaVersion", version, nullptr);
+        for (int child = old.getNumChildren() - 1; child >= 0; --child) {
+            const auto id = old.getChild(child).getProperty("id").toString();
+            bool retained = false;
+            for (std::size_t i = 0; i < darkvoice::parameterCountForVersion(version); ++i)
+                retained = retained || id == darkvoice::parameterSchema[i].id;
+            if (!retained)
+                old.removeChild(child, nullptr);
+        }
+        set(restored, "sculptBreathiness", 1);
+        juce::MemoryBlock bytes;
+        juce::AudioProcessor::copyXmlToBinary(*old.createXml(), bytes);
+        restored.setStateInformation(bytes.getData(), static_cast<int>(bytes.getSize()));
+        require(raw(restored, "sculptBreathiness") == 0,
+                "Every legacy state initializes exactly neutral breath texture");
+        for (std::size_t i = 0; i < darkvoice::parameterCountForVersion(version); ++i)
+            require(std::abs(raw(restored, darkvoice::parameterSchema[i].id) -
+                             raw(source, darkvoice::parameterSchema[i].id)) < .001f,
+                    "Breath migration preserves every prior state value");
+    }
+    for (const auto *invalid : {"NaN", "1e100", "-0.001", "1.001"}) {
+        auto bad = source.parameters.copyState();
+        bad.setProperty("schemaVersion", darkvoice::currentSchemaVersion, nullptr);
+        bad.getChildWithProperty("id", "sculptBreathiness").setProperty("value", invalid, nullptr);
+        const auto before = restored.snapshotPresetValues();
+        juce::MemoryBlock bytes;
+        juce::AudioProcessor::copyXmlToBinary(*bad.createXml(), bytes);
+        restored.setStateInformation(bytes.getData(), static_cast<int>(bytes.getSize()));
+        require(restored.snapshotPresetValues() == before,
+                "Invalid breath texture state must be rejected atomically");
+    }
     for (const auto *id : {"sculptBodyDb", "sculptWarmthDb", "sculptPresenceDb"})
         for (const auto *invalid : {"NaN", "1e100", "-6.01", "6.01"}) {
             auto bad = source.parameters.copyState();
@@ -679,7 +714,7 @@ void stateTests() {
                 "Invalid ID set partially changed state");
     }
     auto values = source.snapshotPresetValues();
-    require(values.size() == 61 && values.count("bypass") == 0,
+    require(values.size() == 62 && values.count("bypass") == 0,
             "Preset must contain only sound parameters");
     values["inputDb"] = 10.0f;
     values["delayMix"] = 0.2f;
@@ -789,7 +824,64 @@ void sculptorToneAudioTests() {
             }
 }
 
-// Three matched processors isolate the actual host Colour parallel route without
+void breathinessAudioTests() {
+    for (double rate : {44100., 48000., 88200., 96000.})
+        for (int channels : {1, 2}) {
+            DarkVoiceProcessor neutral, wet, half, repeated;
+            for (auto *p : {&neutral, &wet, &half, &repeated})
+                layout(*p, channels);
+            require(raw(neutral, "sculptBreathiness") == 0,
+                    "Breath texture host default is exactly neutral");
+            set(wet, "sculptBreathiness", 1);
+            set(repeated, "sculptBreathiness", 1);
+            set(half, "sculptBreathiness", .5f);
+            for (auto *p : {&neutral, &wet, &half, &repeated})
+                p->prepareToPlay(rate, 127);
+            double addedEnergy = 0, centerEnergy = 0;
+            juce::MidiBuffer midi;
+            for (int start = 0; start < 4096; start += 127) {
+                const int count = std::min(127, 4096 - start);
+                juce::AudioBuffer<float> dry(channels, count), a(channels, count),
+                    b(channels, count), repeat(channels, count);
+                dry.clear();
+                for (int i = 0; i < count; ++i)
+                    dry.setSample(
+                        0, i,
+                        static_cast<float>(.1 * std::sin(2 * juce::MathConstants<double>::pi * 300 *
+                                                         (start + i) / rate)));
+                a.makeCopyOf(dry);
+                b.makeCopyOf(dry);
+                repeat.makeCopyOf(dry);
+                neutral.processBlock(dry, midi);
+                wet.processBlock(a, midi);
+                half.processBlock(b, midi);
+                repeated.processBlock(repeat, midi);
+                for (int i = 0; i < count; ++i)
+                    for (int c = 0; c < channels; ++c) {
+                        const double addition = a.getSample(c, i) - dry.getSample(c, i);
+                        const double halfway = b.getSample(c, i) - dry.getSample(c, i);
+                        require(std::isfinite(a.getSample(c, i)) &&
+                                    a.getSample(c, i) == repeat.getSample(c, i),
+                                "Actual breath texture must be finite and deterministic");
+                        require(std::abs(addition - 2 * halfway) < 1e-6,
+                                "Actual host breath amount scales the paired added texture");
+                        if (c == 0)
+                            addedEnergy += addition * addition;
+                        else {
+                            centerEnergy += a.getSample(c, i) * a.getSample(c, i);
+                            const double leftAddition = a.getSample(0, i) - dry.getSample(0, i);
+                            require(std::abs(addition - leftAddition) < 1e-6,
+                                    "Unclamped neutral downstream path retains center texture");
+                        }
+                    }
+            }
+            require(addedEnergy > 1e-5 && (channels == 1 || centerEnergy > 1e-5),
+                    "Breath texture must add actual audio including intentional center feed");
+            require(wet.getLatencySamples() == latency && half.getLatencySamples() == latency,
+                    "Breath texture must not change fixed Colour latency");
+        }
+}
+// Matched processors isolate the actual host Colour parallel route without
 // assuming nominal APVTS 0dB is represented exactly on every target architecture.
 void colourAudioTests() {
     for (double rate : {44100., 48000., 88200., 96000.})
@@ -1452,6 +1544,8 @@ void factoryAudioTests() {
                 for (const auto *id : {"sculptBodyDb", "sculptWarmthDb", "sculptPresenceDb"})
                     require(raw(processor, id) == 0,
                             "All factory preset loads retain exact neutral tone");
+                require(raw(processor, "sculptBreathiness") == 0,
+                        "Every factory load keeps breath texture exactly neutral");
                 processor.prepareToPlay(rate, 257);
                 juce::MidiBuffer midi;
                 double energy = 0;
@@ -1543,6 +1637,7 @@ int main() {
         stateTests();
         colourAudioTests();
         sculptorToneAudioTests();
+        breathinessAudioTests();
         forcedBypassTests();
         renderingTests();
         factoryAudioTests();
