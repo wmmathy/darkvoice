@@ -662,3 +662,22 @@ Production source did not change for those negative controls. Formatting/static/
 tracked scans and native validation remain required before normal merge. Core
 only: no new product parameter or host routing is delivered in this increment.
 Manual host/microphone/listening qualification remains deferred.
+
+## Breath texture dependent work packages — 2026-10-26
+
+Launch plan: engine task breath_engine owns only AudioEngine.hpp/.cpp and
+engine_tests.cpp on feature/sculptor/breathiness-engine in its matching isolated
+worktree. Host task breath_host owns only ParameterSchema, PluginProcessor/Editor,
+PresetBank and plugin/preset/gui tests on feature/sculptor/breathiness-host.
+Both depend on the qualified7fc6fe6 core and schema12 tone integration bd5d452;
+the merged base and exact schema13 contract are recorded in COMPONENT_CONTRACTS.
+Lead owns CMake/docs/integration. No core source changes during host work.
+
+Acceptance: neutral identity, deterministic active texture, all rates/layouts,
+frozen histories through bypass/resume, unchanged56sample alignment and limiter,
+strict v1..12 migrations, prior62 definitions/factories unchanged,62 sound controls
+in13 groups. Engine uses strictO2 standalone regression linked with engine sources;
+lead runs cmake --build build/products --parallel2 then ctest with
+--output-on-failure --no-tests=error, sequential Release/ASan and real GUI checks.
+Read-only QA independently reviews and executes probes after writers freeze.
+These are finite session tasks, not a persistent scheduler. Manual tests deferred.
