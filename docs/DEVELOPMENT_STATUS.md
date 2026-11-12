@@ -911,3 +911,12 @@ Finite isolated writer owns HarmonicCharacter header/source/test only under
 recorded v1 contract; dependency frozen new bandlimited profile helper supplied
 by lead. Parallel additive output avoids serial Colour latency and stays audible
 independently of Colour mix. All alias/functional gates before host exposure.
+
+## Planned Character application packages — 2026-11-12
+
+Shared schema16/parallel-routing contract established before assignments. Engine
+writer owns three files in character-engine; host writer owns parameter/processor/
+editor/preset/test files in character-host. Both use this frozen combined base,
+preserve quality global metadata and all previous parameter definitions, and
+add one independently audible Character control without serial extra latency.
+Lead handles builds, core/dense/native qualification and normal gated integration.

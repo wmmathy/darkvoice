@@ -1307,3 +1307,58 @@ src/HarmonicCharacter.cpp, tests/harmonic_character_tests.cpp. Lead supplies fro
 QualityMode.hpp/BandlimitedColour.hpp/helper from qualified writer, owns CMake/docs.
 No engine/host edits. Strict O2/Werror tests and per-mode time measurements; lead
 ASan/native/independent QA before integration. No commit/push yet.
+
+## Character application routing and schema16 v1 — 2026-11-12
+
+Dependencies: prepared-quality integration c22d580 and frozen16x Character425a75b,
+qualified guarded Colour61e8667. Final profile delays124/184/368 and maximum368
+supersede old v1values. Character core remains separate qualification; no main
+merge until relevant independent/native/dense gates pass.
+
+Append float EngineParameters::sculptCharacter=0 after sculptResonanceDb, valid
+finite[-1,1]. Preserve all previous fields and26,444 engine-check intent. Prepare
+HarmonicCharacter with the SAME immutable quality and preallocate two character
+scratch vectors to maxFrames outside callbacks. After SpaceReverb, copy its
+output to scratch, process Character delta in scratch and Colour in existing wet
+buffers PARALLEL, then sum delta into Colour before existing global mix/output
+gain/final limiter. NO serial extra latency. Skip addition for exact zero delta
+to preserve prior signed-zero bits; nonzero sum uses double and existing bounded
+float conversion. Character remains independently audible at colourMix0.
+
+Set Character targets in setParameters only after the full snapshot validates.
+Normal reset resets both modules and settles targets. Actual bypass freezes both
+histories; exit resets BOTH Colour and Character, raw guardL and fade2L unchanged.
+Old tone/texture/time histories retain existing freeze rules. Raw bypass remains
+bit exact, including nonfinite payloads, globalmix0 alignment unchanged. Quality
+request/active state, current latency, allocation/layout/invalid-process atomicity
+and output-clock automation remain unchanged. No callback allocations/locks/I/O.
+
+Append host parameter index65, ID sculptCharacter, name Character, range[-1,1],
+step.001, linear, default exact0, AU version hint16. State schema16:66 total
+parameters/65sound,13groups and7 Voice Sculptor rows in900x780 editor. All65
+previous IDs/ranges/defaults/steps/skews/hints identical. Signed-zero mapping
+anchor only newfield (retain existing old anchors). Existingfactory sounds add
+neutral Character0 and preserve their previous values.
+
+parameterCountForVersion14=65,15=65,16=66; do not return current array size for
+old14/15. Versions15 and16 fullstate require canonical root qualityMode0/1/2;
+v1..14 migrate requested Live; active mode remains until nextprepare. All old
+state/preset rejection/atomicity checks retained. v1..15 migrate Character0,
+strict current snapshot/preset requires newfield. Presets exclude globalquality
+and never change it. New hint16 permits no sound parameter at hint15.
+
+Engine writer owns ONLY AudioEngine.hpp/.cpp and engine_tests.cpp in isolated
+character-engine worktree. Host writer owns ONLY ParameterSchema.hpp,
+PluginProcessor.hpp/.cpp,PluginEditor.hpp/.cpp,PresetBank.cpp ifrequired and
+plugin/preset/gui tests in isolated character-host worktree. Lead owns CMake,
+shared docs/workflows and core files. Both branches start at this frozen base.
+
+Acceptance: preserve allold numeric gates; allmodes/rates/layouts composed
+parallel routes with independent manual module chain and output clock. Test
+neutral bit identity, both Character signs with Colour on/off, amountautomation,
+invalid snapshots, reset/reprepare/partition, noalloc, raw bypass and resume
+through final limiter. Host roundtrip/migrations/strictmetadata/preset independence,
+audible audio comparisons to direct engine, allold parameter definitions and
+65-control/13-group actual GUI smoke. Record runtime failures honestly; no
+manual/host/listening claim. StrictO2, Release, sanitizer and exact-head native
+checks plus independent QA before normal merge. No pitch/formant controls added.
