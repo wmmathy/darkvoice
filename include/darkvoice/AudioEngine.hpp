@@ -5,6 +5,7 @@
 #include <darkvoice/Flanger.hpp>
 #include <darkvoice/ModulationEffects.hpp>
 #include <darkvoice/NoiseGate.hpp>
+#include <darkvoice/StereoDelay.hpp>
 #include <darkvoice/ToneEffects.hpp>
 #include <darkvoice/VocalLimiter.hpp>
 #include <span>
@@ -28,6 +29,9 @@ struct EngineParameters {
     float gateThresholdDb = -50.0f, gateRatio = 1.0f, gateReleaseMs = 120.0f;
     float deEssHz = 6000.0f, deEssThresholdDb = -24.0f, deEssReductionDb = 0.0f;
     float flangerRateHz = .3f, flangerDepthMs = 2, flangerFeedback = 0, flangerMix = 0;
+    float stereoDelayMs = 100, stereoDelayFeedback = .25f, stereoDelayMix = 0, stereoDelayBpm = 120;
+    int stereoDelayMode = 0, stereoDelayDivision = 5;
+    bool stereoDelaySync = false;
     bool limiterEnabled = false;
     float limiterCeilingDb = -1.0f, limiterReleaseMs = 100.0f;
     float chorusRateHz = .8f, chorusDepthMs = 6.0f, chorusMix = 0.0f, stereoWidth = 1.0f;
@@ -60,6 +64,7 @@ class AudioEngine {
     DeEsser deEsser_;
     ModulationEffects modulation_;
     Flanger flanger_;
+    StereoDelay stereoDelay_;
     VocalLimiter limiter_;
     std::array<std::vector<float>, 2> wet_;
 };

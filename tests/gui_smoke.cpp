@@ -66,7 +66,7 @@ int main(int argc, char **argv) {
                 button && button->getName() == "Load preset")
                 load = button;
         }
-        if (controls != 37 || !input || !bypass || !presetSelection || !load)
+        if (controls != 45 || !input || !bypass || !presetSelection || !load)
             return 2;
         input->setValue(6.0, juce::sendNotificationSync);
         if (std::abs(processor.parameters.getRawParameterValue("inputDb")->load() - 6.0f) > 0.01f)
@@ -74,7 +74,7 @@ int main(int argc, char **argv) {
         bypass->setToggleState(true, juce::sendNotificationSync);
         if (processor.parameters.getRawParameterValue("bypass")->load() != 1.0f)
             return 4;
-        constexpr std::array<const char *, 37> names{"INPUT GAIN",
+        constexpr std::array<const char *, 45> names{"INPUT GAIN",
                                                      "OUTPUT GAIN",
                                                      "HIGH-PASS",
                                                      "WARMTH DRIVE",
@@ -110,7 +110,15 @@ int main(int argc, char **argv) {
                                                      "FLANGER MIX",
                                                      "LIMITER ENABLE (0 = OFF, 1 = ON)",
                                                      "LIMITER CEILING",
-                                                     "LIMITER RELEASE"};
+                                                     "LIMITER RELEASE",
+                                                     "STEREO DELAY MODE",
+                                                     "STEREO DELAY TIME",
+                                                     "STEREO DELAY FEEDBACK",
+                                                     "STEREO DELAY MIX",
+                                                     "STEREO DELAY SYNC (0 / 1)",
+                                                     "MANUAL TEMPO",
+                                                     "BEAT DIVISION",
+                                                     "USE HOST TEMPO (0 / 1)"};
         std::size_t soundIndex = 0;
         for (const auto &spec : darkvoice::parameterSchema) {
             if (juce::String(spec.id) == "bypass")
@@ -213,13 +221,33 @@ int main(int argc, char **argv) {
         bool gateTab = false;
         for (auto *component : components)
             if (auto *tabs = dynamic_cast<juce::TabbedComponent *>(component)) {
-                if (tabs->getNumTabs() != 8)
+                if (tabs->getNumTabs() != 9)
                     return 17;
-                tabs->setCurrentTabIndex(7);
-                gateTab = tabs->getCurrentTabName() == "LIMITER";
+                tabs->setCurrentTabIndex(8);
+                gateTab = tabs->getCurrentTabName() == "STEREO DELAY";
             }
         if (!gateTab)
             return 18;
+        bool tempoShown = false;
+        juce::Timer::callPendingTimersSynchronously();
+        for (auto *component : components)
+            if (auto *label = dynamic_cast<juce::Label *>(component);
+                label && label->getName() == "Stereo delay tempo status")
+                tempoShown = label->getText().contains("manual fallback");
+        if (!tempoShown)
+            return 19;
+        juce::Slider *mode = nullptr;
+        juce::Slider *division = nullptr;
+        for (auto *component : components)
+            if (auto *slider = dynamic_cast<juce::Slider *>(component)) {
+                if (slider->getName() == "STEREO DELAY MODE")
+                    mode = slider;
+                if (slider->getName() == "BEAT DIVISION")
+                    division = slider;
+            }
+        if (!mode || !division || !mode->textFromValueFunction(2).contains("Ping-pong") ||
+            division->textFromValueFunction(5) != "1/4")
+            return 20;
         auto image = editor->createComponentSnapshot(editor->getLocalBounds());
         if (image.isNull())
             return 5;
@@ -230,7 +258,7 @@ int main(int argc, char **argv) {
             if (!stream || !juce::PNGImageFormat().writeImageToStream(image, *stream))
                 return 6;
         }
-        std::cout << "GUI smoke passed: 37 controls, all parameter attachments, bypass, actual "
+        std::cout << "GUI smoke passed: 45 controls, all parameter attachments, bypass, actual "
                      "factory preset audio, dry-pitch feedback, snapshot\n";
         return 0;
     }();

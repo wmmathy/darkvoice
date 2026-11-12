@@ -83,6 +83,14 @@ void stateTests() {
     set(source, "limiterEnabled", 1);
     set(source, "limiterCeilingDb", -8.5f);
     set(source, "limiterReleaseMs", 345);
+    set(source, "stereoDelayMode", 2);
+    set(source, "stereoDelayMs", 420);
+    set(source, "stereoDelayFeedback", .6f);
+    set(source, "stereoDelayMix", .2f);
+    set(source, "stereoDelaySync", 1);
+    set(source, "stereoDelayBpm", 80);
+    set(source, "stereoDelayDivision", 3);
+    set(source, "stereoDelayHostTempo", 1);
     juce::MemoryBlock state;
     source.getStateInformation(state);
     require(state.getSize() > 0, "State serialization empty");
@@ -100,18 +108,19 @@ void stateTests() {
                                                                               : i < 27 ? 4
                                                                               : i < 31 ? 5
                                                                               : i < 35 ? 6
-                                                                                       : 7),
+                                                                              : i < 38 ? 7
+                                                                                       : 8),
                 "AU version hint changed");
         require(std::abs(raw(restored, spec.id) - raw(source, spec.id)) < 0.001f,
-                "Full v7 state roundtrip failed");
+                "Full v8 state roundtrip failed");
     }
-    require(source.getTailLengthSeconds() == 40.0, "Spatial tail not reported");
+    require(source.getTailLengthSeconds() == 240.0, "Stereo musical delay tail not reported");
 
     const char garbage[] = "invalid state";
     restored.setStateInformation(garbage, sizeof(garbage));
     require(raw(restored, "inputDb") == raw(source, "inputDb"),
             "Malformed state changed parameters");
-    for (const char *version : {"8", "1junk"}) {
+    for (const char *version : {"9", "1junk"}) {
         auto xml = source.parameters.copyState().createXml();
         xml->setAttribute("schemaVersion", version);
         juce::MemoryBlock invalid;
@@ -151,6 +160,9 @@ void stateTests() {
     // must reset to defaults even when restoring into a modified v2 instance.
     auto legacy = source.parameters.copyState();
     legacy.setProperty("schemaVersion", 1, nullptr);
+    for (int child = legacy.getNumChildren() - 1; child >= 0; --child)
+        if (legacy.getChild(child).getProperty("id").toString().startsWith("stereoDelay"))
+            legacy.removeChild(child, nullptr);
     for (const auto *id : {"limiterEnabled", "limiterCeilingDb", "limiterReleaseMs"})
         legacy.removeChild(legacy.getChildWithProperty("id", id), nullptr);
     for (int index = legacy.getNumChildren() - 1; index >= 0; --index) {
@@ -176,6 +188,9 @@ void stateTests() {
     }
     auto v2 = source.parameters.copyState();
     v2.setProperty("schemaVersion", 2, nullptr);
+    for (int child = v2.getNumChildren() - 1; child >= 0; --child)
+        if (v2.getChild(child).getProperty("id").toString().startsWith("stereoDelay"))
+            v2.removeChild(child, nullptr);
     for (const auto *id : {"limiterEnabled", "limiterCeilingDb", "limiterReleaseMs"})
         v2.removeChild(v2.getChildWithProperty("id", id), nullptr);
     for (const auto *id : {"flangerRateHz", "flangerDepthMs", "flangerFeedback", "flangerMix"})
@@ -207,6 +222,9 @@ void stateTests() {
             "V2 state resets modulation");
     auto v3 = source.parameters.copyState();
     v3.setProperty("schemaVersion", 3, nullptr);
+    for (int child = v3.getNumChildren() - 1; child >= 0; --child)
+        if (v3.getChild(child).getProperty("id").toString().startsWith("stereoDelay"))
+            v3.removeChild(child, nullptr);
     for (const auto *id : {"limiterEnabled", "limiterCeilingDb", "limiterReleaseMs"})
         v3.removeChild(v3.getChildWithProperty("id", id), nullptr);
     for (const auto *id : {"flangerRateHz", "flangerDepthMs", "flangerFeedback", "flangerMix"})
@@ -233,6 +251,9 @@ void stateTests() {
             "V3 state resets modulation");
     auto v4 = source.parameters.copyState();
     v4.setProperty("schemaVersion", 4, nullptr);
+    for (int child = v4.getNumChildren() - 1; child >= 0; --child)
+        if (v4.getChild(child).getProperty("id").toString().startsWith("stereoDelay"))
+            v4.removeChild(child, nullptr);
     for (const auto *id : {"limiterEnabled", "limiterCeilingDb", "limiterReleaseMs"})
         v4.removeChild(v4.getChildWithProperty("id", id), nullptr);
     for (const auto *id : {"flangerRateHz", "flangerDepthMs", "flangerFeedback", "flangerMix"})
@@ -252,6 +273,9 @@ void stateTests() {
             "V4 state retains de-esser and resets modulation defaults");
     auto v5 = source.parameters.copyState();
     v5.setProperty("schemaVersion", 5, nullptr);
+    for (int child = v5.getNumChildren() - 1; child >= 0; --child)
+        if (v5.getChild(child).getProperty("id").toString().startsWith("stereoDelay"))
+            v5.removeChild(child, nullptr);
     for (const auto *id : {"limiterEnabled", "limiterCeilingDb", "limiterReleaseMs"})
         v5.removeChild(v5.getChildWithProperty("id", id), nullptr);
     for (const auto *id : {"flangerRateHz", "flangerDepthMs", "flangerFeedback", "flangerMix"})
@@ -299,6 +323,47 @@ void stateTests() {
                         raw(restored, "flangerFeedback") == 0 && raw(restored, "flangerMix") == 0,
                     "Every legacy state clears active flanger fields");
     }
+    for (int version = 1; version <= 7; ++version) {
+        auto old = source.parameters.copyState();
+        old.setProperty("schemaVersion", version, nullptr);
+        for (int child = old.getNumChildren() - 1; child >= 0; --child) {
+            bool keep = false;
+            for (std::size_t i = 0; i < darkvoice::parameterCountForVersion(version); ++i)
+                keep = keep || old.getChild(child).getProperty("id").toString() ==
+                                   darkvoice::parameterSchema[i].id;
+            if (!keep)
+                old.removeChild(child, nullptr);
+        }
+        set(restored, "stereoDelayMix", .5f);
+        set(restored, "stereoDelaySync", 1);
+        set(restored, "stereoDelayHostTempo", 1);
+        set(restored, "stereoDelayMode", 2);
+        juce::MemoryBlock bytes;
+        juce::AudioProcessor::copyXmlToBinary(*old.createXml(), bytes);
+        restored.setStateInformation(bytes.getData(), static_cast<int>(bytes.getSize()));
+        for (std::size_t i = 38; i < darkvoice::parameterSchema.size(); ++i) {
+            const auto &spec = darkvoice::parameterSchema[i];
+            require(std::abs(raw(restored, spec.id) - spec.defaultValue) < .001f,
+                    "Legacy state initializes all eight stereo delay controls");
+        }
+        require(restored.getTailLengthSeconds() == 40.0,
+                "Migrated neutral delay retains forty-second tail");
+        if (version == 7)
+            require(raw(restored, "limiterEnabled") == 1, "V7 migration preserves limiter enable");
+    }
+    for (const auto *id :
+         {"stereoDelaySync", "stereoDelayHostTempo", "stereoDelayMode", "stereoDelayDivision"})
+        for (const auto *token : {"0.5", "1.00000001", "1e-500", "NaN", "6", "-1"}) {
+            auto bad = source.parameters.copyState();
+            bad.setProperty("schemaVersion", darkvoice::currentSchemaVersion, nullptr);
+            bad.getChildWithProperty("id", id).setProperty("value", token, nullptr);
+            const auto before = restored.snapshotPresetValues();
+            juce::MemoryBlock bytes;
+            juce::AudioProcessor::copyXmlToBinary(*bad.createXml(), bytes);
+            restored.setStateInformation(bytes.getData(), static_cast<int>(bytes.getSize()));
+            require(restored.snapshotPresetValues() == before,
+                    "Invalid stereo delay Boolean/discrete state changed live snapshot");
+        }
     set(restored, "gateRatio", 1);
     for (const char *badGate : {"NaN", "21", "0"}) {
         auto bad = source.parameters.copyState();
@@ -351,7 +416,7 @@ void stateTests() {
                 "Invalid ID set partially changed state");
     }
     auto values = source.snapshotPresetValues();
-    require(values.size() == 37 && values.count("bypass") == 0,
+    require(values.size() == 45 && values.count("bypass") == 0,
             "Preset must contain only sound parameters");
     values["inputDb"] = 10.0f;
     values["delayMix"] = 0.2f;
@@ -366,6 +431,101 @@ void stateTests() {
     require(std::abs(raw(restored, "inputDb") - 10.0f) < 0.01f,
             "Invalid preset partially changed state");
 }
+class TempoPlayHead final : public juce::AudioPlayHead {
+  public:
+    juce::Optional<double> bpm{120.};
+    bool hasPosition = true;
+    juce::Optional<PositionInfo> getPosition() const override {
+        if (!hasPosition)
+            return {};
+        PositionInfo info;
+        info.setBpm(bpm);
+        return info;
+    }
+};
+void stereoDelayAudioTests() {
+    for (double rate : {44100., 48000., 88200., 96000.})
+        for (int channels : {1, 2}) {
+            for (int scenario = 0; scenario < 9; ++scenario) {
+                DarkVoiceProcessor p;
+                layout(p, channels);
+                TempoPlayHead playhead;
+                set(p, "stereoDelayMix", .5f);
+                set(p, "stereoDelayFeedback", 0);
+                set(p, "stereoDelaySync", 1);
+                set(p, "stereoDelayBpm", 80);
+                set(p, "stereoDelayDivision", 5);
+                set(p, "stereoDelayHostTempo", scenario == 1 ? 0 : 1);
+                if (scenario == 2)
+                    playhead.bpm = {};
+                if (scenario == 3)
+                    playhead.bpm = 19.;
+                if (scenario == 4)
+                    playhead.bpm = 301.;
+                if (scenario == 5)
+                    playhead.bpm = std::numeric_limits<double>::quiet_NaN();
+                if (scenario == 6)
+                    playhead.hasPosition = false;
+                if (scenario != 7)
+                    p.setPlayHead(&playhead);
+                p.prepareToPlay(rate, 257);
+                juce::MidiBuffer midi;
+                double peak = 0;
+                int peakFrame = -1, position = 0;
+                const int expected = static_cast<int>(rate * ((scenario == 0) ? .5 : .75));
+                for (int block = 0; position < static_cast<int>(rate); ++block) {
+                    const int frames =
+                        std::min(block % 2 ? 257 : 191, static_cast<int>(rate) - position);
+                    juce::AudioBuffer<float> audio(channels, frames);
+                    audio.clear();
+                    if (position == 0)
+                        for (int c = 0; c < channels; ++c)
+                            audio.setSample(c, 0, c == 0 ? .8f : .4f);
+                    // Change an existing host's valid tempo before the first echo.
+                    if (scenario == 8 && position > rate * .1)
+                        playhead.bpm = 80.;
+                    p.processBlock(audio, midi);
+                    for (int i = 0; i < frames; ++i)
+                        if (position + i > rate * .3 && std::abs(audio.getSample(0, i)) > peak) {
+                            peak = std::abs(audio.getSample(0, i));
+                            peakFrame = position + i;
+                        }
+                    position += frames;
+                }
+                require(
+                    peak > .3 && std::abs(peakFrame - expected) <= 1,
+                    "Host/manual/fallback/live tempo did not control actual musical echo timing");
+                const bool valid = scenario == 0 || scenario == 1 || scenario == 8;
+                require((p.hostTempoBpm() > 0) == valid,
+                        "Host tempo availability status incorrect");
+                if (scenario == 8)
+                    require(p.hostTempoBpm() == 80, "Live host BPM change not observed");
+                p.setPlayHead(nullptr);
+            }
+        }
+    DarkVoiceProcessor p;
+    require(p.getTailLengthSeconds() == 40, "Neutral delay changed existing tail");
+    set(p, "stereoDelayMix", .1f);
+    require(p.getTailLengthSeconds() == 240, "Audible musical delay needs extended tail");
+    set(p, "stereoDelayMix", 0);
+    require(p.getTailLengthSeconds() == 40, "Disabled delay tail did not restore");
+    set(p, "mix", 0);
+    set(p, "stereoDelayMode", 2);
+    set(p, "stereoDelayMix", .5f);
+    p.prepareToPlay(48000, 64);
+    juce::MidiBuffer midi;
+    juce::AudioBuffer<float> audio(2, 64);
+    for (float invalid :
+         {std::numeric_limits<float>::infinity(), std::numeric_limits<float>::max(), .5f, -1.f}) {
+        p.parameters.getRawParameterValue("stereoDelayMode")->store(invalid);
+        audio.clear();
+        audio.setSample(0, 0, .1f);
+        p.processBlock(audio, midi);
+        require(audio.getSample(0, 0) == .1f,
+                "Invalid raw enum must reject whole snapshot without unsafe cast");
+    }
+}
+
 void limiterAudioTests() {
     for (double rate : {44100., 48000., 88200., 96000.}) {
         for (int channels : {1, 2}) {
@@ -630,6 +790,7 @@ int main() {
         modulationAudioTests();
         flangerAudioTests();
         limiterAudioTests();
+        stereoDelayAudioTests();
         std::cout
             << "PASS plugin state, automation/render, rates/layouts, lifecycle and identity\n";
         return 0;

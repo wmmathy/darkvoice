@@ -73,7 +73,7 @@ void snapshotsAndSmoothing() {
     p.mix = 0;
     p.outputDb = 12;
     check(engine.setParameters(p) && reference.setParameters(p), "valid parameter snapshot");
-    const std::array<float darkvoice::EngineParameters::*, 36> fields{
+    const std::array<float darkvoice::EngineParameters::*, 40> fields{
         &darkvoice::EngineParameters::inputDb,
         &darkvoice::EngineParameters::outputDb,
         &darkvoice::EngineParameters::highPassHz,
@@ -109,7 +109,21 @@ void snapshotsAndSmoothing() {
         &darkvoice::EngineParameters::flangerFeedback,
         &darkvoice::EngineParameters::flangerMix,
         &darkvoice::EngineParameters::limiterCeilingDb,
-        &darkvoice::EngineParameters::limiterReleaseMs};
+        &darkvoice::EngineParameters::limiterReleaseMs,
+        &darkvoice::EngineParameters::stereoDelayMs,
+        &darkvoice::EngineParameters::stereoDelayFeedback,
+        &darkvoice::EngineParameters::stereoDelayMix,
+        &darkvoice::EngineParameters::stereoDelayBpm};
+    for (int value : {-1, 3}) {
+        auto invalid = p;
+        invalid.stereoDelayMode = value;
+        check(!engine.setParameters(invalid), "Invalid stereo delay mode rejected atomically");
+    }
+    for (int value : {-1, 6}) {
+        auto invalid = p;
+        invalid.stereoDelayDivision = value;
+        check(!engine.setParameters(invalid), "Invalid stereo delay division rejected atomically");
+    }
     for (auto field : fields) {
         auto invalid = p;
         invalid.inputDb = 24;
@@ -431,6 +445,51 @@ void integratedFlanger(double rate) {
           "global dry mix preserves unprocessed flanger input");
 }
 
+void integratedStereoDelay(double rate) {
+    darkvoice::AudioEngine a, b;
+    check(a.prepare(rate, 257, 1) && b.prepare(rate, 257, 1), "Musical delay engine prepare");
+    darkvoice::EngineParameters p;
+    p.stereoDelayMix = .5f;
+    p.stereoDelayFeedback = 0;
+    p.stereoDelayMs = 100;
+    check(a.setParameters(p) && b.setParameters(p), "Musical delay engine parameters");
+    a.reset();
+    b.reset();
+    std::vector<float> first(static_cast<std::size_t>(rate * .3), 0), second = first;
+    first[0] = second[0] = .8f;
+    check(run(a, first, 137) && run(b, second, 257) && first == second,
+          "Musical delay engine partition equivalence");
+    const auto delay = static_cast<std::size_t>(std::round(rate * .1));
+    auto at = delay;
+    for (std::size_t i = delay - 1; i <= delay + 1; ++i)
+        if (std::abs(first[i]) > std::abs(first[at]))
+            at = i;
+    check(std::abs(first[at]) > .3f, "Musical delay routed after existing wet chain");
+    check(std::abs(first[delay * 2]) < .001f, "Musical delay zero feedback gives single echo");
+    p.mix = 0;
+    check(a.setParameters(p), "Musical delay global dry snapshot");
+    a.reset();
+    std::array<float, 257> sample{};
+    sample[0] = .8f;
+    std::array<float *, 1> channel{sample.data()};
+    check(a.process(channel, 257) && sample[0] == .8f, "Global dry mix excludes musical delay");
+    p.mix = 1;
+    p.bypass = true;
+    check(a.setParameters(p), "Musical delay bypass snapshot");
+    sample.fill(.123f);
+    check(a.process(channel, 257) && sample[0] == .123f, "Musical delay global bypass exact");
+    p.bypass = false;
+    check(a.setParameters(p), "Musical delay allocation snapshot");
+    a.reset();
+    const auto before = allocations.load();
+    rejectAllocations.store(true);
+    const bool callback = a.setParameters(p) && a.process(channel, 137);
+    a.reset();
+    rejectAllocations.store(false);
+    check(callback && allocations.load() == before,
+          "Musical delay integrated callbacks/reset allocate nothing");
+}
+
 void integratedLimiter(double rate) {
     for (std::size_t count : {1U, 2U}) {
         darkvoice::AudioEngine engine;
@@ -539,6 +598,7 @@ void invalidBlocksAndAllocationFailure() {
     p.reverbMix = 0.3f;
     p.limiterEnabled = true;
     p.limiterCeilingDb = -18;
+    p.stereoDelayMix = .3f;
     check(first.setParameters(p) && reference.setParameters(p), "invalid-history active effects");
     std::array<float, 256> a{}, b{};
     a[0] = b[0] = 1;
@@ -623,6 +683,7 @@ int main() {
         integratedModulation(rate);
         integratedFlanger(rate);
         integratedLimiter(rate);
+        integratedStereoDelay(rate);
     }
     isolationBypassAndSafety();
     invalidBlocksAndAllocationFailure();

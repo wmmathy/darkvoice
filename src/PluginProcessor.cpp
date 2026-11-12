@@ -109,9 +109,25 @@ darkvoice::EngineParameters DarkVoiceProcessor::snapshot() const noexcept {
     p.limiterEnabled = raw_[35]->load(std::memory_order_relaxed) >= 0.5f;
     p.limiterCeilingDb = raw_[36]->load(std::memory_order_relaxed);
     p.limiterReleaseMs = raw_[37]->load(std::memory_order_relaxed);
+    const auto discrete = [](float value, int maximum) noexcept {
+        return std::isfinite(value) && value >= 0 && value <= maximum && std::trunc(value) == value
+                   ? static_cast<int>(value)
+                   : -1;
+    };
+    p.stereoDelayMode = discrete(raw_[38]->load(std::memory_order_relaxed), 2);
+    p.stereoDelayMs = raw_[39]->load(std::memory_order_relaxed);
+    p.stereoDelayFeedback = raw_[40]->load(std::memory_order_relaxed);
+    p.stereoDelayMix = raw_[41]->load(std::memory_order_relaxed);
+    p.stereoDelaySync = raw_[42]->load(std::memory_order_relaxed) >= .5f;
+    p.stereoDelayBpm = raw_[43]->load(std::memory_order_relaxed);
+    p.stereoDelayDivision = discrete(raw_[44]->load(std::memory_order_relaxed), 5);
+    const auto actual = hostTempoBpm();
+    if (raw_[45]->load(std::memory_order_relaxed) >= .5f && actual >= 20 && actual <= 300)
+        p.stereoDelayBpm = actual;
     return p;
 }
 void DarkVoiceProcessor::prepareToPlay(double rate, int maxFrames) {
+    hostTempoBpm_.store(0, std::memory_order_relaxed);
     maximumFrames_ = maxFrames > 0 ? static_cast<std::size_t>(maxFrames) : 0;
     prepared_ =
         engine_.prepare(rate, maximumFrames_, static_cast<std::size_t>(getTotalNumInputChannels()));
@@ -128,11 +144,21 @@ void DarkVoiceProcessor::prepareToPlay(double rate, int maxFrames) {
     setLatencySamples(static_cast<int>(engine_.latencySamples()));
 }
 void DarkVoiceProcessor::releaseResources() {
+    hostTempoBpm_.store(0, std::memory_order_relaxed);
     prepared_ = false;
     dryAnalysis_.release();
     engine_.reset();
     inputPeak_.store(0, std::memory_order_relaxed);
     outputPeak_.store(0, std::memory_order_relaxed);
+}
+void DarkVoiceProcessor::updateHostTempo() noexcept {
+    float tempo = 0;
+    if (auto *playHead = getPlayHead())
+        if (const auto position = playHead->getPosition())
+            if (const auto bpm = position->getBpm();
+                bpm && std::isfinite(*bpm) && *bpm >= 20 && *bpm <= 300)
+                tempo = static_cast<float>(*bpm);
+    hostTempoBpm_.store(tempo, std::memory_order_relaxed);
 }
 void DarkVoiceProcessor::processBlock(juce::AudioBuffer<float> &audio, juce::MidiBuffer &) {
     juce::ScopedNoDenormals noDenormals;
@@ -143,6 +169,7 @@ void DarkVoiceProcessor::processBlock(juce::AudioBuffer<float> &audio, juce::Mid
         outputPeak_.store(0, std::memory_order_relaxed);
         return;
     }
+    updateHostTempo();
     dryAnalysis_.push(audio);
     (void)engine_.setParameters(snapshot());
     float inPeak = 0, outPeak = 0;
@@ -194,7 +221,7 @@ void DarkVoiceProcessor::setStateInformation(const void *data, int bytes) {
         return;
     const auto version = xml->getStringAttribute("schemaVersion");
     if (version != "1" && version != "2" && version != "3" && version != "4" && version != "5" &&
-        version != "6" && version != "7")
+        version != "6" && version != "7" && version != "8")
         return;
     const auto count = darkvoice::parameterCountForVersion(version.getIntValue());
     const auto state = juce::ValueTree::fromXml(*xml);
@@ -218,6 +245,9 @@ void DarkVoiceProcessor::setStateInformation(const void *data, int bytes) {
         const auto numberText = child.getProperty("value").toString().trim().toStdString();
         if (spec.boolean && !darkvoice::exactBooleanNumber(numberText))
             return;
+        if ((id == "stereoDelayMode" && !darkvoice::exactSmallIntegerNumber(numberText, 2)) ||
+            (id == "stereoDelayDivision" && !darkvoice::exactSmallIntegerNumber(numberText, 5)))
+            return;
         std::istringstream parser(numberText);
         parser.imbue(std::locale::classic());
         float value = 0;
@@ -225,6 +255,8 @@ void DarkVoiceProcessor::setStateInformation(const void *data, int bytes) {
         if (!parser || parser.peek() != std::char_traits<char>::eof() || !std::isfinite(value) ||
             value < spec.minimum || value > spec.maximum ||
             (spec.boolean && value != 0 && value != 1))
+            return;
+        if ((id == "stereoDelayMode" || id == "stereoDelayDivision") && std::trunc(value) != value)
             return;
         seen[index] = true;
         values[index] = value;

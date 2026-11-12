@@ -20,7 +20,7 @@ class DarkVoiceProcessor final : public juce::AudioProcessor {
         return true;
     }
     double getTailLengthSeconds() const override {
-        return 40.0;
+        return raw_[41] && raw_[41]->load(std::memory_order_relaxed) > 0 ? 240.0 : 40.0;
     }
     bool acceptsMidi() const override {
         return false;
@@ -61,14 +61,19 @@ class DarkVoiceProcessor final : public juce::AudioProcessor {
     float dryPitchConfidence() const noexcept {
         return dryAnalysis_.confidence();
     }
+    float hostTempoBpm() const noexcept {
+        return hostTempoBpm_.load(std::memory_order_relaxed);
+    }
     juce::AudioProcessorValueTreeState parameters;
 
   private:
     static juce::AudioProcessorValueTreeState::ParameterLayout createParameters();
+    void updateHostTempo() noexcept;
     darkvoice::EngineParameters snapshot() const noexcept;
     darkvoice::AudioEngine engine_;
     darkvoice::DryPitchAnalyzer dryAnalysis_;
     std::array<std::atomic<float> *, darkvoice::parameterSchema.size()> raw_{};
+    std::atomic<float> hostTempoBpm_{0};
     std::atomic<float> inputPeak_{0}, outputPeak_{0};
     std::size_t maximumFrames_ = 0;
     bool prepared_ = false;

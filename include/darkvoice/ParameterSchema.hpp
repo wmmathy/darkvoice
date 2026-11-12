@@ -12,7 +12,7 @@ inline constexpr std::size_t legacyParameterCount = 8;
 inline constexpr std::size_t effectsParameterCount = 21;
 inline constexpr std::size_t gateParameterCount = 24;
 inline constexpr std::size_t deEsserParameterCount = 27;
-inline constexpr std::array<ParameterSpec, 38> parameterSchema{{
+inline constexpr std::array<ParameterSpec, 46> parameterSchema{{
     {"inputDb", "Input", -24.0f, 24.0f, 0.0f, 0.1f, 1.0f, false},
     {"outputDb", "Output", -24.0f, 24.0f, 0.0f, 0.1f, 1.0f, false},
     {"highPassHz", "High-pass", 20.0f, 400.0f, 20.0f, 1.0f, 0.5f, false},
@@ -51,8 +51,16 @@ inline constexpr std::array<ParameterSpec, 38> parameterSchema{{
     {"limiterEnabled", "Limiter enabled (0 = off, 1 = on)", 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, true},
     {"limiterCeilingDb", "Limiter ceiling", -24.0f, 0.0f, -1.0f, .1f, 1.0f, false},
     {"limiterReleaseMs", "Limiter release", 5.0f, 1000.0f, 100.0f, 1.0f, .5f, false},
+    {"stereoDelayMode", "Stereo delay mode", 0, 2, 0, 1, 1, false},
+    {"stereoDelayMs", "Stereo delay manual time", 20, 2000, 100, 1, .5f, false},
+    {"stereoDelayFeedback", "Stereo delay feedback", 0, .8f, .25f, .001f, 1, false},
+    {"stereoDelayMix", "Stereo delay mix", 0, .5f, 0, .001f, 1, false},
+    {"stereoDelaySync", "Stereo delay sync (0 = off, 1 = on)", 0, 1, 0, 1, 1, true},
+    {"stereoDelayBpm", "Stereo delay manual BPM", 20, 300, 120, .1f, 1, false},
+    {"stereoDelayDivision", "Stereo delay beat division", 0, 5, 5, 1, 1, false},
+    {"stereoDelayHostTempo", "Stereo delay use host BPM (0 = off, 1 = on)", 0, 1, 0, 1, 1, true},
 }};
-inline constexpr int currentSchemaVersion = 7;
+inline constexpr int currentSchemaVersion = 8;
 constexpr std::size_t parameterCountForVersion(int version) noexcept {
     return version == 1   ? legacyParameterCount
            : version == 2 ? effectsParameterCount
@@ -60,7 +68,8 @@ constexpr std::size_t parameterCountForVersion(int version) noexcept {
            : version == 4 ? deEsserParameterCount
            : version == 5 ? 31
            : version == 6 ? 35
-           : version == 7 ? parameterSchema.size()
+           : version == 7 ? 38
+           : version == 8 ? parameterSchema.size()
                           : 0;
 }
 constexpr int parameterVersion(std::size_t index) noexcept {
@@ -70,6 +79,7 @@ constexpr int parameterVersion(std::size_t index) noexcept {
            : index < deEsserParameterCount ? 4
            : index < 31                    ? 5
            : index < 35                    ? 6
-                                           : 7;
+           : index < 38                    ? 7
+                                           : 8;
 }
 } // namespace darkvoice
