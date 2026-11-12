@@ -79,23 +79,23 @@ inline constexpr std::array<ParameterSpec, 65> parameterSchema{{
     {"sculptDepthDb", "Depth lows", -6, 6, 0, .1f, 1, false},
     {"sculptResonanceDb", "Resonance 700 Hz", -6, 6, 0, .1f, 1, false},
 }};
-inline constexpr int currentSchemaVersion = 14;
+inline constexpr int currentSchemaVersion = 15;
 constexpr std::size_t parameterCountForVersion(int version) noexcept {
-    return version == 1    ? legacyParameterCount
-           : version == 2  ? effectsParameterCount
-           : version == 3  ? gateParameterCount
-           : version == 4  ? deEsserParameterCount
-           : version == 5  ? 31
-           : version == 6  ? 35
-           : version == 7  ? 38
-           : version == 8  ? 46
-           : version == 9  ? 50
-           : version == 10 ? 55
-           : version == 11 ? 59
-           : version == 12 ? 62
-           : version == 13 ? 63
-           : version == 14 ? parameterSchema.size()
-                           : 0;
+    return version == 1                     ? legacyParameterCount
+           : version == 2                   ? effectsParameterCount
+           : version == 3                   ? gateParameterCount
+           : version == 4                   ? deEsserParameterCount
+           : version == 5                   ? 31
+           : version == 6                   ? 35
+           : version == 7                   ? 38
+           : version == 8                   ? 46
+           : version == 9                   ? 50
+           : version == 10                  ? 55
+           : version == 11                  ? 59
+           : version == 12                  ? 62
+           : version == 13                  ? 63
+           : version == 14 || version == 15 ? parameterSchema.size()
+                                            : 0;
 }
 constexpr int parameterVersion(std::size_t index) noexcept {
     return index < legacyParameterCount    ? 1

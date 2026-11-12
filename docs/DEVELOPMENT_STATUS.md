@@ -855,3 +855,31 @@ authored FFT to avoid unresolved provenance. No pitch controls or false completi
 claim. Manual qualification deferred as requested.
 
 Manual host/microphone/listening qualification remains deferred.
+
+## Planned genuine quality-mode integration — 2026-10-28
+
+Engine and host packages follow prepared quality/global state v15 contract,
+separate owned files/worktrees. Bank1905strictchecks passed, QA underway.
+Actual prepared FIR profile affects CPU and latency, global metadata preserves
+mode without preset side effects. No live callback rebuild or unsafe latency swap.
+
+## Prepared quality-mode application checkpoint — 2026-11-12
+
+The guarded16x Colour library is merged in PR44 at61e8667 after all seven native
+jobs, source quality and24 complete dense-alias shards passed on5946de2.
+Application integration now prepares an actual Live/Studio/Offline profile with
+124/184/368-sample alignment, lifecycle-only mode switching, active/pending UI
+and strict schema15 global metadata. Presets preserve the requested mode; all65
+existing parameter definitions remain unchanged.
+
+Engine strict O2 passed26,444 checks and36 composed routes matched exactly.
+The latest full Debug product run passed24/25 suites: plugin.state_and_audio
+hit its180-second runtime limit. No assertion failure was reported in that run;
+it is still a failed test, not a passing qualification. A Release product rebuild
+and affected-suite rerun are in progress. Native validation on the integration
+head remains required. This checkpoint is committed for review, not yet merged.
+
+Character source checkpoint425a75b is pushed separately; its three fixed modes
+and safety checks pass, while engine/UI integration and dense/native gates remain.
+Pitch diagnostic work is checkpointed independently and stays outside products.
+Manual host/microphone/listening qualification remains deferred.

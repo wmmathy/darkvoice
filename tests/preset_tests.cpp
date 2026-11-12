@@ -211,7 +211,7 @@ void basicPersistence() {
     require(std::abs(restored.find(originalId)->values.at("eqMidGainDb") - 3.4f) < .00001f,
             "Parameter roundtrip");
     require(restored.search("renamed").size() == 1, "Name search");
-    require(restored.find(originalId)->values == settings, "Full v14 nondefault preset roundtrip");
+    require(restored.find(originalId)->values == settings, "Full v15 nondefault preset roundtrip");
     const auto exported = temp.file.getChildFile("export.json");
     good(restored.exportFile(originalId, exported), "Export user preset");
     const auto exportedBytes = exported.loadFileAsString();
@@ -301,6 +301,17 @@ void malformedAndMigration() {
         require(bank.importFile(external, id).failed(), "Reject malformed JSON/version/types");
         require(bank.presets().size() == initial && id.isEmpty(),
                 "Import failure does not mutate bank");
+    }
+    for (bool rootMetadata : {false, true}) {
+        auto qualityPreset = juce::JSON::parse(jsonFor(settings));
+        auto *object = qualityPreset.getDynamicObject();
+        if (rootMetadata)
+            object->setProperty("qualityMode", 2);
+        else
+            object->getProperty("parameters").getDynamicObject()->setProperty("qualityMode", 2);
+        write(external, juce::JSON::toString(qualityPreset, true));
+        require(bank.importFile(external, id).failed() && bank.presets().size() == initial,
+                "Global quality must not enter sound preset schema or mutate bank");
     }
     const auto cleanJson = jsonFor(settings);
     for (const auto &hostile :

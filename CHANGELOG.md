@@ -1,5 +1,12 @@
 # Changelog
 
+## Prepared quality-mode application integration
+
+- Prepare genuine Colour quality profiles with124/184/368-sample dry and bypass alignment.
+- Add active/pending mode selection, applying changes on audio-engine restart or plugin reload.
+- Persist global quality separately from sound presets with strict schema15 migration.
+- Keep final product/native qualification pending; preserve the Debug test timeout evidence.
+
 ## Guarded Colour quality-profile library
 
 - Add a separate16x Colour implementation with guarded input/output FIR filters.

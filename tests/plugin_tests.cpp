@@ -12,7 +12,8 @@
 #include <stdexcept>
 
 namespace {
-constexpr int latency = 56;
+constexpr int latency =
+    static_cast<int>(darkvoice::BandlimitedColour::latencyForQuality(darkvoice::QualityMode::Live));
 struct CommaDecimal : std::numpunct<char> {
     char do_decimal_point() const override {
         return ',';
@@ -51,6 +52,140 @@ void sine(juce::AudioBuffer<float> &buffer, double rate, int start = 0) {
                              0.1f *
                                  std::sin(static_cast<float>(2.0 * juce::MathConstants<double>::pi *
                                                              1000.0 * (start + i) / rate)));
+}
+juce::ValueTree currentState(DarkVoiceProcessor &processor) {
+    auto tree = processor.parameters.copyState();
+    tree.setProperty("schemaVersion", darkvoice::currentSchemaVersion, nullptr);
+    tree.setProperty("qualityMode", static_cast<int>(processor.requestedQualityMode()), nullptr);
+    return tree;
+}
+void qualityModeTests() {
+    using darkvoice::QualityMode;
+    DarkVoiceProcessor processor;
+    require(processor.requestedQualityMode() == QualityMode::Live &&
+                !processor.activeQualityMode() && processor.getLatencySamples() == 0,
+            "Quality starts requested Live and unprepared");
+    juce::MidiBuffer midi;
+    for (auto mode : {QualityMode::Live, QualityMode::Studio, QualityMode::Offline}) {
+        const int expected =
+            static_cast<int>(darkvoice::BandlimitedColour::latencyForQuality(mode));
+        require(processor.requestQualityMode(mode), "Valid quality request rejected");
+        processor.prepareToPlay(48000, 17);
+        require(processor.activeQualityMode() == mode && processor.getLatencySamples() == expected,
+                "Prepare must apply requested quality and actual latency");
+        const auto alternate = mode == QualityMode::Live ? QualityMode::Offline : QualityMode::Live;
+        require(processor.requestQualityMode(alternate), "Pending quality request rejected");
+        require(processor.activeQualityMode() == mode && processor.getLatencySamples() == expected,
+                "Request must not change active mode or host latency");
+        set(processor, "mix", 0);
+        processor.prepareToPlay(48000, 17);
+        require(processor.activeQualityMode() == alternate,
+                "Reprepare must apply pending quality request");
+        // Re-enter mode, then verify oversized host chunks preserve raw bypass bits.
+        require(processor.requestQualityMode(mode), "Mode request rejected");
+        processor.prepareToPlay(48000, 17);
+        juce::AudioBuffer<float> audio(2, expected + 65);
+        audio.clear();
+        audio.setSample(0, 0, std::bit_cast<float>(0x7fc12345U));
+        audio.setSample(1, 0, std::bit_cast<float>(0x80000000U));
+        audio.setSample(0, 1, .375f);
+        processor.processBlockBypassed(audio, midi);
+        require(std::bit_cast<std::uint32_t>(audio.getSample(0, expected)) == 0x7fc12345U &&
+                    std::bit_cast<std::uint32_t>(audio.getSample(1, expected)) == 0x80000000U &&
+                    audio.getSample(0, expected + 1) == .375f,
+                "Each quality must preserve raw delayed bypass bits across chunks");
+        require(!processor.requestQualityMode(static_cast<QualityMode>(-1)) &&
+                    !processor.requestQualityMode(static_cast<QualityMode>(3)) &&
+                    processor.requestedQualityMode() == mode,
+                "Invalid quality request must be atomic");
+        const auto sound = processor.snapshotPresetValues();
+        require(sound.size() == 64 && sound.find("qualityMode") == sound.end(),
+                "Quality must remain outside sound presets");
+        require(processor.requestQualityMode(alternate), "Pending preset guard request rejected");
+        require(processor.applyPreset(sound) && processor.requestedQualityMode() == alternate &&
+                    processor.activeQualityMode() == mode,
+                "Preset application must preserve requested and active quality");
+        juce::MemoryBlock pending;
+        processor.getStateInformation(pending);
+        DarkVoiceProcessor restored;
+        restored.setStateInformation(pending.getData(), static_cast<int>(pending.getSize()));
+        require(restored.requestedQualityMode() == alternate && !restored.activeQualityMode(),
+                "Pending quality must persist without activating unprepared processor");
+        processor.releaseResources();
+        require(!processor.activeQualityMode() && processor.getLatencySamples() == 0 &&
+                    processor.requestedQualityMode() == alternate,
+                "Release must clear active quality while retaining request");
+    }
+    DarkVoiceProcessor source;
+    set(source, "inputDb", 7);
+    require(source.requestQualityMode(QualityMode::Offline), "Offline request rejected");
+    require(processor.requestQualityMode(QualityMode::Studio), "Studio request rejected");
+    set(processor, "inputDb", -5);
+    processor.prepareToPlay(48000, 64);
+    for (const char *invalid : {"", " 1", "1 ", "1.0", "1e0", "-1", "3", "2147483648", "junk"}) {
+        auto tree = currentState(source);
+        tree.setProperty("qualityMode", invalid, nullptr);
+        juce::MemoryBlock data;
+        juce::AudioProcessor::copyXmlToBinary(*tree.createXml(), data);
+        processor.setStateInformation(data.getData(), static_cast<int>(data.getSize()));
+        require(processor.requestedQualityMode() == QualityMode::Studio &&
+                    processor.activeQualityMode() == QualityMode::Studio &&
+                    processor.getLatencySamples() ==
+                        static_cast<int>(
+                            darkvoice::BandlimitedColour::latencyForQuality(QualityMode::Studio)) &&
+                    raw(processor, "inputDb") == -5,
+                "Malformed quality metadata must reject entire snapshot atomically");
+    }
+    {
+        auto tree = currentState(source);
+        tree.removeProperty("qualityMode", nullptr);
+        juce::MemoryBlock data;
+        juce::AudioProcessor::copyXmlToBinary(*tree.createXml(), data);
+        processor.setStateInformation(data.getData(), static_cast<int>(data.getSize()));
+        require(processor.requestedQualityMode() == QualityMode::Studio &&
+                    raw(processor, "inputDb") == -5,
+                "Missing v15 quality metadata must reject entire snapshot");
+    }
+    {
+        auto tree = currentState(source);
+        tree.getChildWithProperty("id", "inputDb").setProperty("value", "bad", nullptr);
+        juce::MemoryBlock data;
+        juce::AudioProcessor::copyXmlToBinary(*tree.createXml(), data);
+        processor.setStateInformation(data.getData(), static_cast<int>(data.getSize()));
+        require(processor.requestedQualityMode() == QualityMode::Studio &&
+                    raw(processor, "inputDb") == -5,
+                "Valid quality with malformed sound must reject both atomically");
+    }
+    for (int version = 1; version <= 14; ++version) {
+        auto tree = currentState(source);
+        tree.setProperty("schemaVersion", version, nullptr);
+        tree.removeProperty("qualityMode", nullptr);
+        // APVTS child order is not the schema order: remove by retained ID,
+        // rather than truncating an arbitrary map-iteration prefix.
+        const auto count = darkvoice::parameterCountForVersion(version);
+        for (int child = tree.getNumChildren() - 1; child >= 0; --child) {
+            const auto id = tree.getChild(child).getProperty("id").toString();
+            bool retained = false;
+            for (std::size_t index = 0; index < count; ++index)
+                retained = retained || id == darkvoice::parameterSchema[index].id;
+            if (!retained)
+                tree.removeChild(child, nullptr);
+        }
+        require(processor.requestQualityMode(QualityMode::Offline), "Legacy setup rejected");
+        juce::MemoryBlock data;
+        juce::AudioProcessor::copyXmlToBinary(*tree.createXml(), data);
+        processor.setStateInformation(data.getData(), static_cast<int>(data.getSize()));
+        require(processor.requestedQualityMode() == QualityMode::Live &&
+                    processor.activeQualityMode() == QualityMode::Studio &&
+                    processor.getLatencySamples() ==
+                        static_cast<int>(
+                            darkvoice::BandlimitedColour::latencyForQuality(QualityMode::Studio)) &&
+                    raw(processor, "inputDb") == raw(source, "inputDb"),
+                "Legacy state defaults requested Live without changing active mode");
+    }
+    processor.prepareToPlay(12345, 64);
+    require(!processor.activeQualityMode() && processor.getLatencySamples() == 0,
+            "Failed prepare must leave no active quality");
 }
 void stateTests() {
     DarkVoiceProcessor source;
@@ -160,7 +295,7 @@ void stateTests() {
                                                                                        : 14),
                 "AU version hint changed");
         require(std::abs(raw(restored, spec.id) - raw(source, spec.id)) < 0.001f,
-                "Full v14 state roundtrip failed");
+                "Full v15 state roundtrip failed");
     }
     require(source.getTailLengthSeconds() == 240.0, "Stereo musical delay tail not reported");
 
@@ -170,7 +305,7 @@ void stateTests() {
             "Malformed state changed parameters");
     for (const auto &version :
          {juce::String(darkvoice::currentSchemaVersion + 1), juce::String("1junk")}) {
-        auto xml = source.parameters.copyState().createXml();
+        auto xml = currentState(source).createXml();
         xml->setAttribute("schemaVersion", version);
         juce::MemoryBlock invalid;
         juce::AudioProcessor::copyXmlToBinary(*xml, invalid);
@@ -180,7 +315,7 @@ void stateTests() {
                 "Invalid schema changed parameters");
     }
     for (const char *value : {"NaN", "1.2.3", "100", "", ".", "--1", "1 2"}) {
-        auto tree = source.parameters.copyState();
+        auto tree = currentState(source);
         tree.setProperty("schemaVersion", darkvoice::currentSchemaVersion, nullptr);
         tree.getChildWithProperty("id", "inputDb").setProperty("value", value, nullptr);
         juce::MemoryBlock invalid;
@@ -189,7 +324,7 @@ void stateTests() {
         require(std::abs(raw(restored, "inputDb") + 5.0f) < 0.01f,
                 "Invalid parameter state accepted");
     }
-    auto scientificTree = source.parameters.copyState();
+    auto scientificTree = currentState(source);
     scientificTree.setProperty("schemaVersion", darkvoice::currentSchemaVersion, nullptr);
     scientificTree.getChildWithProperty("id", "inputDb").setProperty("value", "1e1", nullptr);
     juce::MemoryBlock scientific;
@@ -207,7 +342,7 @@ void stateTests() {
     }
     // A legacy project contains exactly the original eight IDs. New effects
     // must reset to defaults even when restoring into a modified v2 instance.
-    auto legacy = source.parameters.copyState();
+    auto legacy = currentState(source);
     legacy.setProperty("schemaVersion", 1, nullptr);
     for (int child = legacy.getNumChildren() - 1; child >= 0; --child)
         if (legacy.getChild(child).getProperty("id").toString().startsWith("space") ||
@@ -243,7 +378,7 @@ void stateTests() {
         require(std::abs(raw(restored, spec.id) - spec.defaultValue) < 0.001f,
                 "Legacy effect defaults not restored");
     }
-    auto v2 = source.parameters.copyState();
+    auto v2 = currentState(source);
     v2.setProperty("schemaVersion", 2, nullptr);
     for (int child = v2.getNumChildren() - 1; child >= 0; --child)
         if (v2.getChild(child).getProperty("id").toString().startsWith("space") ||
@@ -285,7 +420,7 @@ void stateTests() {
                 raw(restored, "chorusDepthMs") == 6 &&
                 std::abs(raw(restored, "chorusRateHz") - .8f) < .001f,
             "V2 state resets modulation");
-    auto v3 = source.parameters.copyState();
+    auto v3 = currentState(source);
     v3.setProperty("schemaVersion", 3, nullptr);
     for (int child = v3.getNumChildren() - 1; child >= 0; --child)
         if (v3.getChild(child).getProperty("id").toString().startsWith("space") ||
@@ -322,7 +457,7 @@ void stateTests() {
                 raw(restored, "chorusDepthMs") == 6 &&
                 std::abs(raw(restored, "chorusRateHz") - .8f) < .001f,
             "V3 state resets modulation");
-    auto v4 = source.parameters.copyState();
+    auto v4 = currentState(source);
     v4.setProperty("schemaVersion", 4, nullptr);
     for (int child = v4.getNumChildren() - 1; child >= 0; --child)
         if (v4.getChild(child).getProperty("id").toString().startsWith("space") ||
@@ -352,7 +487,7 @@ void stateTests() {
                 raw(restored, "chorusDepthMs") == 6 && raw(restored, "chorusMix") == 0 &&
                 raw(restored, "stereoWidth") == 1 && raw(restored, "deEssReductionDb") == 9,
             "V4 state retains de-esser and resets modulation defaults");
-    auto v5 = source.parameters.copyState();
+    auto v5 = currentState(source);
     v5.setProperty("schemaVersion", 5, nullptr);
     for (int child = v5.getNumChildren() - 1; child >= 0; --child)
         if (v5.getChild(child).getProperty("id").toString().startsWith("space") ||
@@ -382,7 +517,7 @@ void stateTests() {
                 std::abs(raw(restored, "chorusMix") - .25f) < .001f,
             "V5 state preserves chorus and resets active flanger defaults");
     for (int version = 1; version <= 6; ++version) {
-        auto old = source.parameters.copyState();
+        auto old = currentState(source);
         old.setProperty("schemaVersion", version, nullptr);
         for (int child = old.getNumChildren() - 1; child >= 0; --child) {
             const auto id = old.getChild(child).getProperty("id").toString();
@@ -413,7 +548,7 @@ void stateTests() {
                     "Every legacy state clears active flanger fields");
     }
     for (int version = 1; version <= 7; ++version) {
-        auto old = source.parameters.copyState();
+        auto old = currentState(source);
         old.setProperty("schemaVersion", version, nullptr);
         for (int child = old.getNumChildren() - 1; child >= 0; --child) {
             bool keep = false;
@@ -443,7 +578,7 @@ void stateTests() {
     for (const auto *id :
          {"stereoDelaySync", "stereoDelayHostTempo", "stereoDelayMode", "stereoDelayDivision"})
         for (const auto *token : {"0.5", "1.00000001", "1e-500", "NaN", "6", "-1"}) {
-            auto bad = source.parameters.copyState();
+            auto bad = currentState(source);
             bad.setProperty("schemaVersion", darkvoice::currentSchemaVersion, nullptr);
             bad.getChildWithProperty("id", id).setProperty("value", token, nullptr);
             const auto before = restored.snapshotPresetValues();
@@ -454,7 +589,7 @@ void stateTests() {
                     "Invalid stereo delay Boolean/discrete state changed live snapshot");
         }
     for (int version = 1; version <= 8; ++version) {
-        auto old = source.parameters.copyState();
+        auto old = currentState(source);
         old.setProperty("schemaVersion", version, nullptr);
         for (int child = old.getNumChildren() - 1; child >= 0; --child) {
             bool keep = false;
@@ -485,7 +620,7 @@ void stateTests() {
     for (const auto *id :
          {"doublerSeparationMs", "doublerVariationMs", "doublerRateHz", "doublerMix"})
         for (const auto *invalid : {"NaN", "1e100", "-1", "100"}) {
-            auto bad = source.parameters.copyState();
+            auto bad = currentState(source);
             bad.setProperty("schemaVersion", darkvoice::currentSchemaVersion, nullptr);
             bad.getChildWithProperty("id", id).setProperty("value", invalid, nullptr);
             const auto before = restored.snapshotPresetValues();
@@ -496,7 +631,7 @@ void stateTests() {
                     "Invalid doubler state changes no live controls");
         }
     for (int version = 1; version <= 9; ++version) {
-        auto old = source.parameters.copyState();
+        auto old = currentState(source);
         old.setProperty("schemaVersion", version, nullptr);
         for (int child = old.getNumChildren() - 1; child >= 0; --child) {
             bool keep = false;
@@ -526,7 +661,7 @@ void stateTests() {
                     "V9 migration preserves prior effects");
     }
     for (const auto *invalid : {"0.5", "1.00000001", "1e-500", "NaN", "3", "-1"}) {
-        auto bad = source.parameters.copyState();
+        auto bad = currentState(source);
         bad.setProperty("schemaVersion", darkvoice::currentSchemaVersion, nullptr);
         bad.getChildWithProperty("id", "spaceModel").setProperty("value", invalid, nullptr);
         const auto before = restored.snapshotPresetValues();
@@ -538,7 +673,7 @@ void stateTests() {
     }
     for (const auto *id : {"spaceDecay", "spaceToneHz", "spacePreDelayMs", "spaceMix"})
         for (const auto *invalid : {"NaN", "1e100", "-1", "100000"}) {
-            auto bad = source.parameters.copyState();
+            auto bad = currentState(source);
             bad.setProperty("schemaVersion", darkvoice::currentSchemaVersion, nullptr);
             bad.getChildWithProperty("id", id).setProperty("value", invalid, nullptr);
             const auto before = restored.snapshotPresetValues();
@@ -549,7 +684,7 @@ void stateTests() {
                     "Invalid Space float state changed live snapshot");
         }
     for (int version = 1; version <= 10; ++version) {
-        auto old = source.parameters.copyState();
+        auto old = currentState(source);
         old.setProperty("schemaVersion", version, nullptr);
         for (int child = old.getNumChildren() - 1; child >= 0; --child) {
             bool keep = false;
@@ -575,7 +710,7 @@ void stateTests() {
             require(std::abs(raw(restored, "spaceMix") - .2f) < .001f, "V10 preserves Space sound");
     }
     for (int version = 1; version <= 11; ++version) {
-        auto old = source.parameters.copyState();
+        auto old = currentState(source);
         old.setProperty("schemaVersion", version, nullptr);
         for (int child = old.getNumChildren() - 1; child >= 0; --child) {
             bool keep = false;
@@ -601,7 +736,7 @@ void stateTests() {
         }
     }
     for (int version = 1; version <= 12; ++version) {
-        auto old = source.parameters.copyState();
+        auto old = currentState(source);
         old.setProperty("schemaVersion", version, nullptr);
         for (int child = old.getNumChildren() - 1; child >= 0; --child) {
             const auto id = old.getChild(child).getProperty("id").toString();
@@ -623,7 +758,7 @@ void stateTests() {
                     "Breath migration preserves every prior state value");
     }
     for (int version = 1; version <= 13; ++version) {
-        auto old = source.parameters.copyState();
+        auto old = currentState(source);
         old.setProperty("schemaVersion", version, nullptr);
         const auto count = darkvoice::parameterCountForVersion(version);
         for (int child = old.getNumChildren() - 1; child >= 0; --child) {
@@ -649,7 +784,7 @@ void stateTests() {
         }
     }
     for (const auto *invalid : {"NaN", "1e100", "-0.001", "1.001"}) {
-        auto bad = source.parameters.copyState();
+        auto bad = currentState(source);
         bad.setProperty("schemaVersion", darkvoice::currentSchemaVersion, nullptr);
         bad.getChildWithProperty("id", "sculptBreathiness").setProperty("value", invalid, nullptr);
         const auto before = restored.snapshotPresetValues();
@@ -662,7 +797,7 @@ void stateTests() {
     for (const auto *id : {"sculptBodyDb", "sculptWarmthDb", "sculptPresenceDb", "sculptDepthDb",
                            "sculptResonanceDb"})
         for (const auto *invalid : {"NaN", "1e100", "-6.01", "6.01"}) {
-            auto bad = source.parameters.copyState();
+            auto bad = currentState(source);
             bad.setProperty("schemaVersion", darkvoice::currentSchemaVersion, nullptr);
             bad.getChildWithProperty("id", id).setProperty("value", invalid, nullptr);
             const auto before = restored.snapshotPresetValues();
@@ -673,7 +808,7 @@ void stateTests() {
                     "Invalid VoiceSculptor tone state must be atomic");
         }
     for (const auto *invalid : {"0.5", "1.00000001", "1e-500", "NaN", "2", "-1"}) {
-        auto bad = source.parameters.copyState();
+        auto bad = currentState(source);
         bad.setProperty("schemaVersion", darkvoice::currentSchemaVersion, nullptr);
         bad.getChildWithProperty("id", "colourModel").setProperty("value", invalid, nullptr);
         const auto before = restored.snapshotPresetValues();
@@ -685,7 +820,7 @@ void stateTests() {
     }
     for (const auto *id : {"colourDrive", "colourToneHz", "colourMix"})
         for (const auto *invalid : {"NaN", "1e100", "-1", "100000"}) {
-            auto bad = source.parameters.copyState();
+            auto bad = currentState(source);
             bad.setProperty("schemaVersion", darkvoice::currentSchemaVersion, nullptr);
             bad.getChildWithProperty("id", id).setProperty("value", invalid, nullptr);
             const auto before = restored.snapshotPresetValues();
@@ -697,7 +832,7 @@ void stateTests() {
         }
     set(restored, "gateRatio", 1);
     for (const char *badGate : {"NaN", "21", "0"}) {
-        auto bad = source.parameters.copyState();
+        auto bad = currentState(source);
         bad.setProperty("schemaVersion", darkvoice::currentSchemaVersion, nullptr);
         bad.getChildWithProperty("id", "gateRatio").setProperty("value", badGate, nullptr);
         juce::MemoryBlock data;
@@ -706,7 +841,7 @@ void stateTests() {
         require(raw(restored, "gateRatio") == 1, "Invalid gate state changed live state");
     }
     for (const char *badReduction : {"NaN", "19", "-1"}) {
-        auto bad = source.parameters.copyState();
+        auto bad = currentState(source);
         bad.setProperty("schemaVersion", darkvoice::currentSchemaVersion, nullptr);
         bad.getChildWithProperty("id", "deEssReductionDb")
             .setProperty("value", badReduction, nullptr);
@@ -719,7 +854,7 @@ void stateTests() {
     }
     for (const auto *invalidEnable : {"0.5", "-1", "2", "NaN", "1.00000001", "0.99999999", "1e-500",
                                       "1.00000000000000000001"}) {
-        auto bad = source.parameters.copyState();
+        auto bad = currentState(source);
         bad.setProperty("schemaVersion", darkvoice::currentSchemaVersion, nullptr);
         bad.getChildWithProperty("id", "limiterEnabled")
             .setProperty("value", invalidEnable, nullptr);
@@ -731,7 +866,7 @@ void stateTests() {
                 "Invalid limiter boolean changed live snapshot");
     }
     for (int fault = 0; fault < 3; ++fault) {
-        auto invalidTree = source.parameters.copyState();
+        auto invalidTree = currentState(source);
         invalidTree.setProperty("schemaVersion", darkvoice::currentSchemaVersion, nullptr);
         if (fault == 0)
             invalidTree.removeChild(0, nullptr);
@@ -1657,7 +1792,7 @@ void renderingTests() {
             set(p, "outputDb", -6.0f);
             p.prepareToPlay(rate, 64);
             require(p.getLatencySamples() == latency,
-                    "Prepared host latency must stay fixed at56 samples");
+                    "Prepared host latency must match the prepared Live profile");
             // Oversized host block is processed in bounded prepared-size chunks.
             juce::AudioBuffer<float> buffer(channels, 257);
             sine(buffer, rate);
@@ -1705,6 +1840,7 @@ void renderingTests() {
 int main() {
     juce::ScopedJuceInitialiser_GUI runtime;
     try {
+        qualityModeTests();
         stateTests();
         colourAudioTests();
         sculptorToneAudioTests();

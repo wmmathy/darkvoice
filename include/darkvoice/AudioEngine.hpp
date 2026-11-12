@@ -2,8 +2,8 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <darkvoice/BandlimitedColour.hpp>
 #include <darkvoice/Breathiness.hpp>
-#include <darkvoice/Colour.hpp>
 #include <darkvoice/DeEsser.hpp>
 #include <darkvoice/Doubler.hpp>
 #include <darkvoice/Flanger.hpp>
@@ -14,11 +14,11 @@
 #include <darkvoice/ToneEffects.hpp>
 #include <darkvoice/VocalLimiter.hpp>
 #include <darkvoice/VoiceSculptor.hpp>
+#include <optional>
 #include <span>
 #include <vector>
 namespace darkvoice {
-// v2: fixed56-sample alignment; snapshots are delivered by the host on the audio thread between
-// blocks.
+// v3: prepared quality determines alignment; snapshots arrive between audio blocks.
 struct EngineParameters {
     float inputDb = 0.0f;
     float outputDb = 0.0f;
@@ -57,7 +57,8 @@ struct EngineMeters {
 };
 class AudioEngine {
   public:
-    bool prepare(double sampleRate, std::size_t maxFrames, std::size_t channels) noexcept;
+    bool prepare(double sampleRate, std::size_t maxFrames, std::size_t channels,
+                 QualityMode quality = QualityMode::Live) noexcept;
     bool setParameters(const EngineParameters &) noexcept;
     bool process(std::span<float *> channels, std::size_t frames) noexcept;
     bool processBypassed(std::span<float *> channels, std::size_t frames) noexcept;
@@ -67,7 +68,11 @@ class AudioEngine {
         return meters_;
     }
     [[nodiscard]] std::size_t latencySamples() const noexcept {
-        return rate_ == 0 ? 0 : 56;
+        return rate_ == 0 ? 0 : latency_;
+    }
+
+    [[nodiscard]] std::optional<QualityMode> qualityMode() const noexcept {
+        return rate_ == 0 ? std::nullopt : colour_.qualityMode();
     }
 
   private:
@@ -89,11 +94,14 @@ class AudioEngine {
     StereoDelay stereoDelay_;
     SpaceReverb spaceReverb_;
     VocalLimiter limiter_;
-    Colour colour_;
+    BandlimitedColour colour_;
     std::array<std::vector<float>, 2> wet_;
     std::array<std::vector<std::uint32_t>, 2> aligned_;
-    std::array<std::array<std::uint32_t, 56>, 2> rawQueue_{};
-    std::size_t rawPosition_ = 0, resumeGuard_ = 0, resumeFade_ = 128;
+    std::array<std::array<std::uint32_t, BandlimitedColour::maximumLatencySamples>, 2> rawQueue_{};
+    std::size_t rawPosition_ = 0, resumeGuard_ = 0,
+                resumeFade_ = 2 * BandlimitedColour::latencyForQuality(QualityMode::Live);
+    std::size_t latency_ = 0,
+                resumeFadeLength_ = 2 * BandlimitedColour::latencyForQuality(QualityMode::Live);
     bool bypassed_ = false, limiterResetPending_ = false;
 };
 } // namespace darkvoice
