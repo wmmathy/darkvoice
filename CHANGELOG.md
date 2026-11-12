@@ -1,5 +1,12 @@
 # Changelog
 
+## Harmonic Character core
+
+- Add an independent bipolar harmonic contribution with exact neutral output.
+- Match prepared quality profiles and124/184/368-sample alignment.
+- Add independent reference, absolute-alias, safety and complete sharded qualification.
+- Keep application routing and controls in the dependent schema16 increment.
+
 ## Guarded Colour quality-profile library
 
 - Add a separate16x Colour implementation with guarded input/output FIR filters.

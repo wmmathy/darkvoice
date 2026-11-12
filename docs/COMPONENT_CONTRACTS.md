@@ -1255,3 +1255,19 @@ src/HarmonicCharacter.cpp, tests/harmonic_character_tests.cpp. Lead supplies fro
 QualityMode.hpp/BandlimitedColour.hpp/helper from qualified writer, owns CMake/docs.
 No engine/host edits. Strict O2/Werror tests and per-mode time measurements; lead
 ASan/native/independent QA before integration. No commit/push yet.
+
+## Character core current profile confirmation v4 — 2026-11-12
+
+The historical v1 section is superseded for profiles by the frozen425a75b
+implementation:16x shaping, guarded first/last native filters, actual latency
+124/184/368 and maximum368. Higher halfband kernels65/129/257, guarded
+193/257/513. Native10Hz DC/output-clock amount smoothing and additive delta
+semantics remain. No .25 transient bound: measured peaks and conservative L1
+bounds are recorded separately.
+
+All fixed/reference/absolute tests are retained; explicit1720..1724 cases address
+previously missed alias peaks. Dense qualification covers all bins17..2031, both
+signs, each mode, in24 complete Release shards. Debug/SAN safety is separately
+named and cannot be reported as full spectral qualification. The application
+parallel-routing/schema16 contract is a dependent increment, not implemented
+by this library-only integration.

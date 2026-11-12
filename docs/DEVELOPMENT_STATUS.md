@@ -912,3 +912,14 @@ Finite isolated writer owns HarmonicCharacter header/source/test only under
 recorded v1 contract; dependency frozen new bandlimited profile helper supplied
 by lead. Parallel additive output avoids serial Colour latency and stays audible
 independently of Colour mix. All alias/functional gates before host exposure.
+
+## Character core qualification integration — 2026-11-12
+
+The committed Character contribution is now registered as an independent core
+library consumer and CTest target using the qualified16x profile helper. All
+three fixed cores previously passed34,506 checks per mode; fresh checkpoint
+safety passed98,757 across all modes. The new workflow covers every integer
+bin17..2031, both character signs, across24 complete Release shards.
+Application routing and schema16 UI controls remain a dependent increment.
+Safety sanitizer, independent review and exact-head native/dense checks are
+required before normal merge. No manual or realtime-deadline claim.
