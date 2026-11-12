@@ -765,3 +765,22 @@ JUCE builds and actual unsigned AU validation. OS coverage changes, architecture
 and quality gates do not. No main/feature integration until the corresponding
 new head passes actual native/source-quality checks and normal review/rules.
 Manual host/microphone/listening qualification remains deferred.
+
+## Planned schema14 integration packages — 2026-10-28
+
+Lead established the exact schema14 contract before delegation. Engine task
+depth_engine owns only AudioEngine.hpp/.cpp and engine_tests.cpp in isolated
+/workspace/worktrees/depth-resonance-engine. Host task depth_host owns only
+ParameterSchema, PluginProcessor/Editor, PresetBank and plugin/preset/gui tests
+in /workspace/worktrees/depth-resonance-host. Their feature/sculptor branches
+match those worktree names. Base combines qualified v2 core900bb8f and validated
+schema13 host d37253d, including verified macOS15 ARM CI fallback. Qualified core
+files stay frozen. Compile strict engine tests with current v2 VoiceSculptor.cpp;
+do not link stale v1 object code, since the private object layout grew.
+
+Acceptance retains16642 previous engine gates, adds both tone fields and complete
+routing/automation/resume/limiter checks, all63 prior definitions/factories and
+strict v1..13 migrations,65state/64sound/13groups. Lead runs warm product build,
+CTest with --output-on-failure --no-tests=error, sequential Release/ASan, realGUI,
+static/scans and native checks. Read-only independent QA after frozen writers.
+No persistent scheduler; manual host/microphone/listening qualification deferred.
