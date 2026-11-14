@@ -5,6 +5,7 @@ Final-half metrics retained from pitch
 coupling audit. Correlation alone cannot distinguish octave-down from unchanged
 70Hz; ideal35/unchanged70/even-only controls explicitly demonstrate ambiguity.
 Malformed inputs fail; valid negative quality results are reported, not hidden.
+The matrix-periodicity suite also exits nonzero for any hard-gate failure.
 """
 from pathlib import Path
 import argparse
@@ -35,7 +36,7 @@ def correlation(x, hz, rate=RATE):
     return float(np.dot(a, b) / denominator)
 
 
-def metrics(x, target, envelope, rate=RATE):
+def metrics(x, target, envelope, rate=RATE, broad_hann=False):
     if len(x) < 2 or not np.isfinite(x).all() or np.dot(x, x) <= 0:
         raise ValueError("invalid final-second signal")
     padded = np.abs(np.fft.rfft(x * np.hanning(len(x)), n=FFT_FRAMES))
@@ -75,13 +76,25 @@ def metrics(x, target, envelope, rate=RATE):
         raise ValueError("undefined spectral energy")
     corr = correlation(x, target, rate)
     error = abs(grid_peak/envelope-1)
-    return dict(corrHalfT=correlation(x, 2*target, rate), corrT=corr,
+    result=dict(corrHalfT=correlation(x, 2*target, rate), corrT=corr,
                 corrDoubleT=correlation(x, target/2, rate), gridPeakHz=grid_peak,
                 hannPeakHz=peak, envelopeError=error,
                 hannEnvelopeError=abs(peak/envelope-1), capturedGrid=(odd+even)/total,
                 oddOverTotal=odd/total, oddOverCaptured=odd/(odd+even),
                 periodicityPass=corr > .8, envelopePass=error < .2,
                 hannEnvelopePass=abs(peak/envelope-1) < .2)
+    if broad_hann:
+        low_hz,high_hz=200.,3000.
+        low=int(np.ceil(low_hz*FFT_FRAMES/rate));high=int(np.floor(high_hz*FFT_FRAMES/rate))
+        selected=low+int(np.argmax(padded[low:high+1]));offset=0.
+        if low<selected<high:
+            amplitudes=np.log(np.maximum(padded[selected-1:selected+2],1e-30))
+            curve=amplitudes[0]-2*amplitudes[1]+amplitudes[2]
+            if np.isfinite(curve) and curve!=0:
+                offset=float(np.clip(.5*(amplitudes[0]-amplitudes[2])/curve,-1,1))
+        result.update(broadHannPeakHz=float((selected+offset)*rate/FFT_FRAMES),
+                      broadHannSearchLowHz=low_hz,broadHannSearchHighHz=high_hz)
+    return result
 
 
 def controls():
@@ -127,6 +140,18 @@ def manifest():
     return rows
 
 
+def matrix_manifest():
+    rows = []
+    for rate in (48000, 96000):
+        for f0 in (70, 100, 180):
+            for center in (600, 1200):
+                for pitch in (-12, -7, 0, 7, 12):
+                    for formant in (-7, 0, 7):
+                        rows.append((rate, f0, center, pitch, formant, "matrix"))
+    assert len(rows) == 180
+    return rows
+
+
 def peak_on_grid(x, rate, target, low, high):
     time = np.arange(len(x))/rate
     best = peak = 0.0
@@ -150,8 +175,18 @@ def crossing_frequency(x, rate):
     return float((len(indices)-1)*rate/(crossings[-1]-crossings[0]))
 
 
-def recompute_periodicity(directory,name,original,rate,time,f0):
+def recompute_periodicity(directory,name,original,rate,time,f0,verification_cache=None):
     count=len(time)
+    cache_key=None
+    if verification_cache is not None:
+        suffixes=("-time.f64","-f0.f64","-candidate-0.f64","-candidate-1.f64",
+                  "-candidate-2.f64","-candidate-3.f64","-backend-status.i32",
+                  "-periods.f64","-scores.f64","-selected.i32")
+        cache_key=(rate,(directory/(name+"-input.raw")).read_bytes(),
+                   *((directory/(name+suffix)).read_bytes() for suffix in suffixes))
+        if cache_key in verification_cache:
+            previous,candidates=verification_cache[cache_key]
+            return dict(previous,decisionVerificationReused=True),candidates
     candidates=np.stack([load(directory/(name+f"-candidate-{i}.f64"),"<f8",count) for i in range(4)],axis=1)
     statuses=load(directory/(name+"-backend-status.i32"),"<i4",4)
     if ((statuses<0)|(statuses>4)).any():
@@ -197,8 +232,12 @@ def recompute_periodicity(directory,name,original,rate,time,f0):
     f0_error=float(np.max(np.abs(f0-expected_f0)))
     if period_error>1e-7 or score_error>1e-10 or f0_error>1e-7 or not np.array_equal(selected,expected_selected):
         raise ValueError(f"independent periodicity recompute mismatch {period_error} {score_error} {f0_error}")
-    return dict(periodRecomputeMaxError=period_error,scoreRecomputeMaxError=score_error,
-                f0RecomputeMaxError=f0_error,backendStatus=statuses.astype(int).tolist()),candidates
+    result=dict(periodRecomputeMaxError=period_error,scoreRecomputeMaxError=score_error,
+                f0RecomputeMaxError=f0_error,backendStatus=statuses.astype(int).tolist())
+    if verification_cache is not None:
+        verification_cache[cache_key]=(result,candidates)
+        result=dict(result,decisionVerificationReused=False)
+    return result,candidates
 
 
 def analyse_periodicity_controls(directory):
@@ -237,93 +276,149 @@ def analyse_periodicity_controls(directory):
     return dict(suite="periodicity-controls",rows=rows)
 
 
+def analyse_row(directory,method,index,case,verification_cache=None):
+    rate,fundamental,center,pitch,formant,kind=case
+    name = f"{method}-{index}"
+    seconds = 1.5 if kind=="sine" else 2
+    frames = int(seconds*rate)
+    output = load(directory/(name+".raw"), "<f4", frames)
+    original = load(directory/(name+"-input.raw"), "<f4", frames)
+    if np.dot(original, original) <= 0:
+        raise ValueError("empty input fixture")
+    count = int(seconds/.005)+1
+    time = load(directory/(name+"-time.f64"), "<f8", count)
+    f0 = load(directory/(name+"-f0.f64"), "<f8", count)
+    if not np.allclose(time, np.arange(count)*.005, rtol=0, atol=1e-12) or (f0 < 0).any():
+        raise ValueError("invalid F0/time contour")
+    reaper_info = {}
+    periodicity_candidates=None
+    if method in ("periodicity","retained-periodicity","matrix-periodicity"):
+        reaper_info,periodicity_candidates=recompute_periodicity(directory,name,original,rate,time,f0,verification_cache)
+    if method in ("reaper","retained-reaper","periodicity","retained-periodicity","matrix-periodicity"):
+        mapping = (directory/(name+"-reaper.txt")).read_text().split()
+        if len(mapping)!=6 or mapping[::2]!=["pcmClips","sourceFrames","worldFrames"]:
+            raise ValueError("invalid REAPER mapping metadata")
+        clips,source_count,world_count = map(int,mapping[1::2])
+        rounded = np.sign(original)*np.floor(np.abs(original)*32768+.5)
+        actual_clips = int(np.count_nonzero((rounded < -32768) | (rounded > 32767)))
+        if clips!=actual_clips or world_count!=count or source_count<0 or (source_count==0 and (periodicity_candidates is None or reaper_info["backendStatus"][3]==0)):
+            raise ValueError("REAPER clipping/frame metadata mismatch")
+        raw_f0 = load(directory/(name+"-reaper-f0.raw"),"<f4",source_count)
+        mapped = np.zeros(count)
+        common = min(count,source_count)
+        mapped[:common] = np.maximum(raw_f0[:common],0)
+        if not np.array_equal(mapped,f0 if periodicity_candidates is None else periodicity_candidates[:,3]):
+            raise ValueError("REAPER index mapping mismatch")
+        reaper_info.update(pcmClips=clips,reaperSourceFrames=source_count,
+                           worldFrames=count,missingFrames=max(count-source_count,0),
+                           truncatedFrames=max(source_count-count,0))
+    f0 = f0[(time >= seconds*.5) & (time < seconds)]
+    voiced = f0[f0 > 0]
+    coverage = len(voiced)/len(f0)
+    cents = float(np.median(1200*np.log2(voiced/fundamental))) if len(voiced) else 1e30
+    metadata = (directory/(name+".txt")).read_text().split()
+    if len(metadata) != 4 or metadata[0] != "voicedCoverage" or metadata[2] != "medianCents":
+        raise ValueError("invalid metadata")
+    observed_metadata = np.array([float(metadata[1]), float(metadata[3])])
+    if not np.isfinite(observed_metadata).all() or abs(observed_metadata[0]-coverage) > 1e-12 or abs(observed_metadata[1]-cents) > 1e-9:
+        raise ValueError("F0 metadata disagrees with contour")
+    target = fundamental*2**(pitch/12)
+    scale = 2**(formant/12)
+    envelope = center*scale if center else (target if kind=="sine" else 600*scale)
+    tail = output[frames//2:]
+    row = metrics(tail,target,envelope,rate,broad_hann=kind=="matrix")
+    row.update(reaper_info)
+    row.update(rate=rate,kind=kind,sourceF0=fundamental,pitch=pitch,formant=formant,
+               inputVoicedCoverage=coverage,inputMedianCents=cents,
+               inputEstimatePass=coverage >= .9 and abs(cents) <= 20)
+    if kind=="matrix":
+        measured=peak_on_grid(tail,rate,target,envelope*.5,envelope*1.5)
+        resolvable=abs(np.floor(envelope/target+.5)*target-envelope)<=envelope*.2
+        row.update(matrixGridPeakHz=measured,matrixGridEnvelopeError=abs(measured/envelope-1),
+                   matrixSearchLowHz=envelope*.5,matrixSearchHighHz=envelope*1.5,
+                   sourceCenterHz=center,targetEnvelopeHz=envelope,targetF0Hz=target,
+                   fullHannSearchLowHz=0.,fullHannSearchHighHz=rate/2,
+                   nearestGridResolvable=bool(resolvable),retainedPass=bool(row["periodicityPass"]))
+    elif kind=="sine":
+        hz = crossing_frequency(tail,rate)
+        cents_error = float(1200*np.log2(hz/target)) if hz>0 else 1e30
+        row.update(crossingFrequency=hz,sineCents=cents_error,
+                   retainedPass=abs(cents_error)<20)
+    elif kind=="multi":
+        boundary = np.sqrt(600*1200)*scale
+        upper = np.sqrt(1200*2500)*scale
+        first = peak_on_grid(tail,rate,target,200,boundary)
+        second = peak_on_grid(tail,rate,target,boundary,upper)
+        row.update(firstEnvelopePeak=first,secondEnvelopePeak=second,
+                   firstEnvelopeError=abs(first/(600*scale)-1),
+                   secondEnvelopeError=abs(second/(1200*scale)-1))
+        row["retainedPass"] = bool(row["periodicityPass"] and row["firstEnvelopeError"]<.2 and row["secondEnvelopeError"]<.2)
+    else:
+        row["retainedPass"] = bool(row["periodicityPass"] and row["envelopePass"])
+    row["retainedSubsetPass"] = bool(row["inputEstimatePass"] and row["retainedPass"])
+    return row
+
+
+def matrix_cache_metadata(directory,name,index,rate,frames,first_sources):
+    tokens=(directory/(name+"-cache.txt")).read_text().split()
+    if len(tokens)!=8 or tokens[::2]!=["cacheHit","sourceName","sampleRate","inputBytes"]:
+        raise ValueError("invalid trajectory cache metadata")
+    hit,source,observed_rate,observed_bytes=tokens[1::2]
+    if hit not in ("0","1") or int(observed_rate)!=rate or int(observed_bytes)!=frames*4:
+        raise ValueError("trajectory cache metadata values mismatch")
+    original=(directory/(name+"-input.raw")).read_bytes()
+    key=(rate,original)
+    expected_source=first_sources.setdefault(key,name)
+    if source!=expected_source or int(hit)!=int(expected_source!=name):
+        raise ValueError("trajectory cache source/hit mismatch")
+    return dict(trajectoryCacheHit=bool(int(hit)),trajectoryCacheSource=source,
+                trajectoryCacheInputBytes=len(original))
+
+
 def analyse(directory, suite="narrow"):
     if suite=="periodicity-controls":
         return analyse_periodicity_controls(directory)
-    result = {}
-    rows = manifest() if suite.startswith("retained") else [(48000,*c,"combined") for c in CASES]
-    for method in ((suite,) if suite.startswith("retained") else (("yin",) if suite=="narrow-yin" else (("reaper",) if suite=="narrow-reaper" else (("periodicity",) if suite=="narrow-periodicity" else ("dio","harvest"))))):
-        for index, (rate,fundamental,center,pitch,formant,kind) in enumerate(rows):
-            name = f"{method}-{index}"
-            seconds = 1.5 if kind=="sine" else 2
-            frames = int(seconds*rate)
-            output = load(directory/(name+".raw"), "<f4", frames)
-            original = load(directory/(name+"-input.raw"), "<f4", frames)
-            if np.dot(original, original) <= 0:
-                raise ValueError("empty input fixture")
-            count = int(seconds/.005)+1
-            time = load(directory/(name+"-time.f64"), "<f8", count)
-            f0 = load(directory/(name+"-f0.f64"), "<f8", count)
-            if not np.allclose(time, np.arange(count)*.005, rtol=0, atol=1e-12) or (f0 < 0).any():
-                raise ValueError("invalid F0/time contour")
-            reaper_info = {}
-            periodicity_candidates=None
-            if method in ("periodicity","retained-periodicity"):
-                reaper_info,periodicity_candidates=recompute_periodicity(directory,name,original,rate,time,f0)
-            if method in ("reaper","retained-reaper","periodicity","retained-periodicity"):
-                mapping = (directory/(name+"-reaper.txt")).read_text().split()
-                if len(mapping)!=6 or mapping[::2]!=["pcmClips","sourceFrames","worldFrames"]:
-                    raise ValueError("invalid REAPER mapping metadata")
-                clips,source_count,world_count = map(int,mapping[1::2])
-                rounded = np.sign(original)*np.floor(np.abs(original)*32768+.5)
-                actual_clips = int(np.count_nonzero((rounded < -32768) | (rounded > 32767)))
-                if clips!=actual_clips or world_count!=count or source_count<0 or (source_count==0 and (periodicity_candidates is None or reaper_info["backendStatus"][3]==0)):
-                    raise ValueError("REAPER clipping/frame metadata mismatch")
-                raw_f0 = load(directory/(name+"-reaper-f0.raw"),"<f4",source_count)
-                mapped = np.zeros(count)
-                common = min(count,source_count)
-                mapped[:common] = np.maximum(raw_f0[:common],0)
-                if not np.array_equal(mapped,f0 if periodicity_candidates is None else periodicity_candidates[:,3]):
-                    raise ValueError("REAPER index mapping mismatch")
-                reaper_info.update(pcmClips=clips,reaperSourceFrames=source_count,
-                                   worldFrames=count,missingFrames=max(count-source_count,0),
-                                   truncatedFrames=max(source_count-count,0))
-            f0 = f0[(time >= seconds*.5) & (time < seconds)]
-            voiced = f0[f0 > 0]
-            coverage = len(voiced)/len(f0)
-            cents = float(np.median(1200*np.log2(voiced/fundamental))) if len(voiced) else 1e30
-            metadata = (directory/(name+".txt")).read_text().split()
-            if len(metadata) != 4 or metadata[0] != "voicedCoverage" or metadata[2] != "medianCents":
-                raise ValueError("invalid metadata")
-            observed_metadata = np.array([float(metadata[1]), float(metadata[3])])
-            if not np.isfinite(observed_metadata).all() or abs(observed_metadata[0]-coverage) > 1e-12 or abs(observed_metadata[1]-cents) > 1e-9:
-                raise ValueError("F0 metadata disagrees with contour")
-            target = fundamental*2**(pitch/12)
-            scale = 2**(formant/12)
-            envelope = center*scale if center else (target if kind=="sine" else 600*scale)
-            tail = output[frames//2:]
-            row = metrics(tail,target,envelope,rate)
-            row.update(reaper_info)
-            row.update(rate=rate,kind=kind,sourceF0=fundamental,pitch=pitch,formant=formant,
-                       inputVoicedCoverage=coverage,inputMedianCents=cents,
-                       inputEstimatePass=coverage >= .9 and abs(cents) <= 20)
-            if kind=="sine":
-                hz = crossing_frequency(tail,rate)
-                cents_error = float(1200*np.log2(hz/target)) if hz>0 else 1e30
-                row.update(crossingFrequency=hz,sineCents=cents_error,
-                           retainedPass=abs(cents_error)<20)
-            elif kind=="multi":
-                boundary = np.sqrt(600*1200)*scale
-                upper = np.sqrt(1200*2500)*scale
-                first = peak_on_grid(tail,rate,target,200,boundary)
-                second = peak_on_grid(tail,rate,target,boundary,upper)
-                row.update(firstEnvelopePeak=first,secondEnvelopePeak=second,
-                           firstEnvelopeError=abs(first/(600*scale)-1),
-                           secondEnvelopeError=abs(second/(1200*scale)-1))
-                row["retainedPass"] = bool(row["periodicityPass"] and row["firstEnvelopeError"]<.2 and row["secondEnvelopeError"]<.2)
-            else:
-                row["retainedPass"] = bool(row["periodicityPass"] and row["envelopePass"])
-            row["retainedSubsetPass"] = bool(row["inputEstimatePass"] and row["retainedPass"])
-            result[name] = row
-    return dict(suite=suite,rows=result,controls=controls())
+    is_matrix=suite=="matrix-periodicity"
+    rows=matrix_manifest() if is_matrix else (manifest() if suite.startswith("retained") else [(48000,*c,"combined") for c in CASES])
+    if is_matrix or suite.startswith("retained"):
+        methods=(suite,)
+    else:
+        methods={"narrow-yin":("yin",),"narrow-reaper":("reaper",),
+                 "narrow-periodicity":("periodicity",)}.get(suite,("dio","harvest"))
+    result={};verification_cache={} if is_matrix else None;first_sources={}
+    for method in methods:
+        for index,case in enumerate(rows):
+            name=f"{method}-{index}"
+            try:
+                row=analyse_row(directory,method,index,case,verification_cache)
+                if is_matrix:
+                    row.update(matrix_cache_metadata(directory,name,index,case[0],case[0]*2,first_sources))
+                    row["hardPass"]=bool(row["retainedSubsetPass"])
+                result[name]=row
+            except (ValueError,OSError) as error:
+                if not is_matrix:
+                    raise
+                result[name]=dict(hardPass=False,measurementError=str(error))
+    output=dict(suite=suite,rows=result,controls=controls())
+    if is_matrix:
+        passed=sum(row["hardPass"] for row in result.values())
+        output["summary"]=dict(expectedCases=180,measuredCases=len(result),hardPasses=passed,
+                               hardFailures=180-passed,
+                               trajectoryCacheHits=sum(row.get("trajectoryCacheHit",False) for row in result.values()),
+                               independentDecisionVerifications=len(verification_cache),
+                               reusedDecisionVerifications=sum(row.get("decisionVerificationReused",False) for row in result.values()))
+    return output
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("directory", type=Path)
-    parser.add_argument("--suite", choices=("narrow","retained","retained-harvest","retained-yin","narrow-yin","retained-reaper","narrow-reaper","retained-periodicity","narrow-periodicity","periodicity-controls"), default="narrow")
+    parser.add_argument("--suite", choices=("narrow","retained","retained-harvest","retained-yin","narrow-yin","retained-reaper","narrow-reaper","retained-periodicity","narrow-periodicity","periodicity-controls","matrix-periodicity"), default="narrow")
     args = parser.parse_args()
-    print(json.dumps(analyse(args.directory,args.suite), indent=2, allow_nan=False))
+    result=analyse(args.directory,args.suite)
+    print(json.dumps(result, indent=2, allow_nan=False))
+    if args.suite=="matrix-periodicity" and result["summary"]["hardFailures"]:
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":

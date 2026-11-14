@@ -21,8 +21,10 @@
 #include <complex>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <filesystem>
 #include <fstream>
+#include <iterator>
 #include <new>
 #include <numbers>
 #include <stdexcept>
@@ -190,6 +192,17 @@ std::vector<Case> retained() {
     require(cases.size() == 42, "retained manifest size");
     return cases;
 }
+std::vector<Case> matrix() {
+    std::vector<Case> cases;
+    for (int rate : {48000, 96000})
+        for (double f0 : {70., 100., 180.})
+            for (double center : {600., 1200.})
+                for (double pitch : {-12., -7., 0., 7., 12.})
+                    for (double formant : {-7., 0., 7.})
+                        cases.push_back({f0, center, pitch, formant, rate});
+    require(cases.size() == 180, "combined matrix manifest size");
+    return cases;
+}
 constexpr double period = 5;
 void write(const std::filesystem::path &p, const void *data, std::size_t bytes) {
     std::ofstream f(p, std::ios::binary);
@@ -323,9 +336,10 @@ double fractionalNccf(const std::vector<double> &window, double lag) {
     const double den = std::sqrt(aa * bb);
     return den > 0 && std::isfinite(den) ? ab / den : -1.;
 }
-Trajectory periodicityTrajectory(const std::vector<float> &original, const std::vector<double> &x,
-                                 int fs, int fftSize, const std::filesystem::path &directory,
-                                 const std::string &name) {
+Trajectory periodicityTrajectoryCold(const std::vector<float> &original,
+                                     const std::vector<double> &x, int fs, int fftSize,
+                                     const std::filesystem::path &directory,
+                                     const std::string &name) {
     std::array<Trajectory, 4> candidates;
     for (int method = 0; method < 4; ++method)
         candidates[method] = estimateTrajectory(method, original, x, fs, fftSize, true);
@@ -394,6 +408,84 @@ Trajectory periodicityTrajectory(const std::vector<float> &original, const std::
     return result;
 }
 
+struct CachedDecisions {
+    int rate = 0;
+    std::vector<float> input;
+    Trajectory trajectory;
+    std::string source;
+    std::vector<std::pair<std::string, std::vector<char>>> artifacts;
+};
+struct DecisionCache {
+    std::vector<CachedDecisions> entries;
+    std::vector<int> verifiedRates;
+    std::size_t hits = 0, misses = 0;
+    bool verifying = false;
+};
+template <class T> bool sameBytes(const std::vector<T> &a, const std::vector<T> &b) {
+    return a.size() == b.size() &&
+           (a.empty() || std::memcmp(a.data(), b.data(), a.size() * sizeof(T)) == 0);
+}
+std::vector<char> readBytes(const std::filesystem::path &path) {
+    std::ifstream input(path, std::ios::binary);
+    require(bool(input), "decision artifact open failed");
+    return {std::istreambuf_iterator<char>(input), std::istreambuf_iterator<char>()};
+}
+Trajectory periodicityTrajectory(const std::vector<float> &original, const std::vector<double> &x,
+                                 int fs, int fftSize, const std::filesystem::path &directory,
+                                 const std::string &name, DecisionCache *cache = nullptr) {
+    if (!cache)
+        return periodicityTrajectoryCold(original, x, fs, fftSize, directory, name);
+    auto found = std::find_if(cache->entries.begin(), cache->entries.end(), [&](const auto &entry) {
+        return entry.rate == fs && sameBytes(entry.input, original);
+    });
+    const bool hit = found != cache->entries.end();
+    if (!hit) {
+        if (!cache->verifying)
+            ++cache->misses;
+        CachedDecisions entry;
+        entry.rate = fs;
+        entry.input = original;
+        entry.source = name;
+        entry.trajectory = periodicityTrajectoryCold(original, x, fs, fftSize, directory, name);
+        for (const std::string suffix :
+             {"-candidate-0.f64", "-candidate-1.f64", "-candidate-2.f64", "-candidate-3.f64",
+              "-periods.f64", "-scores.f64", "-selected.i32", "-backend-status.i32"})
+            entry.artifacts.emplace_back(suffix, readBytes(directory / (name + suffix)));
+        cache->entries.push_back(std::move(entry));
+        found = std::prev(cache->entries.end());
+    } else {
+        if (!cache->verifying)
+            ++cache->hits;
+        for (const auto &[suffix, bytes] : found->artifacts)
+            write(directory / (name + suffix), bytes.data(), bytes.size());
+    }
+    {
+        std::ofstream metadata(directory / (name + "-cache.txt"));
+        metadata << "cacheHit " << static_cast<int>(hit) << "\nsourceName " << found->source
+                 << "\nsampleRate " << fs << "\ninputBytes " << original.size() * sizeof(float)
+                 << '\n';
+        require(bool(metadata), "decision cache metadata write");
+    }
+    const auto result = found->trajectory;
+    if (!hit && std::find(cache->verifiedRates.begin(), cache->verifiedRates.end(), fs) ==
+                    cache->verifiedRates.end()) {
+        const auto hotName = name + "-cache-check";
+        cache->verifying = true;
+        const auto hot = periodicityTrajectory(original, x, fs, fftSize, directory, hotName, cache);
+        cache->verifying = false;
+        require(sameBytes(result.time, hot.time) && sameBytes(result.f0, hot.f0) &&
+                    sameBytes(result.reaperRaw, hot.reaperRaw) && result.pcmClips == hot.pcmClips &&
+                    result.backendStatus == hot.backendStatus,
+                "cold/hot input trajectory mismatch");
+        for (const auto &[suffix, bytes] : found->artifacts)
+            require(sameBytes(bytes, readBytes(directory / (hotName + suffix))),
+                    "cold/hot decision artifacts mismatch");
+        cache->verifiedRates.push_back(fs);
+        std::printf("decision cache cold/hot byte equivalence verified rate%d\n", fs);
+    }
+    return result;
+}
+
 void periodicityControls(const std::filesystem::path &directory) {
     constexpr int fs = 48000, fftSize = 4096, frames = 96000;
     for (const std::string name : {"ideal35", "unchanged70", "evenOnly35", "noise", "silence"}) {
@@ -437,8 +529,10 @@ void periodicityControls(const std::filesystem::path &directory) {
     }
 }
 
-void render(const std::filesystem::path &directory, bool expanded, int selectedMethod = 0) {
-    const auto cases = expanded ? retained() : narrow;
+void render(const std::filesystem::path &directory, bool expanded, int selectedMethod = 0,
+            bool combinedMatrix = false) {
+    const auto cases = combinedMatrix ? matrix() : (expanded ? retained() : narrow);
+    DecisionCache cache;
     for (int method = (expanded || selectedMethod >= 2) ? selectedMethod : 0;
          method < ((expanded || selectedMethod >= 2) ? selectedMethod + 1 : 2); ++method) {
         for (std::size_t index = 0; index < cases.size(); ++index) {
@@ -477,10 +571,13 @@ void render(const std::filesystem::path &directory, bool expanded, int selectedM
                            ? "harvest"
                            : (method == 2 ? "yin" : (method == 3 ? "reaper" : "periodicity")));
             const std::string name =
-                (expanded ? (method == 0 ? "retained" : "retained-" + methodName) : methodName) +
+                (combinedMatrix ? "matrix-periodicity"
+                                : (expanded ? (method == 0 ? "retained" : "retained-" + methodName)
+                                            : methodName)) +
                 "-" + std::to_string(index);
             auto trajectory = method == 4
-                                  ? periodicityTrajectory(original, x, fs, fftSize, directory, name)
+                                  ? periodicityTrajectory(original, x, fs, fftSize, directory, name,
+                                                          combinedMatrix ? &cache : nullptr)
                                   : estimateTrajectory(method, original, x, fs, fftSize);
             auto time = trajectory.time, f0 = trajectory.f0;
             std::vector<double> output(frames);
@@ -568,6 +665,12 @@ void render(const std::filesystem::path &directory, bool expanded, int selectedM
             std::fflush(stdout);
         }
     }
+    if (combinedMatrix) {
+        require(cache.misses == 12 && cache.hits == 168 && cache.verifiedRates.size() == 2,
+                "matrix exact-input cache accounting");
+        std::printf("matrix cases180 cacheMisses%zu cacheHits%zu coldHotVerifiedRates%zu\n",
+                    cache.misses, cache.hits, cache.verifiedRates.size());
+    }
 }
 } // namespace
 int main(int argc, char **argv) {
@@ -590,7 +693,8 @@ int main(int argc, char **argv) {
                     std::string(argv[2]) == "retained-reaper" ||
                     std::string(argv[2]) == "narrow-reaper" ||
                     std::string(argv[2]) == "retained-periodicity" ||
-                    std::string(argv[2]) == "narrow-periodicity") &&
+                    std::string(argv[2]) == "narrow-periodicity" ||
+                    std::string(argv[2]) == "matrix-periodicity") &&
                    std::filesystem::is_directory(argv[3])) {
             selfTest();
             const std::string suite = argv[2];
@@ -604,14 +708,15 @@ int main(int argc, char **argv) {
                                   : ((suite == "retained-reaper" || suite == "narrow-reaper")
                                          ? 3
                                          : 4)));
-            render(argv[3], suite.starts_with("retained"), method);
+            render(argv[3], suite.starts_with("retained"), method, suite == "matrix-periodicity");
         } else {
             std::fprintf(
                 stderr,
                 "usage: world_probe --fft-self-test | existing-output-directory | "
                 "--suite "
                 "retained|retained-harvest|retained-yin|narrow-yin|retained-reaper|narrow-reaper|"
-                "retained-periodicity|narrow-periodicity existing-output-directory | "
+                "retained-periodicity|narrow-periodicity|matrix-periodicity "
+                "existing-output-directory | "
                 "--periodicity-controls existing-output-directory\n");
             return 2;
         }

@@ -1,6 +1,7 @@
 # WORLD source/filter experiment v1 — 2026-10-28
 
-**The uniform waveform-periodicity comparator passes all42 retained synthetic rows.
+**The uniform waveform-periodicity comparator passes all42 retained synthetic rows
+and all180 expanded stationary hard-gate cases.
 Earlier fixed estimators remain negative: DIO40/42, Harvest24/42, YIN31/42 and
 REAPER25/42. This remains an offline diagnostic, not a qualified product
 pitch/formant backend.** No production dependency, host
@@ -659,6 +660,288 @@ implementation with measured latency/CPU/reset/automation and mono/stereo tests;
 product controls and quality modes. None follows from these stationary fixtures.
 Manual listening, microphone and DAW testing remains deferred as requested.
 
+## Complete180 stationary matrix — checkpoint 2026-11-14
+
+Lead contracts c737a32/0ebaf8e authorize exactly180 two-second renders:
+48/96kHz × source F0 70/100/180Hz × Gaussian center600/1200Hz × pitch
+−12/−7/0/+7/+12 × formant−7/0/+7. The original float synthesis, all four
+candidate settings, waveform scoring/refinement/tie/unavailable policy,
+CheapTrick/D4C and envelope/synthesis policy are unchanged. No candidate, fixture
+or threshold search was performed.
+
+**All180 cases pass every hard gate:** expected finite output with positive
+energy; intended-F0 lag correlation strictly>.8; final-half input voiced coverage
+>=.9 and absolute median input error<=20cents. The analyser measures every output
+and returns status1 if any hard gate or measurement validity check fails. It
+emits all180 rows, including explicit error rows for malformed/missing data.
+This is180 audio cases, not a claim that the old540 lifecycle assertions ran.
+
+Minimum output intended-period correlation is0.952576938; minimum input voiced coverage is0.990000; maximum absolute median input error is0.002529084cents. All PCM clipping counts are0.
+
+Analysis reuse is limited to exact input identity: sample rate and complete
+original float bytes, compared with `memcmp`, not expected F0, center or case
+labels. Only the four input candidate contours/status and selected trajectory/
+decision artifacts are reused; CheapTrick, D4C, warp, synthesis and output
+measurement run separately for every case. Renderer accounting is12 cold inputs
+and168 hits. Before normal reuse, representative48k and96k cold/hot trajectories
+and every stored decision artifact match bitwise. Every row records its cache
+hit/source/rate/input byte count.
+
+The independent NumPy analyser verifies12 distinct waveform-decision records and
+reuses those verifications for168 rows only if rate, original input bytes and
+all contour/time/F0/status/period/score/selection bytes match exactly. It validates
+mapping/cache metadata and measures output metrics on all180 rows. Maximum
+independent recomputation errors are4.32e-12samples for periods,1.121e-14 for NCCF scores and1.393e-12Hz for selected F0; selected indices agree exactly.
+
+The original nearest-grid resolvability flag and target-window harmonic peak
+search remain exploratory. The search spans half to1.5 times the expected
+envelope target. The old full-spectrum Hann peak (0..Nyquist) is unchanged; a
+separately named200–3000Hz Hann peak is additionally reported. Neither Hann
+measurement replaces a grid measurement or hard gate.
+
+**Two exploratory envelope misses remain visible:** rows69/159 are the48/96k
+F0180, center600, pitch+7/formant−7 cases. Both were already classified as
+unresolvable by the original nearest-grid test. All178 grid-resolvable cases
+have target-window grid peak error<=20%. The two unresolvable cases measure
+approximately34.695% grid and Hann error; they are not silently discarded and do
+not establish arbitrary-envelope preservation.
+
+|Unresolvable row|Rate|Target F0 Hz|Envelope target Hz|Target-window grid peak Hz|Grid relative error|Full Hann peak Hz|200–3000Hz Hann peak Hz|
+|---:|---:|---:|---:|---:|---:|---:|---:|
+|69|48000|269.695273838|400.451956251|539.390547676|0.346954458|539.390297085|539.390297085|
+|159|96000|269.695273838|400.451956251|539.390547676|0.346954458|539.390551404|539.390551404|
+
+Complete per-case result table below. Grid errors are relative fractions; `R`
+is the original grid-resolvability flag. All hard gates pass, including for the
+two `R=no` rows. Raw JSON contains both Hann peaks, explicit search limits,
+per-case input coverage/errors, raw cache identity and independent decision errors.
+
+|Row|Rate|Source F0|Center|Pitch|Formant|Correlation|Grid peak Hz|Grid error|R|Hard gates|
+|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|---|
+|0|48000|70|600|-12|-7|0.995037683|385.000000|0.038586292|yes|pass|
+|1|48000|70|600|-12|0|0.991349845|595.000000|0.008333333|yes|pass|
+|2|48000|70|600|-12|7|0.979155797|910.000000|0.012253556|yes|pass|
+|3|48000|70|600|-7|-7|0.991122565|420.474554|0.050000000|yes|pass|
+|4|48000|70|600|-7|0|0.991243260|607.352134|0.012253556|yes|pass|
+|5|48000|70|600|-7|7|0.990263690|887.668503|0.012587254|yes|pass|
+|6|48000|70|600|0|-7|0.994531358|420.000000|0.048814954|yes|pass|
+|7|48000|70|600|0|0|0.994397724|630.000000|0.050000000|yes|pass|
+|8|48000|70|600|0|7|0.993221625|910.000000|0.012253556|yes|pass|
+|9|48000|70|600|7|-7|0.993260498|419.525982|0.047631245|yes|pass|
+|10|48000|70|600|7|0|0.990682876|629.288972|0.048814954|yes|pass|
+|11|48000|70|600|7|7|0.988086587|943.933458|0.050000000|yes|pass|
+|12|48000|70|600|12|-7|0.992161991|420.000000|0.048814954|yes|pass|
+|13|48000|70|600|12|0|0.994421706|560.000000|0.066666667|yes|pass|
+|14|48000|70|600|12|7|0.995487377|840.000000|0.065612102|yes|pass|
+|15|48000|70|1200|-12|-7|0.980137542|805.000000|0.005114331|yes|pass|
+|16|48000|70|1200|-12|0|0.965642942|1190.000000|0.008333333|yes|pass|
+|17|48000|70|1200|-12|7|0.953063732|1785.000000|0.007212858|yes|pass|
+|18|48000|70|1200|-7|-7|0.985669116|794.229713|0.008333333|yes|pass|
+|19|48000|70|1200|-7|0|0.973250460|1214.704267|0.012253556|yes|pass|
+|20|48000|70|1200|-7|7|0.959303590|1775.337006|0.012587254|yes|pass|
+|21|48000|70|1200|0|-7|0.975428901|770.000000|0.038586292|yes|pass|
+|22|48000|70|1200|0|0|0.979075013|1190.000000|0.008333333|yes|pass|
+|23|48000|70|1200|0|7|0.990010003|1820.000000|0.012253556|yes|pass|
+|24|48000|70|1200|7|-7|0.975846052|839.051963|0.047631245|yes|pass|
+|25|48000|70|1200|7|0|0.982378939|1153.696449|0.038586292|yes|pass|
+|26|48000|70|1200|7|7|0.980030186|1782.985421|0.008333333|yes|pass|
+|27|48000|70|1200|12|-7|0.986376266|840.000000|0.048814954|yes|pass|
+|28|48000|70|1200|12|0|0.978928690|1260.000000|0.050000000|yes|pass|
+|29|48000|70|1200|12|7|0.978339166|1820.000000|0.012253556|yes|pass|
+|30|48000|100|600|-12|-7|0.999869596|400.000000|0.001128615|yes|pass|
+|31|48000|100|600|-12|0|0.999488359|600.000000|0.000000000|yes|pass|
+|32|48000|100|600|-12|7|0.996726629|900.000000|0.001129891|yes|pass|
+|33|48000|100|600|-7|-7|0.993448918|400.451956|0.000000000|yes|pass|
+|34|48000|100|600|-7|0|0.992328493|600.677934|0.001129891|yes|pass|
+|35|48000|100|600|-7|7|0.992123870|867.645905|0.034859722|yes|pass|
+|36|48000|100|600|0|-7|0.995427284|400.000000|0.001128615|yes|pass|
+|37|48000|100|600|0|0|0.995362690|600.000000|0.000000000|yes|pass|
+|38|48000|100|600|0|7|0.994965069|900.000000|0.001129891|yes|pass|
+|39|48000|100|600|7|-7|0.997002132|449.492123|0.122462048|yes|pass|
+|40|48000|100|600|7|0|0.995430766|599.322831|0.001128615|yes|pass|
+|41|48000|100|600|7|7|0.994322065|898.984246|0.000000000|yes|pass|
+|42|48000|100|600|12|-7|0.998190330|400.000000|0.001128615|yes|pass|
+|43|48000|100|600|12|0|0.997345756|600.000000|0.000000000|yes|pass|
+|44|48000|100|600|12|7|0.996063784|800.000000|0.110106764|yes|pass|
+|45|48000|100|1200|-12|-7|0.957747245|800.000000|0.001128615|yes|pass|
+|46|48000|100|1200|-12|0|0.953371531|1200.000000|0.000000000|yes|pass|
+|47|48000|100|1200|-12|7|0.981364570|1800.000000|0.001129891|yes|pass|
+|48|48000|100|1200|-7|-7|0.970601976|800.903913|0.000000000|yes|pass|
+|49|48000|100|1200|-7|0|0.963276153|1201.355869|0.001129891|yes|pass|
+|50|48000|100|1200|-7|7|0.981511421|1802.033803|0.002261058|yes|pass|
+|51|48000|100|1200|0|-7|0.970888255|800.000000|0.001128615|yes|pass|
+|52|48000|100|1200|0|0|0.971375658|1200.000000|0.000000000|yes|pass|
+|53|48000|100|1200|0|7|0.961292166|1800.000000|0.001129891|yes|pass|
+|54|48000|100|1200|7|-7|0.952576938|749.153538|0.064614960|yes|pass|
+|55|48000|100|1200|7|0|0.964598849|1198.645662|0.001128615|yes|pass|
+|56|48000|100|1200|7|7|0.967460641|1797.968492|0.000000000|yes|pass|
+|57|48000|100|1200|12|-7|0.987429836|800.000000|0.001128615|yes|pass|
+|58|48000|100|1200|12|0|0.972894970|1200.000000|0.000000000|yes|pass|
+|59|48000|100|1200|12|7|0.968424911|1800.000000|0.001129891|yes|pass|
+|60|48000|180|600|-12|-7|0.994169599|360.000000|0.101015754|yes|pass|
+|61|48000|180|600|-12|0|0.993416888|540.000000|0.100000000|yes|pass|
+|62|48000|180|600|-12|7|0.992927834|810.000000|0.098983098|yes|pass|
+|63|48000|180|600|-7|-7|0.999210478|360.406761|0.100000000|yes|pass|
+|64|48000|180|600|-7|0|0.998091637|600.677934|0.001129891|yes|pass|
+|65|48000|180|600|-7|7|0.995551897|840.949108|0.064556346|yes|pass|
+|66|48000|180|600|0|-7|0.998558168|360.000000|0.101015754|yes|pass|
+|67|48000|180|600|0|0|0.997465622|540.000000|0.100000000|yes|pass|
+|68|48000|180|600|0|7|0.996015042|900.000000|0.001129891|yes|pass|
+|69|48000|180|600|7|-7|0.996196243|539.390548|0.346954458|no|pass|
+|70|48000|180|600|7|0|0.999336411|539.390548|0.101015754|yes|pass|
+|71|48000|180|600|7|7|0.998814874|809.085822|0.100000000|yes|pass|
+|72|48000|180|600|12|-7|0.999502620|360.000000|0.101015754|yes|pass|
+|73|48000|180|600|12|0|0.997717460|720.000000|0.200000000|yes|pass|
+|74|48000|180|600|12|7|0.997642785|720.000000|0.199096087|yes|pass|
+|75|48000|180|1200|-12|-7|0.979822684|810.000000|0.011357277|yes|pass|
+|76|48000|180|1200|-12|0|0.996169923|1260.000000|0.050000000|yes|pass|
+|77|48000|180|1200|-12|7|0.977264442|1890.000000|0.051186385|yes|pass|
+|78|48000|180|1200|-7|-7|0.989120953|840.949108|0.050000000|yes|pass|
+|79|48000|180|1200|-7|0|0.993909493|1201.355869|0.001129891|yes|pass|
+|80|48000|180|1200|-7|7|0.975291485|1922.169390|0.069078462|yes|pass|
+|81|48000|180|1200|0|-7|0.976314876|720.000000|0.101015754|yes|pass|
+|82|48000|180|1200|0|0|0.987031236|1260.000000|0.050000000|yes|pass|
+|83|48000|180|1200|0|7|0.974363345|1800.000000|0.001129891|yes|pass|
+|84|48000|180|1200|7|-7|0.991029029|809.085822|0.010215843|yes|pass|
+|85|48000|180|1200|7|0|0.975136645|1078.781095|0.101015754|yes|pass|
+|86|48000|180|1200|7|7|0.985619821|1887.866917|0.050000000|yes|pass|
+|87|48000|180|1200|12|-7|0.982826651|720.000000|0.101015754|yes|pass|
+|88|48000|180|1200|12|0|0.963705823|1080.000000|0.100000000|yes|pass|
+|89|48000|180|1200|12|7|0.971887969|1800.000000|0.001129891|yes|pass|
+|90|96000|70|600|-12|-7|0.998373473|420.000000|0.048814954|yes|pass|
+|91|96000|70|600|-12|0|0.987659043|595.000000|0.008333333|yes|pass|
+|92|96000|70|600|-12|7|0.987887644|910.000000|0.012253556|yes|pass|
+|93|96000|70|600|-7|-7|0.992251854|420.474554|0.050000000|yes|pass|
+|94|96000|70|600|-7|0|0.992026513|607.352134|0.012253556|yes|pass|
+|95|96000|70|600|-7|7|0.992005090|934.387898|0.039381838|yes|pass|
+|96|96000|70|600|0|-7|0.994298811|420.000000|0.048814954|yes|pass|
+|97|96000|70|600|0|0|0.994961191|630.000000|0.050000000|yes|pass|
+|98|96000|70|600|0|7|0.993973870|910.000000|0.012253556|yes|pass|
+|99|96000|70|600|7|-7|0.993151612|419.525982|0.047631245|yes|pass|
+|100|96000|70|600|7|0|0.992437485|629.288972|0.048814954|yes|pass|
+|101|96000|70|600|7|7|0.991734041|943.933458|0.050000000|yes|pass|
+|102|96000|70|600|12|-7|0.996526897|420.000000|0.048814954|yes|pass|
+|103|96000|70|600|12|0|0.994352677|560.000000|0.066666667|yes|pass|
+|104|96000|70|600|12|7|0.993571830|840.000000|0.065612102|yes|pass|
+|105|96000|70|1200|-12|-7|0.979326523|805.000000|0.005114331|yes|pass|
+|106|96000|70|1200|-12|0|0.963866568|1190.000000|0.008333333|yes|pass|
+|107|96000|70|1200|-12|7|0.953290123|1785.000000|0.007212858|yes|pass|
+|108|96000|70|1200|-7|-7|0.984866664|794.229713|0.008333333|yes|pass|
+|109|96000|70|1200|-7|0|0.971203244|1214.704267|0.012253556|yes|pass|
+|110|96000|70|1200|-7|7|0.959180853|1775.337006|0.012587254|yes|pass|
+|111|96000|70|1200|0|-7|0.971841511|770.000000|0.038586292|yes|pass|
+|112|96000|70|1200|0|0|0.974731670|1190.000000|0.008333333|yes|pass|
+|113|96000|70|1200|0|7|0.990178388|1820.000000|0.012253556|yes|pass|
+|114|96000|70|1200|7|-7|0.977085930|839.051963|0.047631245|yes|pass|
+|115|96000|70|1200|7|0|0.978886452|1153.696449|0.038586292|yes|pass|
+|116|96000|70|1200|7|7|0.980949084|1782.985421|0.008333333|yes|pass|
+|117|96000|70|1200|12|-7|0.984155269|840.000000|0.048814954|yes|pass|
+|118|96000|70|1200|12|0|0.968924260|1260.000000|0.050000000|yes|pass|
+|119|96000|70|1200|12|7|0.969825623|1820.000000|0.012253556|yes|pass|
+|120|96000|100|600|-12|-7|0.991760383|400.000000|0.001128615|yes|pass|
+|121|96000|100|600|-12|0|0.989845545|600.000000|0.000000000|yes|pass|
+|122|96000|100|600|-12|7|0.989794303|900.000000|0.001129891|yes|pass|
+|123|96000|100|600|-7|-7|0.991838494|400.451956|0.000000000|yes|pass|
+|124|96000|100|600|-7|0|0.991036380|600.677934|0.001129891|yes|pass|
+|125|96000|100|600|-7|7|0.990743485|867.645905|0.034859722|yes|pass|
+|126|96000|100|600|0|-7|0.995422816|400.000000|0.001128615|yes|pass|
+|127|96000|100|600|0|0|0.995379427|600.000000|0.000000000|yes|pass|
+|128|96000|100|600|0|7|0.994946266|900.000000|0.001129891|yes|pass|
+|129|96000|100|600|7|-7|0.997102651|449.492123|0.122462048|yes|pass|
+|130|96000|100|600|7|0|0.997380715|599.322831|0.001128615|yes|pass|
+|131|96000|100|600|7|7|0.996795612|898.984246|0.000000000|yes|pass|
+|132|96000|100|600|12|-7|0.998437011|400.000000|0.001128615|yes|pass|
+|133|96000|100|600|12|0|0.997566899|600.000000|0.000000000|yes|pass|
+|134|96000|100|600|12|7|0.996628172|800.000000|0.110106764|yes|pass|
+|135|96000|100|1200|-12|-7|0.992532377|800.000000|0.001128615|yes|pass|
+|136|96000|100|1200|-12|0|0.990462150|1200.000000|0.000000000|yes|pass|
+|137|96000|100|1200|-12|7|0.990203462|1800.000000|0.001129891|yes|pass|
+|138|96000|100|1200|-7|-7|0.991909997|800.903913|0.000000000|yes|pass|
+|139|96000|100|1200|-7|0|0.990943710|1201.355869|0.001129891|yes|pass|
+|140|96000|100|1200|-7|7|0.990258896|1802.033803|0.002261058|yes|pass|
+|141|96000|100|1200|0|-7|0.983917914|800.000000|0.001128615|yes|pass|
+|142|96000|100|1200|0|0|0.983602619|1200.000000|0.000000000|yes|pass|
+|143|96000|100|1200|0|7|0.965038058|1800.000000|0.001129891|yes|pass|
+|144|96000|100|1200|7|-7|0.961012240|749.153538|0.064614960|yes|pass|
+|145|96000|100|1200|7|0|0.979812522|1198.645662|0.001128615|yes|pass|
+|146|96000|100|1200|7|7|0.988353919|1797.968492|0.000000000|yes|pass|
+|147|96000|100|1200|12|-7|0.991142670|800.000000|0.001128615|yes|pass|
+|148|96000|100|1200|12|0|0.980527101|1200.000000|0.000000000|yes|pass|
+|149|96000|100|1200|12|7|0.979831093|1800.000000|0.001129891|yes|pass|
+|150|96000|180|600|-12|-7|0.999307284|360.000000|0.101015754|yes|pass|
+|151|96000|180|600|-12|0|0.999173185|540.000000|0.100000000|yes|pass|
+|152|96000|180|600|-12|7|0.999032186|810.000000|0.098983098|yes|pass|
+|153|96000|180|600|-7|-7|0.999484058|360.406761|0.100000000|yes|pass|
+|154|96000|180|600|-7|0|0.998681966|600.677934|0.001129891|yes|pass|
+|155|96000|180|600|-7|7|0.996947533|840.949108|0.064556346|yes|pass|
+|156|96000|180|600|0|-7|0.999376304|360.000000|0.101015754|yes|pass|
+|157|96000|180|600|0|0|0.999052084|540.000000|0.100000000|yes|pass|
+|158|96000|180|600|0|7|0.998548000|900.000000|0.001129891|yes|pass|
+|159|96000|180|600|7|-7|0.996315283|539.390548|0.346954458|no|pass|
+|160|96000|180|600|7|0|0.999340887|539.390548|0.101015754|yes|pass|
+|161|96000|180|600|7|7|0.998818351|809.085822|0.100000000|yes|pass|
+|162|96000|180|600|12|-7|0.999846918|360.000000|0.101015754|yes|pass|
+|163|96000|180|600|12|0|0.998877601|720.000000|0.200000000|yes|pass|
+|164|96000|180|600|12|7|0.999058337|720.000000|0.199096087|yes|pass|
+|165|96000|180|1200|-12|-7|0.980535155|810.000000|0.011357277|yes|pass|
+|166|96000|180|1200|-12|0|0.997148654|1260.000000|0.050000000|yes|pass|
+|167|96000|180|1200|-12|7|0.979575139|1890.000000|0.051186385|yes|pass|
+|168|96000|180|1200|-7|-7|0.990004240|840.949108|0.050000000|yes|pass|
+|169|96000|180|1200|-7|0|0.996816251|1201.355869|0.001129891|yes|pass|
+|170|96000|180|1200|-7|7|0.981948803|1922.169390|0.069078462|yes|pass|
+|171|96000|180|1200|0|-7|0.977102032|720.000000|0.101015754|yes|pass|
+|172|96000|180|1200|0|0|0.988574067|1260.000000|0.050000000|yes|pass|
+|173|96000|180|1200|0|7|0.978372009|1800.000000|0.001129891|yes|pass|
+|174|96000|180|1200|7|-7|0.991143117|809.085822|0.010215843|yes|pass|
+|175|96000|180|1200|7|0|0.974838351|1078.781095|0.101015754|yes|pass|
+|176|96000|180|1200|7|7|0.985904707|1887.866917|0.050000000|yes|pass|
+|177|96000|180|1200|12|-7|0.981731324|720.000000|0.101015754|yes|pass|
+|178|96000|180|1200|12|0|0.962864461|1080.000000|0.100000000|yes|pass|
+|179|96000|180|1200|12|7|0.973123546|1800.000000|0.001129891|yes|pass|
+
+### Matrix checkpoint validation and reproduction
+
+Current authored C++ and unchanged project detector pass a fresh strict
+C++20/O2/Wall/Wextra/Wpedantic/Werror compile. All eight whitelisted WORLD and
+four REAPER sources are freshly compiled from the pinned checkouts; upstream
+FFT remains excluded. The fresh FFT invariant run passes1,181,835 assertions
+with zero allocations during execute. No new full-matrix sanitizer or realtime
+execution claim follows.
+
+The23 matrix rows overlapping existing retained42 fixtures reproduce all345
+raw audio/contour/decision/metadata files byte for byte. Existing retained42,
+narrow3 and all five control analyser results are exactly unchanged after the
+matrix extension. Both sample-rate cache cold/hot checks are recorded in the
+probe log.
+
+Fourteen adversarial cache/measurement checks pass: altered periods, scores,
+selection, input bytes, selected F0, backend availability, trailing output bytes,
+rate identity, and cache hit/source/rate/byte metadata are rejected. Separate
+finite-wrong-output and nonfinite-output CLI checks each emit all180 rows,
+report exactly one hard failure and exit1. In the finite-wrong-output check,
+input decision verification is reused but the changed output still fails; no
+output measurement is cached. Originals are never modified. Seven invalid
+probe CLI shapes return status2 and usage includes the matrix suite.
+
+Generated measurements and reproduction evidence remain ignored under
+`build/qualification/matrix180/`: `render/`, `analysis.json`, complete `render/probe.log`,
+`retained-equivalence.json`, guard reports/scripts and
+`verification-20261114/{compile.log,fft-self-test.log,sources.json}`. None is
+committed. Reproduce after the explicit whitelisted build above:
+
+```sh
+mkdir -p build/qualification/matrix180/fresh
+build/qualification/world-build/world_probe --suite matrix-periodicity build/qualification/matrix180/fresh
+python3 -B tools/qualification/world_analyse.py build/qualification/matrix180/fresh --suite matrix-periodicity
+```
+
+The fixed stationary matrix remains an offline diagnostic. Independent agent
+review of this new matrix/cache checkpoint is pending. Dynamic F0, transients,
+real voiced/unvoiced transitions, a genuine bounded streaming implementation,
+mono/stereo/reset/automation, latency/CPU and product integration remain pending.
+No naturalness, realtime deadline, release or listening/DAW qualification is
+claimed; manual tests stay deferred under the user's instruction.
+
 ## Fingerprints
 
 All SHA256, measured after the reported experiment:
@@ -666,8 +949,8 @@ All SHA256, measured after the reported experiment:
 |File|SHA256|
 |---|---|
 |tools/qualification/world_fft_shim.cpp|`8bebb1c5d3d7f586b60458652cda999889570aacc37e94e86d084228d046b4b9`|
-|tools/qualification/world_probe.cpp|`c606471c27440515612949a8a58de36809026b5fa0a112ae74af02dbdcaf2810`|
-|tools/qualification/world_analyse.py|`c52fb6924210078062bf2500697b6d901b630732b09bfa140a75bb3ee3401df6`|
+|tools/qualification/world_probe.cpp|`b0adb47725f72a82cce0d6a255cf4345cb63e5b4e8d1337e4d5a3fd4e38591b6`|
+|tools/qualification/world_analyse.py|`a20d33d199f48a6f3f2c63aba88a12cea907630575da1dedaf5eec38ff2425d9`|
 |WORLD/LICENSE.txt|`6921ef0a65a931509b4055075fd847d7257c4094609075dd0615e8e997215f7e`|
 |WORLD/src/world/fft.h|`ac321b81dea5e8118933ecc66d2d9cbfb7721da52892a64d8a4f2e18a65829d6`|
 |WORLD/src/world/macrodefinitions.h|`6d5417f864a4a4d95b470e72e3cb0114e8c96ba33cc189341e83a9f345e664f0`|
