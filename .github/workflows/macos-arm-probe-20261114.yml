@@ -1,0 +1,31 @@
+name: macOS ARM capacity probe 2026-11-14
+
+on:
+  push:
+    branches: ['feature/ci/macos-arm-probe-20261114']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: macos-arm-capacity-probe-20261114
+  cancel-in-progress: true
+
+jobs:
+  arm-capacity:
+    name: Probe / ${{ matrix.os }} / ARM64
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-15, macos-26]
+    steps:
+      - name: Verify available Apple Silicon runner
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(uname -m)" = arm64
+          uname -m
+          sw_vers
+          xcodebuild -version
