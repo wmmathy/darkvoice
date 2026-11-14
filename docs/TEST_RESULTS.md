@@ -875,3 +875,17 @@ plugin.state_and_audio33.75s. All state/audio assertions executed under the
 unchanged180-second budget. This resolves Release application validation; the
 earlier Debug180-second timeout remains recorded and is not described as passed.
 Exact-head native CI and any remaining sanitizer checks still gate merge.
+
+## ARM quality-state invariant fixture correction — 2026-11-14
+
+The resumed macOS15 product job built successfully but failed the malformed
+quality-metadata atomicity assertion. That fixture assumed normalized inputDb
+would store the exact literal-5. A controlled float reconstruction gives-5 with
+separate operations and-4.999999523162842 with fused multiply-add, matching the
+ARM-sensitive assumption. The production canonical metadata parser is unchanged.
+
+The rejection fixture now captures the actual prior complete sound snapshot and
+bypass value and requires EXACT preservation of both, alongside requested/active
+quality and latency. No tolerance is introduced; the assertion is stronger than
+the prior single-field check. Source formatting/whitespace/scans pass. Native
+product rerun on the new head remains required; no macOS pass is claimed yet.

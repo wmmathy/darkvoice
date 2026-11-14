@@ -122,6 +122,9 @@ void qualityModeTests() {
     require(processor.requestQualityMode(QualityMode::Studio), "Studio request rejected");
     set(processor, "inputDb", -5);
     processor.prepareToPlay(48000, 64);
+    // Compare actual stored state: normalized float round trips may fuse on ARM.
+    const auto protectedSound = processor.snapshotPresetValues();
+    const auto protectedBypass = raw(processor, "bypass");
     for (const char *invalid : {"", " 1", "1 ", "1.0", "1e0", "-1", "3", "2147483648", "junk"}) {
         auto tree = currentState(source);
         tree.setProperty("qualityMode", invalid, nullptr);
@@ -133,7 +136,8 @@ void qualityModeTests() {
                     processor.getLatencySamples() ==
                         static_cast<int>(
                             darkvoice::BandlimitedColour::latencyForQuality(QualityMode::Studio)) &&
-                    raw(processor, "inputDb") == -5,
+                    processor.snapshotPresetValues() == protectedSound &&
+                    raw(processor, "bypass") == protectedBypass,
                 "Malformed quality metadata must reject entire snapshot atomically");
     }
     {
@@ -143,7 +147,8 @@ void qualityModeTests() {
         juce::AudioProcessor::copyXmlToBinary(*tree.createXml(), data);
         processor.setStateInformation(data.getData(), static_cast<int>(data.getSize()));
         require(processor.requestedQualityMode() == QualityMode::Studio &&
-                    raw(processor, "inputDb") == -5,
+                    processor.snapshotPresetValues() == protectedSound &&
+                    raw(processor, "bypass") == protectedBypass,
                 "Missing v15 quality metadata must reject entire snapshot");
     }
     {
@@ -153,7 +158,8 @@ void qualityModeTests() {
         juce::AudioProcessor::copyXmlToBinary(*tree.createXml(), data);
         processor.setStateInformation(data.getData(), static_cast<int>(data.getSize()));
         require(processor.requestedQualityMode() == QualityMode::Studio &&
-                    raw(processor, "inputDb") == -5,
+                    processor.snapshotPresetValues() == protectedSound &&
+                    raw(processor, "bypass") == protectedBypass,
                 "Valid quality with malformed sound must reject both atomically");
     }
     for (int version = 1; version <= 14; ++version) {
