@@ -89,6 +89,7 @@ bool AudioEngine::prepare(double sampleRate, std::size_t maxFrames, std::size_t 
     try {
         for (std::size_t c = 0; c < channels; ++c) {
             wet_[c].resize(maxFrames);
+            characterScratch_[c].resize(maxFrames);
             aligned_[c].resize(maxFrames);
         }
     } catch (...) {
@@ -105,6 +106,7 @@ bool AudioEngine::prepare(double sampleRate, std::size_t maxFrames, std::size_t 
         !stereoDelay_.prepare(sampleRate, maxFrames, channels) ||
         !spaceReverb_.prepare(sampleRate, maxFrames, channels) ||
         !colour_.prepare(sampleRate, maxFrames, channels, quality) ||
+        !character_.prepare(sampleRate, maxFrames, channels, quality) ||
         !limiter_.prepare(sampleRate, maxFrames, channels))
         return false;
     latency_ = colour_.latencySamples();
@@ -129,7 +131,9 @@ bool AudioEngine::setParameters(const EngineParameters &p) noexcept {
         !VocalLimiter::valid({p.limiterCeilingDb, p.limiterReleaseMs}) ||
         !StereoDelay::valid(stereoDelayParameters(p)) || !Doubler::valid(doublerParameters(p)) ||
         !SpaceReverb::valid(spaceParameters(p)) || !BandlimitedColour::valid(colourParameters(p)) ||
-        !VoiceSculptor::valid(sculptorParameters(p)) || !Breathiness::valid({p.sculptBreathiness}))
+        !VoiceSculptor::valid(sculptorParameters(p)) ||
+        !Breathiness::valid({p.sculptBreathiness}) ||
+        !HarmonicCharacter::valid({p.sculptCharacter}))
         return false;
     // All snapshots are fully validated before any target is replaced.
     if (!effects_.setParameters(toneParameters(p)))
@@ -144,6 +148,7 @@ bool AudioEngine::setParameters(const EngineParameters &p) noexcept {
     (void)stereoDelay_.setParameters(stereoDelayParameters(p));
     (void)limiter_.setParameters({p.limiterCeilingDb, p.limiterReleaseMs});
     (void)colour_.setParameters(colourParameters(p));
+    (void)character_.setParameters({p.sculptCharacter});
     (void)sculptor_.setParameters(sculptorParameters(p));
     (void)breathiness_.setParameters({p.sculptBreathiness});
     if (p.limiterEnabled != target_.limiterEnabled)
@@ -185,6 +190,7 @@ void AudioEngine::reset() noexcept {
     stereoDelay_.reset();
     spaceReverb_.reset();
     colour_.reset();
+    character_.reset();
     limiter_.reset();
 }
 
@@ -232,6 +238,7 @@ bool AudioEngine::processInternal(std::span<float *> channels, std::size_t frame
     }
     if (bypassed_) {
         colour_.reset();
+        character_.reset();
         resumeGuard_ = latency_;
         resumeFade_ = 0;
         bypassed_ = false;
@@ -284,9 +291,21 @@ bool AudioEngine::processInternal(std::span<float *> channels, std::size_t frame
         !flanger_.process(std::span<float *>(wetChannels.data(), channels_), frames) ||
         !doubler_.process(std::span<float *>(wetChannels.data(), channels_), frames) ||
         !stereoDelay_.process(std::span<float *>(wetChannels.data(), channels_), frames) ||
-        !spaceReverb_.process(std::span<float *>(wetChannels.data(), channels_), frames) ||
-        !colour_.process(std::span<float *>(wetChannels.data(), channels_), frames))
+        !spaceReverb_.process(std::span<float *>(wetChannels.data(), channels_), frames))
         return false; // Prepared capacities/layout have already been validated.
+    // Both branches observe the same post-space signal and have the same prepared
+    // latency. Character contributes only a delta; no extra serial delay is added.
+    for (std::size_t c = 0; c < channels_; ++c)
+        std::copy_n(wet_[c].data(), frames, characterScratch_[c].data());
+    std::array<float *, 2> characterChannels{characterScratch_[0].data(),
+                                             characterScratch_[1].data()};
+    if (!character_.process(std::span<float *>(characterChannels.data(), channels_), frames) ||
+        !colour_.process(std::span<float *>(wetChannels.data(), channels_), frames))
+        return false;
+    for (std::size_t c = 0; c < channels_; ++c)
+        for (std::size_t i = 0; i < frames; ++i)
+            if (characterScratch_[c][i] != 0)
+                wet_[c][i] = bounded(static_cast<double>(wet_[c][i]) + characterScratch_[c][i]);
     for (std::size_t i = 0; i < frames; ++i) {
         smooth(current_.outputDb, target_.outputDb);
         smooth(current_.mix, target_.mix);
