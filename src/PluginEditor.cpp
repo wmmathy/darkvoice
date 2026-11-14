@@ -2,7 +2,7 @@
 #include <cmath>
 namespace {
 const juce::Colour background{0xff111418}, panel{0xff1c2229}, accent{0xffe54b52}, text{0xffecedf0};
-constexpr std::array<const char *, 64> ids{"inputDb",
+constexpr std::array<const char *, 65> ids{"inputDb",
                                            "highPassHz",
                                            "drive",
                                            "thresholdDb",
@@ -65,8 +65,9 @@ constexpr std::array<const char *, 64> ids{"inputDb",
                                            "sculptPresenceDb",
                                            "sculptBreathiness",
                                            "sculptDepthDb",
-                                           "sculptResonanceDb"};
-constexpr std::array<const char *, 64> names{"INPUT GAIN",
+                                           "sculptResonanceDb",
+                                           "sculptCharacter"};
+constexpr std::array<const char *, 65> names{"INPUT GAIN",
                                              "HIGH-PASS",
                                              "WARMTH DRIVE",
                                              "COMPRESSOR THRESHOLD",
@@ -129,13 +130,14 @@ constexpr std::array<const char *, 64> names{"INPUT GAIN",
                                              "PRESENCE 3 kHz",
                                              "BREATH TEXTURE",
                                              "DEPTH LOWS",
-                                             "RESONANCE 700 Hz"};
-constexpr std::array<const char *, 64> suffixes{
+                                             "RESONANCE 700 Hz",
+                                             "CHARACTER"};
+constexpr std::array<const char *, 65> suffixes{
     " dB", " Hz", "", " dB",  ":1",  "",    " dB", " Hz", " dB", " Hz", " dB", "",    " Hz",
     " dB", " ms", "", "",     "",    "",    "",    " dB", ":1",  " ms", " Hz", " dB", " dB",
     " Hz", " ms", "", "",     " Hz", " ms", "",    "",    "",    " dB", " ms", "",    " ms",
     "",    "",    "", " BPM", "",    "",    " ms", " ms", " Hz", "",    "",    "",    " Hz",
-    " ms", "",    "", "",     " Hz", "",    " dB", " dB", " dB", "",    " dB", " dB"};
+    " ms", "",    "", "",     " Hz", "",    " dB", " dB", " dB", "",    " dB", " dB", ""};
 juce::File presetDirectory(const juce::File &supplied) {
     if (supplied != juce::File{})
         return supplied;
@@ -204,7 +206,10 @@ DarkVoiceEditor::DarkVoiceEditor(DarkVoiceProcessor &p, juce::File root)
         slider.setName(names[i]);
         slider.setTitle(names[i]);
         slider.setTooltip(
-            i == 63   ? "Boost or soften the fixed 700 Hz resonance band."
+            i == 64
+                ? "Adds odd harmonics at negative values and even harmonics at positive values, "
+                  "independently of Colour mix. Zero is neutral."
+            : i == 63 ? "Boost or soften the fixed 700 Hz resonance band."
             : i == 62 ? "Adjust low-frequency endpoint gain below 90 Hz."
             : i == 61
                 ? "Center-driven added texture follows the recent vocal level. Amount controls "
@@ -214,7 +219,7 @@ DarkVoiceEditor::DarkVoiceEditor(DarkVoiceProcessor &p, juce::File root)
             : i >= 58
                 ? "Vocal tone shaping: Body at 180 Hz and Presence at 3 kHz. Zero dB is neutral."
             : i >= 54
-                ? "Tape/tube-style saturation with 8x oversampling, HF tone and parallel mix. "
+                ? "Tape/tube-style saturation with 16x oversampling, HF tone and parallel mix. "
                   "Quality-dependent alignment."
             : i >= 49 ? "Distinct algorithmic Room / Hall / Plate networks. HF tone is output "
                         "filtering; Decay is not an RT60 time."

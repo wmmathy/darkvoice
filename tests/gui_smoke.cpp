@@ -74,7 +74,7 @@ int main(int argc, char **argv) {
                 button && button->getName() == "Load preset")
                 load = button;
         }
-        if (controls != 64 || !input || !bypass || !presetSelection || !load)
+        if (controls != 65 || !input || !bypass || !presetSelection || !load)
             return 2;
         if (!quality || !qualityStatus || quality->getNumItems() != 3 ||
             !editor->getLocalBounds().contains(quality->getBounds()) ||
@@ -96,7 +96,7 @@ int main(int argc, char **argv) {
         bypass->setToggleState(true, juce::sendNotificationSync);
         if (processor.parameters.getRawParameterValue("bypass")->load() != 1.0f)
             return 4;
-        constexpr std::array<const char *, 64> names{"INPUT GAIN",
+        constexpr std::array<const char *, 65> names{"INPUT GAIN",
                                                      "OUTPUT GAIN",
                                                      "HIGH-PASS",
                                                      "WARMTH DRIVE",
@@ -159,7 +159,8 @@ int main(int argc, char **argv) {
                                                      "PRESENCE 3 kHz",
                                                      "BREATH TEXTURE",
                                                      "DEPTH LOWS",
-                                                     "RESONANCE 700 Hz"};
+                                                     "RESONANCE 700 Hz",
+                                                     "CHARACTER"};
         std::size_t soundIndex = 0;
         for (const auto &spec : darkvoice::parameterSchema) {
             if (juce::String(spec.id) == "bypass")
@@ -334,6 +335,20 @@ int main(int argc, char **argv) {
         if (!breath || !breath->getTooltip().contains("Center-driven") ||
             !breath->getTooltip().contains("recent vocal level"))
             return 27;
+        juce::Slider *character = nullptr;
+        for (auto *component : components)
+            if (auto *slider = dynamic_cast<juce::Slider *>(component);
+                slider && slider->getName() == "CHARACTER")
+                character = slider;
+        if (!character || !character->getTooltip().contains("independently of Colour mix"))
+            return 38;
+        character->setValue(-.625, juce::sendNotificationSync);
+        if (std::abs(processor.parameters.getRawParameterValue("sculptCharacter")->load() + .625f) >
+            .001f)
+            return 39;
+        character->setValue(0, juce::sendNotificationSync);
+        if (processor.parameters.getRawParameterValue("sculptCharacter")->load() != 0)
+            return 40;
         auto image = editor->createComponentSnapshot(editor->getLocalBounds());
         if (image.isNull())
             return 5;
@@ -344,7 +359,7 @@ int main(int argc, char **argv) {
             if (!stream || !juce::PNGImageFormat().writeImageToStream(image, *stream))
                 return 6;
         }
-        std::cout << "GUI smoke passed: 64 controls, all parameter attachments, bypass, actual "
+        std::cout << "GUI smoke passed: 65 controls, all parameter attachments, bypass, actual "
                      "factory preset audio, dry-pitch feedback, snapshot\n";
         return 0;
     }();
