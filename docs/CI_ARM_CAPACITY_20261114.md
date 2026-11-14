@@ -16,9 +16,22 @@ uname=arm64 and reports macOS/Xcode versions. It does not check out source,
 install dependencies, access secrets or build products. Permissions are read only.
 No production runner labels or qualification gates are changed by this probe.
 
-Probe results are pending. Unrelated standard build CI triggered by this isolated
-branch may be cancelled explicitly to avoid performing product validation on a
-diagnostic-only change. Never cancel the actual feature validation runs. Any
-healthy label needs full native product/core/sanitizer/AU validation on the
-reviewed feature head before normal integration; a successful probe alone is
-not product qualification. No repeated retries are planned if both pools fail.
+Both labels passed in run43634362047 on workflow commit
+7e6a2fe0209c6092c9d284cdfa37d255e25050cc. Both executed on arm64:
+
+| Label | Job | macOS | Xcode | Runner image |
+| --- | --- | --- | --- | --- |
+| macos-15 |132567789218|15.8.2 build24H232|16.4 build16F6|20261104.0514|
+| macos-26 |132567789454|26.7.2 build25G332|26.6 build17F113|20261102.0473|
+
+The actual downloaded run-log archive is preserved in the ignored
+build/probe-evidence directory. These outcomes establish availability at probe
+time, not a guarantee of future capacity or product compatibility.
+
+Unrelated standard Build-and-tests run43634361899 was cancelled only on this
+diagnostic branch. Actual feature validation runs were untouched. No production
+labels changed. Since the existing macos-15 pool is available again, a single
+retry of cancelled feature jobs is the least disruptive next step. The alternative
+macos-26 ARM pool is also proven available if a later fallback is needed. Any
+label still needs full native product/core/sanitizer/AU validation on the reviewed
+feature head before normal integration; a probe is not product qualification.
