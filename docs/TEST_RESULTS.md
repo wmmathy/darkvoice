@@ -837,3 +837,19 @@ Manual host/microphone/listening qualification remains deferred.
 Final optimized v4 strict O2 cores also passed1,211/0 each: Live31.273s,
 Studio47.711s,Offline108.308s in this cloud session. All three profiles executed
 the full fixed/reference/complex matrices. Full dense scans remain pending CI.
+
+## Character core native qualification package — 2026-11-12
+
+Frozen Character425a75b passed strict fixed cores34,506/0 each and fresh safety
+98,757/0 across profiles. Independent QA reproduced Live34,506/0 and42 public
+FFT cases (both signs, seven critical bins, all modes); worst supplemental
+alias -96.5046dB/inputRMS. Independent DC/harmonic/Nyquist calibration passed.
+All three source files match the checkpoint exactly.
+
+Lead CMake Debug ASan/UBSan safety passed3/3 in790.85seconds: Live126.27,
+Studio216.76,Offline447.81, with leak detection and halt-on-error. These checks
+do not replace fixed spectral or complete dense qualification. All24 dense
+Release shards (every bin17..2031, both signs, all profiles), exact-head native
+checks and source quality remain required before core merge. Product controls
+and parallel engine routing are a separate schema16 increment. Manual tests
+remain deferred and no target-machine deadline is claimed.
