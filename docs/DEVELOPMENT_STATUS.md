@@ -936,3 +936,12 @@ builds now keep Debug assertions/symbols with-O1, and the expanded engine suite
 has a600-second operational budget. Final sanitizer completion is not yet
 verified. This checkpoint is not a claim of a qualified release or main merge.
 Manual host/listening tests remain deferred.
+
+## Effect examples preview packages planned — 2026-11-15
+
+A versioned preview contract and shared headers precede independent catalog/
+renderer, realtime player, worker/service and popup/host assignments. The user
+requested male/female clean sources and additional vocal FX references. Licensed
+natural speech and singing assets are being integrated separately. The initial
+catalog covers existing real DSP; future transducer/ringmod/phaser/rhythmic and
+pitch-dependent features remain explicit backlog, not simulated preview entries.

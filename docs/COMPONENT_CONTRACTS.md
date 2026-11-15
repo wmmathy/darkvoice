@@ -1362,3 +1362,104 @@ audible audio comparisons to direct engine, allold parameter definitions and
 65-control/13-group actual GUI smoke. Record runtime failures honestly; no
 manual/host/listening claim. StrictO2, Release, sanitizer and exact-head native
 checks plus independent QA before normal merge. No pitch/formant controls added.
+
+## Effect examples preview v1 — 2026-11-15
+
+User addition USER_REQUIREMENTS_UPDATES.md authorizes effect examples from clean
+male/female recordings and further vocal FX references. No sound-schema change:
+APVTS remains66state/65sound,13groups, schema16. Shared headers EffectPreview.hpp,
+EffectPreviewPlayer.hpp and src/EffectPreviewService.hpp are lead-owned.
+
+Catalog/renderer: immutable unique positive IDs with labels and curated valid
+EngineParameters, covering every existing effect family/actual variant (about26;
+Character may have odd/even examples). No playable unqualified pitch/harmony/
+vocoder. No vendor presets/branding. Direct examples only; no Apply/current-live
+settings in v1, and no live parameter mutation. Recommended speech for gate/de-
+esser/dynamics; singing available for tonal effects. Both published male/female
+samples selectable, with Auto/Speech/Singing source-kind UI.
+
+renderPreview is worker-only, receives finite mono floats at target rate, maximum
+6seconds, and a concrete request/definition with matching ID/nonzero generation.
+Own AudioEngine is prepared at request quality/channels with512-frame render
+chunks; cancellation checks every chunk and before publication. Set/reset static
+example before processing. Shared5ms source edge fades; a clearly labelled stereo
+demonstration for width uses right-channel7ms delay, identically for dry/wet.
+Reject that demonstration in mono. Tail per definition<=3seconds, total<=10seconds.
+Dry is the same prepared source+zeros. Process through the private engine and
+remove ONLY its reported algorithmic latency; preserve effect delays/predelays.
+Apply one common gain min(1,.8/maxAbsBothBuffers) to both, never independent wet
+normalization. Valid source/effect metadata, finite output and bounded storage
+required; no live/GUI/file work in renderer.
+
+Player/ownership: three fixed slots with Free/Writing/Ready/Active/Retired states.
+Worker exclusively claims/reuses Free or acquire-reclaims Retired slots, allocates
+and writes clip vectors only while Writing, then release-publishes Ready through
+readyIndex.exchange. An old returned mailbox index was unconsumed Ready and may
+be reclaimed by worker; never touch Active. Callback acquire-exchanges Ready only
+when no active slot, validates generation/format/vector bounds, and owns Active
+until its LAST read, then marks Retired and never touches that clip again. Audio
+never clears/resizes/destroys vectors, frees storage, locks or wakes a worker.
+No shared_ptr lifetime/release on callback. Three slots bound memory.
+
+UI/worker requestedGeneration (0=stop) and renderGeneration drive cancellation;
+request counter stays monotonic across lifecycle. Audio may zero renderGeneration
+when blocked and stores blockedThroughGeneration, but never mutates requested
+generation. Only accept Ready matching requested AND render generation and newer
+than blocked-through. Selection changes stop old preview; Play renders the latest
+request. Fade current clip to live before consuming a newer ready clip, no two-
+clip crossfade needed. Smooth live/preview, dry/wet and level over approximately
+10ms; A/B retains cursor. Natural completion records completedGeneration so it
+does not show Waiting or replay itself. Level finite0..1 default.5.
+
+Normal empty blocks freeze cursor/fades/mailbox; malformed layouts/null/overlap/
+oversize blocks do not mutate audio or advance playback. blocked takes precedence
+and immediately stops/retires audition while leaving ALL live output bits alone
+(including nonfinite payloads). Idle is bit-exact pass-through. Active transition
+math must remain finite even if the live mix0 path contains nonfinite payloads;
+return to untouched live bits once blend is zero. All atomics touched in callback
+must be lock-free on supported targets.
+
+Service: UI/worker locks allowed, never callback. Lazy worker, local bundled WAV
+decode and high-quality SRC before render. Use JUCE WindowedSincInterpolator or
+equivalent existing licensed implementation, flush padding and compensate its
+rounded source latency to one output sample; dry/wet share the same resampled
+source. Unity-rate copy remains exact before shared fades. Embedded original
+assets, manifests and credit text supplied by assets package; no runtime network
+or second audio device. Original sample bytes stay unchanged. Worker reports
+progress/cancellation/errors; latest request wins. UI status reads atomic audio
+state without clip-vector access; request mutex is never held during IO/render/
+join. release/prepare require callbacks stopped, cancel/join before clearing
+storage, and never auto-resume an old clip. Constructor/destructor are nonRT.
+
+Processor integration: render live normally, keep dry analysis on REAL input,
+then service.process each successful engine chunk. blocked if host/global bypass,
+isNonRealtime, or known recording flag. Explicit future exports use AudioEngine
+outside service. Actual host recordings can capture preview if recording state
+is unavailable; do not promise otherwise. Output meters follow actual replaced
+output; input meters/analysis remain live. Optional preview prepare failure must
+not mute a valid live engine. Stop on editor/popup close, release, failedprepare
+and SR/layout changes. If callbacks suspended, Ready—waiting for host audio,
+never a fake Playing state.
+
+UI: one Preview effects button in unused preset-row space, popup only. Effect,
+male/female, Auto/Speech/Singing, Play/Stop, Dry/Effect, preview level and progress.
+Clearly label Effect examples and unchanged live settings, stereo-demo/mono
+limitation and normal host-output use. Credits available locally. Popup controls
+are not APVTS sound parameters;65 sound sliders/13groups/900x780 remain.
+
+Ownership: renderer agent only src/EffectPreview.cpp/tests/effect_preview_tests.cpp;
+player agent only src/EffectPreviewPlayer.cpp/tests/effect_preview_player_tests.cpp;
+service agent only src/EffectPreviewService.cpp/tests/effect_preview_service_tests.cpp;
+UI agent only new EffectPreviewPanel.hpp/.cpp, processor/editor and plugin/gui
+tests. Lead owns shared headers, CMake/workflows, docs and integration. Separate
+isolated branches/worktrees based on this commit. Assets own resources/preview
+and checker independently. No source interface changes without lead integration.
+
+Acceptance: complete valid catalog/unique IDs, audible example differences on
+appropriate fixtures, direct engine/neutral latency alignment, cancel/finite/SRC
+checks, both voice/type assets, common-gain and bounded tail tests. Player callback
+allocation AND deallocation guards, stale generation, raw bypass/idle bits, A/B
+cursor, fade/stop/end and producer/audio stress. Service lifecycle/reprepare/
+shutdown/blocked/nonRT tests. Plugin sound/preset/quality snapshots unchanged by
+preview; actual popup Play/Stop/A-B tests, recording/offline/bypass suppression.
+Independent QA, sanitizer/native gates before merge. Manual tests deferred.
