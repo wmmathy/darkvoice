@@ -920,3 +920,19 @@ editor/preset/test files in character-host. Both use this frozen combined base,
 preserve quality global metadata and all previous parameter definitions, and
 add one independently audible Character control without serial extra latency.
 Lead handles builds, core/dense/native qualification and normal gated integration.
+
+## Character application safety checkpoint — 2026-11-15
+
+The parallel Character engine and schema16 application changes are checkpointed
+for loss protection. Release engine/preset/plugin tests previously passed3/3;
+independent engine QA passed30,788/0 with60 exact composed routes, and the
+65-control/13-group GUI passed. All65 previous parameter definitions are intact.
+The test-only ARM float-state invariant fix is included; its latest affected
+plugin rerun and exact-head native validation remain required.
+
+Unoptimized sanitizer execution exceeded900seconds; the subsequent-O1 run
+exceeded the old180-second CTest budget. Every assertion is retained. Sanitizer
+builds now keep Debug assertions/symbols with-O1, and the expanded engine suite
+has a600-second operational budget. Final sanitizer completion is not yet
+verified. This checkpoint is not a claim of a qualified release or main merge.
+Manual host/listening tests remain deferred.

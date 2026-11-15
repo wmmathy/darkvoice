@@ -817,7 +817,8 @@ void integratedLimiter(double rate) {
 // the reference as integer bits so NaN payloads and signed zero cannot be hidden
 // by floating point equality or arithmetic.
 void rawAlignment(double rate, std::size_t count,
-                  darkvoice::QualityMode quality = darkvoice::QualityMode::Live) {
+                  darkvoice::QualityMode quality = darkvoice::QualityMode::Live,
+                  float characterAmount = 0) {
     const auto latency = darkvoice::BandlimitedColour::latencyForQuality(quality);
     darkvoice::AudioEngine engine;
     check(engine.prepare(rate, 513, count, quality) && engine.latencySamples() == latency &&
@@ -834,6 +835,7 @@ void rawAlignment(double rate, std::size_t count,
     const auto channels = std::span<float *>(pointers.data(), count);
     darkvoice::EngineParameters p;
     p.colourMix = 1;
+    p.sculptCharacter = characterAmount;
     p.limiterEnabled = true;
     p.outputDb = 24;
     for (std::size_t block = 0; block < 14; ++block) {
@@ -1725,6 +1727,252 @@ void depthResonanceRoutingOracle(double rate, std::size_t count,
                 maxError);
 }
 
+// Independent post-Space parallel branch composition; existing legacy route tests stay unchanged.
+void characterRoutingOracle(double rate, std::size_t count,
+                            darkvoice::QualityMode quality = darkvoice::QualityMode::Live) {
+    const auto latency = darkvoice::BandlimitedColour::latencyForQuality(quality);
+    const auto fadeLength = 2 * latency;
+    darkvoice::AudioEngine actual, partitioned;
+    darkvoice::DeEsser deEsser;
+    darkvoice::VoiceSculptor sculptor;
+    darkvoice::Breathiness breathiness;
+    darkvoice::ToneEffects legacy;
+    darkvoice::BandlimitedColour colour;
+    darkvoice::HarmonicCharacter character;
+    darkvoice::SpaceReverb space;
+    darkvoice::VocalLimiter limiter;
+    check(actual.prepare(rate, 257, count, quality) &&
+              partitioned.prepare(rate, 257, count, quality) && deEsser.prepare(rate, 1, count) &&
+              sculptor.prepare(rate, 1, count) && breathiness.prepare(rate, 1, count) &&
+              legacy.prepare(rate, 1, count) && colour.prepare(rate, 1, count, quality) &&
+              character.prepare(rate, 1, count, quality) && space.prepare(rate, 1, count) &&
+              limiter.prepare(rate, 1, count),
+          "Character parallel independently composed route preparation all rates/layouts");
+    darkvoice::EngineParameters p;
+    p.highPassHz = 80;
+    p.deEssHz = 3000;
+    p.deEssThresholdDb = -40;
+    p.deEssReductionDb = 6;
+    p.eqMidHz = 650;
+    p.eqMidGainDb = 4;
+    p.eqMidQ = .8f;
+    p.delayMs = 20;
+    p.delayFeedback = .2f;
+    p.delayMix = .3f;
+    p.colourMix = .6f;
+    p.colourDrive = .7f;
+    p.colourModel = 1;
+    p.colourToneHz = 11000;
+    p.spaceModel = 1;
+    p.spaceDecay = .3f;
+    p.spaceToneHz = 7000;
+    p.spacePreDelayMs = 2;
+    p.spaceMix = .25f;
+    p.mix = .85f;
+    p.outputDb = 12;
+    p.limiterEnabled = true;
+    p.limiterCeilingDb = -3;
+    p.limiterReleaseMs = 700;
+    darkvoice::ToneEffectsParameters tone;
+    tone.eqMidHz = p.eqMidHz;
+    tone.eqMidGainDb = p.eqMidGainDb;
+    tone.eqMidQ = p.eqMidQ;
+    tone.delayMs = p.delayMs;
+    tone.delayFeedback = p.delayFeedback;
+    tone.delayMix = p.delayMix;
+    check(actual.setParameters(p) && partitioned.setParameters(p) &&
+              deEsser.setParameters({p.deEssHz, p.deEssThresholdDb, p.deEssReductionDb}) &&
+              legacy.setParameters(tone) &&
+              colour.setParameters({p.colourModel, p.colourDrive, p.colourToneHz, p.colourMix}) &&
+              space.setParameters(
+                  {p.spaceModel, p.spaceDecay, p.spaceToneHz, p.spacePreDelayMs, p.spaceMix}) &&
+              limiter.setParameters({p.limiterCeilingDb, p.limiterReleaseMs}),
+          "Character parallel independent route parameter setup");
+    actual.reset();
+    partitioned.reset();
+    deEsser.reset();
+    sculptor.reset();
+    breathiness.reset();
+    legacy.reset();
+    colour.reset();
+    character.reset();
+    space.reset();
+    limiter.reset();
+    const auto clean = [](double x) { return std::abs(x) < 1e-20 ? 0.f : static_cast<float>(x); };
+    const double pole = std::exp(-2 * std::numbers::pi * p.highPassHz / rate);
+    const double smoothing = 1 - std::exp(-1 / (.010 * rate));
+    std::array<float, 2> previousInput{}, previousOutput{};
+    std::array<std::array<float, darkvoice::BandlimitedColour::maximumLatencySamples>, 2> raw{};
+    std::size_t position = 0, absolute = 0, guard = 0, fade = fadeLength;
+    float mix = p.mix, outputDb = p.outputDb;
+    bool wasBypassed = false, exactPartitions = true, referenceOkay = true, protectedAudio = true;
+    double maxError = 0;
+    double activeEnergy = 0, textureEnergy = 0, colourOffDeltaEnergy = 0;
+    bool touchedCeiling = false;
+    struct Segment {
+        std::size_t frames, partition;
+        bool bypass, force;
+        float body, warmth, presence, amount, depth, resonance, character, colourMix, mix, output;
+    };
+    for (const auto segment : std::array<Segment, 12>{
+             {{1700, 257, false, false, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0},
+              {1201, 137, false, false, 0, 0, 0, .731f, 6, 0, -.75f, 0, 1, 6},
+              {1203, 97, false, false, 0, 0, 0, .127f, 0, 6, .6f, .8f, .85f, 12},
+              {701, 193, false, false, -3, 4, 6, .999f, -6, 6, -1, .5f, .3f, -3},
+              {97, 17, true, false, -6, 6, -6, .327f, 6, -6, 1, 1, 1, 18},
+              {400, 137, false, false, -6, 6, -6, .327f, 6, -6, 1, 1, 1, 18},
+              {31, 31, false, true, 6, 6, 6, 1, 6, 6, -1, 0, .5f, 0},
+              {137, 23, false, false, 6, 6, 6, 1, 6, 6, -1, 0, .5f, 0},
+              {63, 23, true, false, 0, 0, 0, 0, -6, -6, 0, 1, 1, 12},
+              {1601, 71, false, false, -4, 3, 6, .853f, -6, -6, .4f, .4f, .85f, 12},
+              {601, 101, false, false, 6, 6, 6, 1, 6, 6, -.4f, .2f, .6f, 6},
+              {307, 59, false, false, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0}}}) {
+        p.bypass = segment.bypass;
+        p.sculptBodyDb = segment.body;
+        p.sculptWarmthDb = segment.warmth;
+        p.sculptPresenceDb = segment.presence;
+        p.sculptBreathiness = segment.amount;
+        p.sculptDepthDb = segment.depth;
+        p.sculptResonanceDb = segment.resonance;
+        p.sculptCharacter = segment.character;
+        p.colourMix = segment.colourMix;
+        p.mix = segment.mix;
+        p.outputDb = segment.output;
+        const auto beforeSet = allocations.load();
+        rejectAllocations.store(true);
+        const bool accepted = actual.setParameters(p) && partitioned.setParameters(p);
+        rejectAllocations.store(false);
+        check(accepted && allocations.load() == beforeSet &&
+                  sculptor.setParameters({segment.body, segment.warmth, segment.presence,
+                                          segment.depth, segment.resonance}) &&
+                  breathiness.setParameters({segment.amount}) &&
+                  character.setParameters({segment.character}) &&
+                  colour.setParameters({p.colourModel, p.colourDrive, p.colourToneHz, p.colourMix}),
+              "Character parallel engine snapshots accepted without allocation");
+        for (std::size_t offset = 0; offset < segment.frames; offset += segment.partition) {
+            const auto frames = std::min(segment.partition, segment.frames - offset);
+            std::array<std::array<float, 257>, 2> audio{}, split{}, expected{};
+            for (std::size_t i = 0; i < frames; ++i) {
+                std::array<float, 2> sample{}, dry{};
+                for (std::size_t c = 0; c < count; ++c) {
+                    const double time = (absolute + i) / rate;
+                    const float source = static_cast<float>(
+                        .4 * std::sin(2 * std::numbers::pi * 180 * time + c * .3) +
+                        .2 * std::sin(2 * std::numbers::pi * 700 * time + c * .8) +
+                        .3 * std::cos(2 * std::numbers::pi * 5000 * time + c * .7));
+                    audio[c][i] = split[c][i] = source;
+                    dry[c] = raw[c][position];
+                    raw[c][position] = source;
+                    if (!segment.bypass && !segment.force) {
+                        sample[c] = clean(pole * (static_cast<double>(previousOutput[c]) + source -
+                                                  previousInput[c]));
+                        previousInput[c] = source;
+                        previousOutput[c] = sample[c];
+                    }
+                }
+                position = (position + 1) % latency;
+                if (segment.bypass || segment.force) {
+                    for (std::size_t c = 0; c < count; ++c)
+                        expected[c][i] = dry[c];
+                    wasBypassed = true;
+                    continue;
+                }
+                if (wasBypassed) {
+                    colour.reset();
+                    character.reset(); // Other upstream histories remain frozen, not reset.
+                    guard = latency;
+                    fade = 0;
+                    wasBypassed = false;
+                }
+                std::array<float *, 2> one{&sample[0], &sample[1]};
+                const auto channels = std::span<float *>(one.data(), count);
+                referenceOkay &= deEsser.process(channels, 1) && sculptor.process(channels, 1);
+                const auto beforeTexture = sample;
+                referenceOkay &= breathiness.process(channels, 1);
+                for (std::size_t c = 0; c < count; ++c) {
+                    const double addition = static_cast<double>(sample[c]) - beforeTexture[c];
+                    textureEnergy += addition * addition;
+                }
+                referenceOkay &= legacy.process(channels, 1) && space.process(channels, 1);
+                auto delta = sample;
+                std::array<float *, 2> deltaPointers{&delta[0], &delta[1]};
+                referenceOkay &=
+                    character.process(std::span<float *>(deltaPointers.data(), count), 1) &&
+                    colour.process(channels, 1);
+                for (std::size_t c = 0; c < count; ++c) {
+                    if (p.colourMix == 0)
+                        colourOffDeltaEnergy += static_cast<double>(delta[c]) * delta[c];
+                    if (delta[c] != 0)
+                        sample[c] = clean(static_cast<double>(sample[c]) + delta[c]);
+                }
+                mix = static_cast<float>(mix + smoothing * (p.mix - mix));
+                outputDb = static_cast<float>(outputDb + smoothing * (p.outputDb - outputDb));
+                const double weight = guard != 0          ? (--guard, 0.)
+                                      : fade < fadeLength ? static_cast<double>(++fade) / fadeLength
+                                                          : 1.;
+                for (std::size_t c = 0; c < count; ++c) {
+                    const double blend = static_cast<double>(dry[c]) * (1. - mix) +
+                                         static_cast<double>(sample[c]) * mix;
+                    sample[c] =
+                        clean((weight == 0 ? dry[c] : dry[c] * (1 - weight) + blend * weight) *
+                              std::pow(10., outputDb / 20.));
+                }
+                referenceOkay &= limiter.process(channels, 1);
+                for (std::size_t c = 0; c < count; ++c) {
+                    expected[c][i] = sample[c];
+                    activeEnergy += static_cast<double>(sample[c]) * sample[c];
+                }
+            }
+            std::array<float *, 2> ptr{audio[0].data(), audio[1].data()};
+            auto channels = std::span<float *>(ptr.data(), count);
+            const auto before = allocations.load();
+            rejectAllocations.store(true);
+            const bool processed = segment.force ? actual.processBypassed(channels, frames)
+                                                 : actual.process(channels, frames);
+            // Empty forced call while active cannot synthetically reset tone/Colour.
+            const bool empty = actual.processBypassed(channels, 0);
+            rejectAllocations.store(false);
+            check(processed && empty && allocations.load() == before &&
+                      actual.latencySamples() == latency,
+                  "Character parallel active/bypassed/resume audio has fixed latency and no "
+                  "allocation");
+            for (std::size_t i = 0; i < frames; ++i) {
+                std::array<float *, 2> samplePtr{&split[0][i], &split[1][i]};
+                const auto one = std::span<float *>(samplePtr.data(), count);
+                exactPartitions &= segment.force ? partitioned.processBypassed(one, 1)
+                                                 : partitioned.process(one, 1);
+                for (std::size_t c = 0; c < count; ++c) {
+                    exactPartitions &= audio[c][i] == split[c][i];
+                    maxError = std::max(
+                        maxError, std::abs(static_cast<double>(audio[c][i]) - expected[c][i]));
+                    if (!segment.bypass && !segment.force) {
+                        const double ceiling = std::pow(10., p.limiterCeilingDb / 20.);
+                        protectedAudio &=
+                            std::isfinite(audio[c][i]) && std::abs(audio[c][i]) <= ceiling;
+                        touchedCeiling |= std::abs(audio[c][i]) > ceiling * (1 - 1e-5);
+                    }
+                }
+            }
+            absolute += frames;
+        }
+    }
+    check(referenceOkay && maxError < 3e-7 && activeEnergy > 1,
+          "Character parallel automation/post-Space placement/neutral history/full bypass resume "
+          "match "
+          "independent route");
+    check(colourOffDeltaEnergy > .001,
+          "Character remains audible with Colour mix zero before final limiting");
+    check(textureEnergy > .001,
+          "active amount produces measurable actual texture in composed route");
+    check(exactPartitions,
+          "Character parallel engine automation and bypass partition invariant all rates/layouts");
+    check(protectedAudio,
+          "combined Colour/Character contribution never exceeds enabled final limiter ceiling");
+    check(touchedCeiling, "combined Character route actually engages final limiting");
+    std::printf("Character parallel route %.0f Hz/%zu channels max error %.9g\n", rate, count,
+                maxError);
+}
+
 void sculptorInvalidAtomicity(double rate, std::size_t count) {
     darkvoice::AudioEngine actual, reference;
     check(actual.prepare(rate, 257, count) && reference.prepare(rate, 257, count),
@@ -1908,6 +2156,142 @@ void depthResonanceInvalidAndReset(double rate, std::size_t count) {
           "Depth/Resonance engine reset reproduces fresh prepared RMS/FIR/PRNG and settled amount");
 }
 
+void characterInvalidAndReset(double rate, std::size_t count, darkvoice::QualityMode quality) {
+    darkvoice::AudioEngine actual, reference, fresh;
+    check(actual.prepare(rate, 257, count, quality) &&
+              reference.prepare(rate, 257, count, quality) &&
+              fresh.prepare(rate, 257, count, quality),
+          "Character atomicity/reset preparation");
+    darkvoice::EngineParameters p;
+    p.sculptBreathiness = .653f;
+    p.sculptCharacter = count == 1 ? -.83f : .71f;
+    p.spaceMix = .2f;
+    p.sculptBodyDb = 6;
+    p.sculptDepthDb = 5.3f;
+    p.sculptResonanceDb = -4.7f;
+    p.colourMix = .4f;
+    p.limiterEnabled = true;
+    p.limiterCeilingDb = -6;
+    check(actual.setParameters(p) && reference.setParameters(p) && fresh.setParameters(p),
+          "Character valid active snapshot");
+    for (auto field : {&darkvoice::EngineParameters::sculptCharacter})
+        for (float invalid :
+             {-1.001f, 1.001f, std::numeric_limits<float>::quiet_NaN(),
+              std::numeric_limits<float>::infinity(), -std::numeric_limits<float>::infinity()}) {
+            auto candidate = p;
+            candidate.*field = invalid;
+            candidate.outputDb = -24;
+            candidate.limiterEnabled = false;
+            check(!actual.setParameters(candidate),
+                  "Character invalid snapshot leaves every accepted target unchanged");
+        }
+    std::array<std::array<float, 257>, 2> audio{}, expected{};
+    std::array<float *, 2> a{audio[0].data(), audio[1].data()};
+    std::array<float *, 2> b{expected[0].data(), expected[1].data()};
+    const auto ca = std::span<float *>(a.data(), count);
+    const auto cb = std::span<float *>(b.data(), count);
+    bool equivalent = true;
+    for (std::size_t block = 0; block < 6; ++block) {
+        for (std::size_t c = 0; c < count; ++c)
+            for (std::size_t i = 0; i < 257; ++i)
+                audio[c][i] = expected[c][i] =
+                    static_cast<float>(.5 * std::sin((block * 257 + i) * (.07 + c * .03)));
+        const auto before = allocations.load();
+        rejectAllocations.store(true);
+        equivalent &= !actual.processBypassed(ca, 258) && actual.processBypassed(ca, 0) &&
+                      actual.process(ca, 257) && reference.process(cb, 257);
+        rejectAllocations.store(false);
+        equivalent &= allocations.load() == before;
+        for (std::size_t c = 0; c < count; ++c)
+            equivalent &= audio[c] == expected[c];
+    }
+    check(equivalent,
+          "Character invalid snapshots/blocks and empty bypass preserve targets/history/PRNG");
+    actual.reset();
+    fresh.reset();
+    bool resetEquivalent = true;
+    for (std::size_t block = 0; block < 4; ++block) {
+        for (std::size_t c = 0; c < count; ++c)
+            for (std::size_t i = 0; i < 257; ++i)
+                audio[c][i] = expected[c][i] =
+                    static_cast<float>(.4 * std::cos((block * 257 + i) * (.043 + c * .037)));
+        resetEquivalent &= actual.process(ca, 257) && fresh.process(cb, 257);
+        for (std::size_t c = 0; c < count; ++c)
+            resetEquivalent &= audio[c] == expected[c];
+    }
+    check(resetEquivalent, "Character engine reset reproduces fresh prepared RMS/FIR/PRNG and "
+                           "settled Character amount");
+    const auto nextQuality =
+        static_cast<darkvoice::QualityMode>((static_cast<int>(quality) + 1) % 3);
+    darkvoice::AudioEngine newlyPrepared;
+    check(actual.prepare(rate, 257, count, nextQuality) &&
+              newlyPrepared.prepare(rate, 257, count, nextQuality) && actual.setParameters(p) &&
+              newlyPrepared.setParameters(p),
+          "active Character reprepare accepts a new quality mode");
+    actual.reset();
+    newlyPrepared.reset();
+    bool newQualityEquivalent = true;
+    for (std::size_t block = 0; block < 5; ++block) {
+        for (std::size_t c = 0; c < count; ++c)
+            for (std::size_t i = 0; i < 257; ++i)
+                audio[c][i] = expected[c][i] =
+                    static_cast<float>(.3 * std::sin((block * 257 + i) * (.051 + c * .013)));
+        newQualityEquivalent &= actual.process(ca, 257) && newlyPrepared.process(cb, 257);
+        for (std::size_t c = 0; c < count; ++c)
+            newQualityEquivalent &= audio[c] == expected[c];
+    }
+    check(newQualityEquivalent && actual.qualityMode() == nextQuality &&
+              actual.latencySamples() ==
+                  darkvoice::HarmonicCharacter::latencyForQuality(nextQuality),
+          "Character reprepare discards the old profile and histories without serial latency");
+}
+
+void activeCharacterDryBits(double rate, std::size_t count, darkvoice::QualityMode quality) {
+    darkvoice::AudioEngine actual;
+    const auto latency = darkvoice::HarmonicCharacter::latencyForQuality(quality);
+    check(actual.prepare(rate, 257, count, quality), "active Character dry-only prepare");
+    darkvoice::EngineParameters p;
+    p.sculptCharacter = count == 1 ? -1 : 1;
+    p.colourMix = 1;
+    p.mix = 0;
+    check(actual.setParameters(p), "active parallel branches with dry-only output");
+    actual.reset();
+    std::array<std::array<std::uint32_t, darkvoice::HarmonicCharacter::maximumLatencySamples>, 2>
+        queue{};
+    std::array<std::array<float, 257>, 2> audio{};
+    std::array<float *, 2> pointers{audio[0].data(), audio[1].data()};
+    constexpr std::array<std::uint32_t, 9> patterns{0,           0x80000000U, 1,
+                                                    0x00800000U, 0x3e800000U, 0xbf000000U,
+                                                    0x7fc12345U, 0x7f800000U, 0xff800000U};
+    std::size_t position = 0, absolute = 0;
+    bool exact = true;
+    for (std::size_t block = 0; block < 6; ++block) {
+        std::array<std::array<std::uint32_t, 257>, 2> expected{};
+        for (std::size_t i = 0; i < 257; ++i) {
+            for (std::size_t c = 0; c < count; ++c) {
+                const auto bits = patterns[(absolute + i + 3 * c) % patterns.size()];
+                audio[c][i] = std::bit_cast<float>(bits);
+                const float dry = std::bit_cast<float>(queue[c][position]);
+                const float output = std::isfinite(dry) && std::abs(dry) >= 1e-20f ? dry : 0.f;
+                expected[c][i] = std::bit_cast<std::uint32_t>(output);
+                queue[c][position] = bits;
+            }
+            position = (position + 1) % latency;
+        }
+        const auto before = allocations.load();
+        rejectAllocations.store(true);
+        exact &= actual.process(std::span<float *>(pointers.data(), count), 257);
+        rejectAllocations.store(false);
+        exact &= allocations.load() == before;
+        for (std::size_t c = 0; c < count; ++c)
+            for (std::size_t i = 0; i < 257; ++i)
+                exact &= std::bit_cast<std::uint32_t>(audio[c][i]) == expected[c][i];
+        absolute += 257;
+    }
+    check(exact,
+          "active Character never contaminates aligned sanitized dry-only bits or allocates");
+}
+
 void invalidBlocksAndAllocationFailure() {
     darkvoice::AudioEngine first, reference;
     check(first.prepare(48000, 256, 1) && reference.prepare(48000, 256, 1),
@@ -1992,6 +2376,15 @@ DARKVOICE_TEST_NOINLINE void operator delete[](void *pointer, std::size_t) noexc
 #undef DARKVOICE_TEST_NOINLINE
 
 int main() {
+    for (auto quality : {darkvoice::QualityMode::Live, darkvoice::QualityMode::Studio,
+                         darkvoice::QualityMode::Offline})
+        for (double rate : {44100., 48000., 88200., 96000.})
+            for (std::size_t count : {std::size_t{1}, std::size_t{2}}) {
+                characterRoutingOracle(rate, count, quality);
+                characterInvalidAndReset(rate, count, quality);
+                activeCharacterDryBits(rate, count, quality);
+                rawAlignment(rate, count, quality, count == 1 ? -.7f : .7f);
+            }
     qualityLifecycleAndDry();
     lifecycle();
     snapshotsAndSmoothing();

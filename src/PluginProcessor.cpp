@@ -27,7 +27,8 @@ juce::AudioProcessorValueTreeState::ParameterLayout DarkVoiceProcessor::createPa
                 juce::String(spec.id) == "sculptWarmthDb" ||
                 juce::String(spec.id) == "sculptPresenceDb" ||
                 juce::String(spec.id) == "sculptDepthDb" ||
-                juce::String(spec.id) == "sculptResonanceDb") {
+                juce::String(spec.id) == "sculptResonanceDb" ||
+                juce::String(spec.id) == "sculptCharacter") {
                 // Anchor these signed controls at zero. Start-relative snapping and affine
                 // conversion can leave a nonzero residual under fused multiply-add.
                 range = juce::NormalisableRange<float>{
@@ -148,6 +149,7 @@ darkvoice::EngineParameters DarkVoiceProcessor::snapshot() const noexcept {
     p.sculptBreathiness = raw_[62]->load(std::memory_order_relaxed);
     p.sculptDepthDb = raw_[63]->load(std::memory_order_relaxed);
     p.sculptResonanceDb = raw_[64]->load(std::memory_order_relaxed);
+    p.sculptCharacter = raw_[65]->load(std::memory_order_relaxed);
     return p;
 }
 void DarkVoiceProcessor::prepareToPlay(double rate, int maxFrames) {
@@ -266,10 +268,11 @@ void DarkVoiceProcessor::setStateInformation(const void *data, int bytes) {
     const auto version = xml->getStringAttribute("schemaVersion");
     if (version != "1" && version != "2" && version != "3" && version != "4" && version != "5" &&
         version != "6" && version != "7" && version != "8" && version != "9" && version != "10" &&
-        version != "11" && version != "12" && version != "13" && version != "14" && version != "15")
+        version != "11" && version != "12" && version != "13" && version != "14" &&
+        version != "15" && version != "16")
         return;
     auto quality = darkvoice::QualityMode::Live;
-    if (version == "15") {
+    if (version == "15" || version == "16") {
         const auto text = xml->getStringAttribute("qualityMode");
         if (text != "0" && text != "1" && text != "2")
             return;

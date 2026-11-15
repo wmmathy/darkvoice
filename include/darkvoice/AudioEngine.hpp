@@ -7,6 +7,7 @@
 #include <darkvoice/DeEsser.hpp>
 #include <darkvoice/Doubler.hpp>
 #include <darkvoice/Flanger.hpp>
+#include <darkvoice/HarmonicCharacter.hpp>
 #include <darkvoice/ModulationEffects.hpp>
 #include <darkvoice/NoiseGate.hpp>
 #include <darkvoice/SpaceReverb.hpp>
@@ -50,6 +51,7 @@ struct EngineParameters {
     float sculptBodyDb = 0, sculptWarmthDb = 0, sculptPresenceDb = 0;
     float sculptBreathiness = 0;
     float sculptDepthDb = 0, sculptResonanceDb = 0;
+    float sculptCharacter = 0;
 };
 struct EngineMeters {
     float inputPeak = 0.0f;
@@ -95,7 +97,8 @@ class AudioEngine {
     SpaceReverb spaceReverb_;
     VocalLimiter limiter_;
     BandlimitedColour colour_;
-    std::array<std::vector<float>, 2> wet_;
+    HarmonicCharacter character_;
+    std::array<std::vector<float>, 2> wet_, characterScratch_;
     std::array<std::vector<std::uint32_t>, 2> aligned_;
     std::array<std::array<std::uint32_t, BandlimitedColour::maximumLatencySamples>, 2> rawQueue_{};
     std::size_t rawPosition_ = 0, resumeGuard_ = 0,

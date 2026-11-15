@@ -875,3 +875,23 @@ plugin.state_and_audio33.75s. All state/audio assertions executed under the
 unchanged180-second budget. This resolves Release application validation; the
 earlier Debug180-second timeout remains recorded and is not described as passed.
 Exact-head native CI and any remaining sanitizer checks still gate merge.
+
+## Character application validation in progress — 2026-11-14
+
+Release engine/preset/plugin suites passed3/3 in131.32seconds (41.44/.11/89.75).
+Independent strict O2 rebuilt all16 DSP sources:30,788/0 and all60 composed
+routes exact. All65 prior parameter definitions remain unchanged. GUI65controls
+and13groups passed; build/verification/character.png inspected with all7Sculptor
+rows visible. The test-only normalized-state invariant correction from the ARM
+quality run is applied here too; final affected plugin rerun remains required.
+
+The first unoptimized Debug ASan/UBSan engine run exceeded its explicit900-second
+limit and is NOT passed. The expanded16x parallel chain incurs substantial
+unoptimized per-tap overhead. Sanitizer builds now retain Debug assertions,
+symbols, leak/halt checks and every fixture while adding-O1 (without fastmath).
+Normal Debug builds remain unoptimized; Release numeric gates are unchanged.
+The initial-O1 instrumented CTest run also exceeded the former180-second
+engine budget. The complete expanded suite is being measured separately and
+the engine suite runtime budget is now600seconds; all30,788 assertions and
+60route comparisons remain enabled. A timeout or sanitizer report remains a
+failure, and no callback deadline or numerical threshold is changed. No target realtime deadline follows.
