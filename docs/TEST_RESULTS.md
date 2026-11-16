@@ -895,3 +895,19 @@ engine budget. The complete expanded suite is being measured separately and
 the engine suite runtime budget is now600seconds; all30,788 assertions and
 60route comparisons remain enabled. A timeout or sanitizer report remains a
 failure, and no callback deadline or numerical threshold is changed. No target realtime deadline follows.
+
+## Character host reference correction — 2026-11-16
+
+Mac product CI run43768368582 failed the direct-engine Character mapping oracle;
+its other native jobs passed. The independent reference had assumed literal
+EngineParameters defaults, while JUCE normalizes and converts even untouched
+APVTS defaults back to floats. Those values can differ on ARM. The reference
+now reads all65 public host values by stable ID independently of the production
+snapshot mapping. The2e-7 bound and full mode/rate/layout/sign matrix remain.
+Independent source QA verified every field and accepted the correction. The
+combined preview branch linked processor suite passed93.67seconds with this fix;
+this branch's fresh linked rerun and native CI remain pending.
+
+The earlier local instrumented engine regression has now completed:1/1 passed
+425.03seconds with ASan/UBSan leak/halt checks, all30,788 assertions and60route
+comparisons retained. Earlier timeout attempts remain historical failures.
