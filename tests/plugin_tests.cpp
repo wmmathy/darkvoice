@@ -1032,6 +1032,78 @@ void stateTests() {
                     "Invalid depth/resonance memory preset is rejected atomically");
         }
 }
+// Read public host values by stable ID, independently of the processor snapshot
+// mapping. JUCE round-trips even untouched defaults through normalised ranges;
+// their float values need not equal EngineParameters literal defaults on ARM.
+darkvoice::EngineParameters hostReferenceParameters(DarkVoiceProcessor &processor) {
+    darkvoice::EngineParameters result;
+    result.inputDb = raw(processor, "inputDb");
+    result.outputDb = raw(processor, "outputDb");
+    result.highPassHz = raw(processor, "highPassHz");
+    result.drive = raw(processor, "drive");
+    result.thresholdDb = raw(processor, "thresholdDb");
+    result.ratio = raw(processor, "ratio");
+    result.mix = raw(processor, "mix");
+    result.bypass = raw(processor, "bypass") >= .5f;
+    result.eqLowHz = raw(processor, "eqLowHz");
+    result.eqLowGainDb = raw(processor, "eqLowGainDb");
+    result.eqMidHz = raw(processor, "eqMidHz");
+    result.eqMidGainDb = raw(processor, "eqMidGainDb");
+    result.eqMidQ = raw(processor, "eqMidQ");
+    result.eqHighHz = raw(processor, "eqHighHz");
+    result.eqHighGainDb = raw(processor, "eqHighGainDb");
+    result.delayMs = raw(processor, "delayMs");
+    result.delayFeedback = raw(processor, "delayFeedback");
+    result.delayMix = raw(processor, "delayMix");
+    result.reverbSize = raw(processor, "reverbSize");
+    result.reverbDamping = raw(processor, "reverbDamping");
+    result.reverbMix = raw(processor, "reverbMix");
+    result.gateThresholdDb = raw(processor, "gateThresholdDb");
+    result.gateRatio = raw(processor, "gateRatio");
+    result.gateReleaseMs = raw(processor, "gateReleaseMs");
+    result.deEssHz = raw(processor, "deEssHz");
+    result.deEssThresholdDb = raw(processor, "deEssThresholdDb");
+    result.deEssReductionDb = raw(processor, "deEssReductionDb");
+    result.flangerRateHz = raw(processor, "flangerRateHz");
+    result.flangerDepthMs = raw(processor, "flangerDepthMs");
+    result.flangerFeedback = raw(processor, "flangerFeedback");
+    result.flangerMix = raw(processor, "flangerMix");
+    result.spaceModel = static_cast<int>(raw(processor, "spaceModel"));
+    result.spaceDecay = raw(processor, "spaceDecay");
+    result.spaceToneHz = raw(processor, "spaceToneHz");
+    result.spacePreDelayMs = raw(processor, "spacePreDelayMs");
+    result.spaceMix = raw(processor, "spaceMix");
+    result.doublerSeparationMs = raw(processor, "doublerSeparationMs");
+    result.doublerVariationMs = raw(processor, "doublerVariationMs");
+    result.doublerRateHz = raw(processor, "doublerRateHz");
+    result.doublerMix = raw(processor, "doublerMix");
+    result.stereoDelayMs = raw(processor, "stereoDelayMs");
+    result.stereoDelayFeedback = raw(processor, "stereoDelayFeedback");
+    result.stereoDelayMix = raw(processor, "stereoDelayMix");
+    result.stereoDelayBpm = raw(processor, "stereoDelayBpm");
+    result.stereoDelayMode = static_cast<int>(raw(processor, "stereoDelayMode"));
+    result.stereoDelayDivision = static_cast<int>(raw(processor, "stereoDelayDivision"));
+    result.stereoDelaySync = raw(processor, "stereoDelaySync") >= .5f;
+    result.limiterEnabled = raw(processor, "limiterEnabled") >= .5f;
+    result.limiterCeilingDb = raw(processor, "limiterCeilingDb");
+    result.limiterReleaseMs = raw(processor, "limiterReleaseMs");
+    result.chorusRateHz = raw(processor, "chorusRateHz");
+    result.chorusDepthMs = raw(processor, "chorusDepthMs");
+    result.chorusMix = raw(processor, "chorusMix");
+    result.stereoWidth = raw(processor, "stereoWidth");
+    result.colourModel = static_cast<int>(raw(processor, "colourModel"));
+    result.colourDrive = raw(processor, "colourDrive");
+    result.colourToneHz = raw(processor, "colourToneHz");
+    result.colourMix = raw(processor, "colourMix");
+    result.sculptBodyDb = raw(processor, "sculptBodyDb");
+    result.sculptWarmthDb = raw(processor, "sculptWarmthDb");
+    result.sculptPresenceDb = raw(processor, "sculptPresenceDb");
+    result.sculptBreathiness = raw(processor, "sculptBreathiness");
+    result.sculptDepthDb = raw(processor, "sculptDepthDb");
+    result.sculptResonanceDb = raw(processor, "sculptResonanceDb");
+    result.sculptCharacter = raw(processor, "sculptCharacter");
+    return result;
+}
 void characterAudioTests() {
     juce::MidiBuffer midi;
     for (auto quality : {darkvoice::QualityMode::Live, darkvoice::QualityMode::Studio,
@@ -1048,11 +1120,7 @@ void characterAudioTests() {
                         set(processor, "colourMix", colourMix);
                         set(processor, "sculptCharacter", amount);
                         processor.prepareToPlay(rate, 73);
-                        darkvoice::EngineParameters parameters;
-                        parameters.colourModel = 1;
-                        parameters.colourDrive = raw(processor, "colourDrive");
-                        parameters.colourMix = raw(processor, "colourMix");
-                        parameters.sculptCharacter = raw(processor, "sculptCharacter");
+                        auto parameters = hostReferenceParameters(processor);
                         darkvoice::AudioEngine expected, neutral;
                         require(expected.prepare(rate, 73, channels, quality) &&
                                     neutral.prepare(rate, 73, channels, quality) &&
@@ -1112,6 +1180,18 @@ void characterAudioTests() {
                                 }
                             offset += frames;
                         }
+                        if (error >= 2e-7)
+                            std::cerr
+                                << "Character mapping case quality=" << static_cast<int>(quality)
+                                << " rate=" << rate << " channels=" << channels
+                                << " colourMix=" << colourMix << " amount=" << amount
+                                << " maxError=" << error << '\n';
+                        if (error >= 2e-7)
+                            std::cerr << "Character reference case rate=" << rate
+                                      << " channels=" << channels
+                                      << " quality=" << static_cast<int>(quality)
+                                      << " colourMix=" << colourMix << " amount=" << amount
+                                      << " maximum error=" << error << '\n';
                         require(
                             error < 2e-7,
                             "Actual host Character mapping differs from direct engine reference");
