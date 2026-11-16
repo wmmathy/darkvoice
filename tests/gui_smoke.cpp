@@ -439,6 +439,15 @@ int main(int argc, char **argv) {
             if (processor.effectPreview().status().state == darkvoice::PreviewState::Playing)
                 return 47;
         }
+        if (argc > 2) {
+            auto previewImage =
+                previewWindow->createComponentSnapshot(previewWindow->getLocalBounds());
+            auto output = juce::File::getCurrentWorkingDirectory().getChildFile(argv[2]);
+            output.deleteFile();
+            auto stream = output.createOutputStream();
+            if (!stream || !juce::PNGImageFormat().writeImageToStream(previewImage, *stream))
+                return 50;
+        }
         previewWindow->closeButtonPressed();
         if (previewWindow->isVisible())
             return 48;

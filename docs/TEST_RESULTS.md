@@ -915,3 +915,14 @@ route checks. Earlier 180/900-second timeout attempts remain failures/incomplete
 Remote Character application macOS product run43768368582 failed the actual-host
 Character mapping oracle; diagnosis remains open. Linux product/core/sanitizer
 jobs passed. No Character application merge is claimed.
+
+Preview linked Release validation: service1/1 passed26.00seconds, including all
+four voice/type assets and30 concurrent UI/lifecycle cycles. Processor suite1/1
+passed93.67seconds with the actual-host Character reference values and preview
+state/audio checks. Independent review accepted both fixes without weakening
+thresholds. Display-backed GUI smoke passed65controls, both preview voices,
+A/B/cursor/Stop and unchanged state. Popup screenshot inspected. Initial bare-Xvfb
+attempts failed (segfault then missing-X11-atom errors); explicitly initializing
+standard window-manager atoms allowed the actual GUI test to run successfully.
+A reusable wrapper is added for CI. These results do not establish macOS native
+or manual listening/DAW qualification.

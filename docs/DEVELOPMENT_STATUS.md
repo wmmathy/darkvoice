@@ -1,3 +1,24 @@
+# Current checkpoint — 2026-11-16
+
+Effect examples are being integrated on `feature/preview/integration`: 27 curated
+examples, male/female speech and singing recordings, dry/effect comparison and
+host-output playback. Independent renderer/player Release tests passed2/2.
+Bundled source recordings and license/cue checks passed. Linked worker/UI/plugin,
+sanitizer and native checks remain pending; this feature is not merged or released.
+QA identified a worker shutdown/UI-request race; the fix and concurrent lifecycle
+regression are under validation. Preview does not change the live sound parameters.
+
+Prepared quality application PR45 passed all exact-head Linux/macOS/source checks
+at ed4f08c, but main has advanced and requires a conflict-resolution merge followed
+by fresh checks. Character core and qualified Colour core are already on main;
+Character application remains unmerged while an ARM host/reference oracle failure
+is diagnosed. Pitch/formant processing remains an offline qualification candidate,
+not a shipped control. Further pitch/harmony, production/standalone, mixing,
+mastering and export requirements remain outstanding in the baseline roadmap.
+Manual listening/microphone/DAW qualification remains deferred by user request.
+
+The chronological entries below retain historical results and limitations.
+
 # Development status — 2026-10-21
 
 Current phase: M1 application foundation implemented and validated locally on

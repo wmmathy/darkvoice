@@ -123,7 +123,7 @@ jobs:
         if: runner.os == 'Linux'
         shell: bash
         run: |
-          xvfb-run -a build/darkvoice_gui_smoke /tmp/darkvoice-ui.png 2>&1 | tee build/gui-smoke.log
+          xvfb-run -a python3 tools/run-x11-smoke.py build/darkvoice_gui_smoke /tmp/darkvoice-ui.png /tmp/darkvoice-preview.png 2>&1 | tee build/gui-smoke.log
           if grep -Eq 'JUCE Assertion failure|Leaked objects detected' build/gui-smoke.log; then exit 1; fi
       - name: Validate unsigned development Audio Units
         if: runner.os == 'macOS'

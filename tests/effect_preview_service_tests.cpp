@@ -160,6 +160,27 @@ int main() {
                 require(
                     !service.request(definition.id, PreviewVoice::Male, PreviewSampleKind::Speech),
                     "Stereo demonstration accepted in mono");
+        // Hosts may release/reprepare while the editor issues requests. No audio
+        // callback is running during lifecycle changes; UI requests must not
+        // create or inspect a worker while shutdown joins and reclaims its slots.
+        std::atomic<unsigned> attempts{0};
+        std::jthread requester([&](std::stop_token stop) {
+            while (!stop.stop_requested()) {
+                (void)service.request(id, PreviewVoice::Male, PreviewSampleKind::Speech);
+                attempts.fetch_add(1);
+                std::this_thread::yield();
+            }
+        });
+        while (attempts.load() == 0)
+            std::this_thread::yield();
+        for (int cycle = 0; cycle < 30; ++cycle) {
+            service.release();
+            require(!service.request(id, PreviewVoice::Female, PreviewSampleKind::Speech),
+                    "Request accepted after release");
+            require(service.prepare(format), "Concurrent UI/lifecycle prepare failed");
+        }
+        requester.request_stop();
+        requester.join();
         service.release();
         require(service.status().state == PreviewState::Unavailable, "Release state");
         format.sampleRate = 123;

@@ -130,10 +130,13 @@ void EffectPreviewPanel::timerCallback() {
     if (state.prepared && stereoRequired)
         text = "Stereo output required for this demonstration.";
     status_.setText(text, juce::dontSendNotification);
-    progress_ = state.state == darkvoice::PreviewState::Preparing
-                    ? static_cast<double>(state.progress) / 100.0
-                : state.totalFrames ? static_cast<double>(state.positionFrames) /
-                                          static_cast<double>(state.totalFrames)
-                                    : 0;
+    progress_ =
+        state.state == darkvoice::PreviewState::Preparing
+            ? static_cast<double>(state.progress) / 100.0
+        : (state.state == darkvoice::PreviewState::Playing ||
+           state.state == darkvoice::PreviewState::Stopping) &&
+                state.totalFrames
+            ? static_cast<double>(state.positionFrames) / static_cast<double>(state.totalFrames)
+            : 0;
     play_.setEnabled(state.prepared && !stereoRequired);
 }

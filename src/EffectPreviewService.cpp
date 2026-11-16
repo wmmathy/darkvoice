@@ -81,11 +81,15 @@ struct EffectPreviewService::Impl {
     bool prepared = false, quitting = false;
 
     void shutdown() noexcept {
-        exchange.requestedGeneration.store(0);
-        exchange.renderGeneration.store(0);
         {
             std::lock_guard lock(mutex);
+            // Close the UI request gate before joining outside the mutex.
+            // A request already holding the lock completes before cancellation;
+            // later requests cannot inspect or replace the joining thread.
+            prepared = false;
             quitting = true;
+            exchange.requestedGeneration.store(0);
+            exchange.renderGeneration.store(0);
             pending.reset();
         }
         condition.notify_all();
@@ -199,7 +203,8 @@ bool EffectPreviewService::request(PreviewEffectId id, PreviewVoice voice, Previ
     std::lock_guard lock(impl_->mutex);
     if (!definition || !validPreviewVoice(voice) || !validPreviewSampleKind(kind))
         return false;
-    if (!impl_->prepared || (definition->stereoDemonstration && impl_->format.channels != 2))
+    if (!impl_->prepared || impl_->quitting ||
+        (definition->stereoDemonstration && impl_->format.channels != 2))
         return false;
     if (!impl_->worker.joinable()) {
         try {
