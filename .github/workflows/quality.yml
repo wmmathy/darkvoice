@@ -39,6 +39,8 @@ jobs:
         run: python3 -B -m unittest discover -s tests -p package_development_tests.py
       - name: Test offline checkers and scan tracked files
         run: |
+          python3 tools/check-preview-assets.py --self-test
+          python3 tools/check-preview-assets.py
           python3 tools/check-secrets.py --self-test
           python3 tools/check-secrets.py
           python3 tools/check-secrets.py --check-dependencies

@@ -895,3 +895,23 @@ engine budget. The complete expanded suite is being measured separately and
 the engine suite runtime budget is now600seconds; all30,788 assertions and
 60route comparisons remain enabled. A timeout or sanitizer report remains a
 failure, and no callback deadline or numerical threshold is changed. No target realtime deadline follows.
+
+## Effect preview integration — 2026-11-16
+
+The combined preview branch now includes the 27-example renderer, bounded player,
+local asset worker and popup/processor integration. CMake registers independent
+renderer/player suites and the linked JUCE service suite, and embeds four original
+recordings plus their credits/license notices. Credits are read from those bundled
+notices rather than duplicated text.
+
+Release CTest preview renderer/player: 2/2 passed (42.84 seconds). Asset checker:
+four original attributed WAVs passed, including 33 malformed/missing/corrupt guards.
+Linked service, plugin and GUI checks are still pending at this checkpoint; these
+core results do not establish audible quality or host qualification.
+
+Character application sanitizer engine regression completed successfully in the
+previous root build: 1/1, 425.03 seconds, retaining all 30,788 assertions and sixty
+route checks. Earlier 180/900-second timeout attempts remain failures/incomplete.
+Remote Character application macOS product run43768368582 failed the actual-host
+Character mapping oracle; diagnosis remains open. Linux product/core/sanitizer
+jobs passed. No Character application merge is claimed.
