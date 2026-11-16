@@ -1,3 +1,6 @@
-# Preserve this third-party metadata byte for byte, including upstream spaces.
-# Its full SHA256 is checked by tools/check-preview-assets.py.
-VOCALSET_README.txt whitespace=-blank-at-eol
+# Preserve third-party notices byte for byte, including their line endings.
+CMU_ARCTIC_COPYING.txt -text
+VOCALSET_LICENSE.txt -text
+VOCALSET_ATTRIBUTION.md -text
+# This metadata has upstream trailing spaces; its full SHA256 is checked.
+VOCALSET_README.txt -text whitespace=-blank-at-eol
