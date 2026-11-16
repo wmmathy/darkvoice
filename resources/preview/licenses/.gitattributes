@@ -1,0 +1,3 @@
+# Preserve this third-party metadata byte for byte, including upstream spaces.
+# Its full SHA256 is checked by tools/check-preview-assets.py.
+VOCALSET_README.txt whitespace=-blank-at-eol
