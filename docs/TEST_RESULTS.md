@@ -933,3 +933,8 @@ test replacements lacked matching nothrow allocation overloads. Neither is passe
 Renderer suite budget is now600s for full-chain instrumented/Debug examples,
 without removing cases or changing numerical bounds. Matching probe overloads
 are being corrected with sanitizer mismatch detection left enabled.
+
+Preview player probe correction728b76a was independently rebuilt in the combined
+ASan/UBSan tree:1/1 passed.08seconds,734checks, mismatch detection retained.
+Character-only branch fresh linked processor rerun passed1/1 in95.33seconds;
+its separate native check run remains pending.
