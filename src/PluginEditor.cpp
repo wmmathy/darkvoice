@@ -367,6 +367,30 @@ DarkVoiceEditor::DarkVoiceEditor(DarkVoiceProcessor &p, juce::File root)
     import_.onClick = [this] { chooseImport(); };
     export_.onClick = [this] { chooseExport(); };
     const auto result = bank_.refresh();
+    addAndMakeVisible(preview_);
+    preview_.onClick = [this] {
+        if (previewWindow_) {
+            previewWindow_->setVisible(true);
+            previewWindow_->toFront(true);
+            return;
+        }
+        struct PreviewWindow final : juce::DialogWindow {
+            explicit PreviewWindow(darkvoice::EffectPreviewService &service)
+                : DialogWindow("Effect examples", juce::Colour(0xff1c2229), true),
+                  service_(service) {
+                setContentOwned(new EffectPreviewPanel(service), true);
+                setUsingNativeTitleBar(true);
+                centreAroundComponent(nullptr, getWidth(), getHeight());
+            }
+            void closeButtonPressed() override {
+                service_.stop();
+                setVisible(false);
+            }
+            darkvoice::EffectPreviewService &service_;
+        };
+        previewWindow_ = std::make_unique<PreviewWindow>(processor_.effectPreview());
+        previewWindow_->setVisible(true);
+    };
     refreshPresets();
     showResult(result, "6 factory sounds / Save as creates a user copy");
     setResizable(true, true);
@@ -377,6 +401,8 @@ DarkVoiceEditor::DarkVoiceEditor(DarkVoiceProcessor &p, juce::File root)
 }
 DarkVoiceEditor::~DarkVoiceEditor() {
     stopTimer();
+    previewWindow_.reset();
+    processor_.effectPreview().stop();
     chooser_.reset();
     setLookAndFeel(nullptr);
 }
@@ -478,6 +504,7 @@ void DarkVoiceEditor::paint(juce::Graphics &g) {
         24, getHeight() - 30, getWidth() - 48, 22, juce::Justification::centredLeft);
 }
 void DarkVoiceEditor::resized() {
+    preview_.setBounds(getWidth() - 156, 141, 132, 30);
     quality_.setBounds(getWidth() - 190, 22, 166, 28);
     qualityStatus_.setBounds(getWidth() - 360, 54, 336, 30);
     const int width = getWidth() - 48;

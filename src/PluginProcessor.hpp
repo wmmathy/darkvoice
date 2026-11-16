@@ -1,5 +1,6 @@
 #pragma once
 #include "DryPitchAnalyzer.hpp"
+#include "EffectPreviewService.hpp"
 #include "PresetBank.hpp"
 #include <array>
 #include <atomic>
@@ -13,6 +14,9 @@ class DarkVoiceProcessor final : public juce::AudioProcessor {
   public:
     explicit DarkVoiceProcessor(bool mastering = false);
     const juce::String getName() const override;
+    darkvoice::EffectPreviewService &effectPreview() noexcept {
+        return preview_;
+    }
     void prepareToPlay(double sampleRate, int maximumExpectedSamplesPerBlock) override;
     void releaseResources() override;
     bool isBusesLayoutSupported(const BusesLayout &) const override;
@@ -89,6 +93,8 @@ class DarkVoiceProcessor final : public juce::AudioProcessor {
     void processAudio(juce::AudioBuffer<float> &, bool forceBypass);
     darkvoice::EngineParameters snapshot() const noexcept;
     darkvoice::AudioEngine engine_;
+    darkvoice::EffectPreviewService preview_;
+    bool hostRecording_ = false;
     darkvoice::DryPitchAnalyzer dryAnalysis_;
     std::array<std::atomic<float> *, darkvoice::parameterSchema.size()> raw_{};
     std::atomic<int> requestedQuality_{0}, activeQuality_{-1};
