@@ -1463,3 +1463,54 @@ cursor, fade/stop/end and producer/audio stress. Service lifecycle/reprepare/
 shutdown/blocked/nonRT tests. Plugin sound/preset/quality snapshots unchanged by
 preview; actual popup Play/Stop/A-B tests, recording/offline/bypass suppression.
 Independent QA, sanitizer/native gates before merge. Manual tests deferred.
+
+## Generic Transducer core v1 — 2026-11-16
+
+Next independent core package: original linear telephone/megaphone/radio coloration,
+not a proprietary device emulation, distortion/codec/RF-noise claim. Frozen public
+API is Transducer.hpp; model0Telephone/1Megaphone/2Radio, mix finite[0,1]. Own DSP,
+no dependency. Header and this contract precede assignment. No host/engine/schema
+integration until core gates pass and lead establishes that next contract.
+
+Double-state RBJ/bilinear sections. Telephone: fourth-order Butterworth HP300Hz,
+then fourth-order Butterworth LP3400Hz. Fourth-order Qs .541196100146197 and
+1.30656296487638. Megaphone: second-order Butterworth HP450Hz; peak1600Hz/+6dB/Q1.2;
+peak3200Hz/+3dB/Q2; second-order Butterworth LP5500Hz; fixed-6dB trim. Radio:
+second-order Butterworth HP120Hz; peak1200Hz/+3dB/Q.6; fourth-order Butterworth
+LP4500Hz. Second-order Butterworth Q=sqrt(.5). Fixed coefficients at prepare;
+all three networks run continuously. Model target one-hot weights smooth over20ms,
+nonnegative/unit sum; mix smooth10ms. Use existing sample-count linear-ramp
+semantics (new target ramps from current value over rounded duration, at least1).
+No coefficient interpolation. Mix dry+(weightedWet-dry)*mix. No added algorithmic
+latency, phase-dependent parallel mix, no loudness-match/peak-ceiling claim.
+
+Prepare accepts only44.1/48/88.2/96kHz, mono/stereo, maxFrames1..65536; failedprepare
+leaves unprepared. Successfulprepare resets defaults. Valid setParameters before
+prepare allowed; prepare resets it. Invalid snapshot rejects atomically, even
+warmed. Reset clears all states and settles target controls. Zero frames freezes
+all state; validate channel count/null/nonoverlap/size before mutation. No callback
+allocation/deallocation/locks/I/O. Independent channels. Active inputs sanitized
+for nonfinite/subnormal and outputs safely bounded to finite float. At settled
+mix0 preserve exact finite normal/zero input bits; still maintain sanitized wet
+histories. Null/overlap/oversize/invalid layouts fail without audio/state mutation.
+
+Acceptance: strict O2 warnings-as-errors tests at four rates and both layouts.
+Independent complex transfer oracle using mathematical RBJ cascade, coherent
+sine warmup>=1second and measurement>=.25second: absolute complex gain error
+<=2e-5 at100/120/300/450/900/1200/1600/2400/3200/3400/4500/5500/10000Hz. Validate
+poles strictly within unit circle independently from analytic oracle. Telephone
+transition/stopband, megaphone each peak+trim, radio emphasis/rolloff; identity,
+swapped models and bypassed peak/trim negative controls must fail response gates.
+Stationary coherent sine/two-tone bin fixtures after>=1second warmup require new
+harmonic/intermod residual<=-100dB/inputRMS outside input bins (real-signal window
+and bin selection must avoid leakage); native clipping negative control must fail.
+This is linear spectral purity, not nonlinear alias certification. All models
+must differ from dry and each other on broadband fixtures.
+
+Reset/partition exact equality, automation against independent sample-ramp oracle,
+warmed invalid-state atomicity, zero frames, extreme values, stereo isolation,
+allocation AND deallocation guards including nothrow/aligned paths, Release and
+ASan/UBSan. Lead integrates CMake and independent QA. Writer isolated worktree
+owns ONLY src/Transducer.cpp and tests/transducer_tests.cpp; header changes require
+lead discussion. No application controls or preview entries are shipped by core.
+Future application adds actual matching previews for both voices when integrated.

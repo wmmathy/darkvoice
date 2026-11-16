@@ -50,7 +50,9 @@ if(BUILD_TESTING)
         set_target_properties(darkvoice_${component}_tests PROPERTIES CXX_EXTENSIONS OFF)
         darkvoice_strict_warnings(darkvoice_${component}_tests)
         add_test(NAME preview.${component} COMMAND darkvoice_${component}_tests)
-        set_tests_properties(preview.${component} PROPERTIES TIMEOUT 180)
+        # Full-chain examples include prepared 16x nonlinear processing. This
+        # bounds instrumented/Debug suite runtime, not an audio callback deadline.
+        set_tests_properties(preview.${component} PROPERTIES TIMEOUT 600)
     endforeach()
     add_executable(darkvoice_breathiness_tests tests/breathiness_tests.cpp)
     target_link_libraries(darkvoice_breathiness_tests PRIVATE DarkVoice::Engine)

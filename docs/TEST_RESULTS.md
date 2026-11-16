@@ -926,3 +926,10 @@ attempts failed (segfault then missing-X11-atom errors); explicitly initializing
 standard window-manager atoms allowed the actual GUI test to run successfully.
 A reusable wrapper is added for CI. These results do not establish macOS native
 or manual listening/DAW qualification.
+
+The first combined ASan/UBSan preview run failed: renderer timed out180.13s;
+player allocator probe reported operator-new(nothrow)/free mismatch because its
+test replacements lacked matching nothrow allocation overloads. Neither is passed.
+Renderer suite budget is now600s for full-chain instrumented/Debug examples,
+without removing cases or changing numerical bounds. Matching probe overloads
+are being corrected with sanitizer mismatch detection left enabled.
