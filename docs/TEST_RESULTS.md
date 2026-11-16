@@ -1049,3 +1049,16 @@ The initial180.13second renderer timeout and test-allocation mismatch remain
 recorded failures. Actual renderer/player/service/processor/UI behavior and
 thresholds were unchanged by the later ancestry merge d6bf9a8. Native exact-head
 CI remains a merge gate; manual listening/microphone/DAW checks remain deferred.
+
+## Transducer core checkpoint — 2026-11-16
+
+Writer strict O2 and ASan/UBSan suites each passed21,779,986checks (6.20/22.87s).
+Worst model complex-response errors were1.40e-8/6.67e-9/1.76e-8; worst spectral
+purity residuals−150.44/−150.70/−148.88dB. Response and omitted-peak/trim,
+swapped-model, identity and clipping negative controls passed, including Radio
+emphasis. Independent source review accepted the core. Application is pending.
+
+Lead CMake Release(-O3) integration build exposed an allocator-probe compiler
+warning treated as error: replacement new inlining produced mismatched-new-delete
+analysis in the test probe. This build is failed, not passed; writer is correcting
+the probe with no warning suppression. DSP thresholds and implementation unchanged.

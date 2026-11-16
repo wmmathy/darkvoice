@@ -52,6 +52,8 @@ struct EngineParameters {
     float sculptBreathiness = 0;
     float sculptDepthDb = 0, sculptResonanceDb = 0;
     float sculptCharacter = 0;
+    int transducerModel = 0;
+    float transducerMix = 0;
 };
 struct EngineMeters {
     float inputPeak = 0.0f;

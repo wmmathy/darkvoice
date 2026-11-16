@@ -1530,3 +1530,56 @@ signs, each mode, in24 complete Release shards. Debug/SAN safety is separately
 named and cannot be reported as full spectral qualification. The application
 parallel-routing/schema16 contract is a dependent increment, not implemented
 by this library-only integration.
+
+## Transducer application and schema17 v1 — 2026-11-16
+
+Core aa415f8 passed 21,779,986 strict O2 and ASan/UBSan checks, including the
+response, spectral purity and negative controls at every rate/layout. Independent
+source review accepted the DSP; the requested Radio peak omission control was
+added. Lead integrates CMake and its test target.
+
+EngineParameters appends int transducerModel=0 and float transducerMix=0. These
+frozen fields are available to the host writer. Preserve all earlier fields and
+behavior. Validate the whole snapshot with Transducer::valid before mutation.
+Prepare/reset the module with the engine and set targets after validation. Insert
+it after StereoDelay and before SpaceReverb, followed by the existing parallel
+Colour/Character stage. Latency remains 124/184/368 samples. Preserve raw bypass,
+nonlinearity resume guards and all old routes exactly at transducerMix0.
+Transducer histories follow existing time/tone freeze semantics during bypass;
+ordinary reset clears histories and settles targets. No callback allocations,
+deallocations or locks.
+
+Engine writer owns only AudioEngine.hpp/.cpp and engine_tests.cpp. Retain all
+30,788 assertions and sixty previous exact routes. Add independent composed
+routes for three models × three qualities × four rates × two layouts, using an
+actual Transducer in the manual chain. Cover automation, reset/partition,
+invalid-state atomicity, raw bypass and resume.
+
+Host schema17 appends index66 transducerModel (name Transducer model, range0..2,
+step1, default0) and index67 transducerMix (name Transducer mix, range0..1,
+step.001, default0), both AU hint17. Preserve all66 old definitions/hints.
+There are now68 state /67 sound parameters and14 groups. Version16 count is66;
+version17 count is68; version15 remains65 and earlier counts remain unchanged.
+Versions1..16 migrate both new fields to neutral0. Strict current state/presets
+require both. Quality metadata remains required for15..17 with unchanged active/
+requested semantics and preset independence. Existing factory presets add neutral
+values; no vendor presets are introduced. Snapshot and independent host mapping
+oracle both read the new values with appropriate types.
+
+Editor adds two real controls in a Transducer group, retaining900x780 size, the
+preview button, thirteen existing groups and65 prior controls. Label the model
+values Telephone/Megaphone/Radio where feasible; otherwise clearly document0/1/2.
+Host writer owns only ParameterSchema.hpp, PluginProcessor.hpp/.cpp,
+PluginEditor.hpp/.cpp, PresetBank.cpp and plugin/preset/gui tests. Cover old
+parameter definitions, state/preset migrations, roundtrip and atomic rejection,
+actual controls, audio versus direct engine and preview/live-state independence.
+
+Lead owns the preview catalog/tests, CMake, workflows and documentation. Append
+IDs28 Telephone,29 Megaphone and30 Radio with transducerMix1, models0..2,
+Speech recommendation and.25second tail; both voices remain available. Verify
+each differs from dry and the other models, preserve common gain and all27 prior
+entries. Native checks and independent review gate integration; manual listening
+and DAW tests remain deferred.
+
+Assignments use isolated worktrees based on this frozen contract. Core writer's
+implementation files are frozen except for requested QA fixes.
