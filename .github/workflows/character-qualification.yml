@@ -1,0 +1,60 @@
+name: Dense Character alias qualification
+
+on:
+  pull_request:
+    paths:
+      - 'include/darkvoice/HarmonicCharacter.hpp'
+      - 'include/darkvoice/QualityMode.hpp'
+      - 'src/HarmonicCharacter.cpp'
+      - 'src/BandlimitedColourOversampling.hpp'
+      - 'tests/harmonic_character_tests.cpp'
+      - 'CMakeLists.txt'
+      - '.github/workflows/character-qualification.yml'
+  push:
+    branches: [main, 'feature/sculptor/character-core-integration', 'feature/sculptor/character-integration']
+    paths:
+      - 'include/darkvoice/HarmonicCharacter.hpp'
+      - 'include/darkvoice/QualityMode.hpp'
+      - 'src/HarmonicCharacter.cpp'
+      - 'src/BandlimitedColourOversampling.hpp'
+      - 'tests/harmonic_character_tests.cpp'
+      - 'CMakeLists.txt'
+      - '.github/workflows/character-qualification.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  alias-scan:
+    name: Character / ${{ matrix.mode }} / shard ${{ matrix.shard }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        mode: [live, studio, offline]
+        shard: [0, 1, 2, 3, 4, 5, 6, 7]
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Build qualification executable
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON
+          cmake --build build --target darkvoice_harmonic_character_tests --parallel 2
+      - name: Qualify inclusive frequency range
+        shell: bash
+        run: |
+          first=$((17 + ${{ matrix.shard }} * 252))
+          last=$((first + 251))
+          if ((last > 2031)); then last=2031; fi
+          python3 tools/ci-build.py build/alias-scan.log build/darkvoice_harmonic_character_tests --scan-range "$first" "$last" --quality '${{ matrix.mode }}'
+      - name: Retain numerical results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: character-${{ matrix.mode }}-${{ matrix.shard }}
+          path: build/alias-scan.log
+          if-no-files-found: ignore

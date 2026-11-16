@@ -889,3 +889,42 @@ bypass value and requires EXACT preservation of both, alongside requested/active
 quality and latency. No tolerance is introduced; the assertion is stronger than
 the prior single-field check. Source formatting/whitespace/scans pass. Native
 product rerun on the new head remains required; no macOS pass is claimed yet.
+
+## Character core native qualification package — 2026-11-12
+
+Frozen Character425a75b passed strict fixed cores34,506/0 each and fresh safety
+98,757/0 across profiles. Independent QA reproduced Live34,506/0 and42 public
+FFT cases (both signs, seven critical bins, all modes); worst supplemental
+alias -96.5046dB/inputRMS. Independent DC/harmonic/Nyquist calibration passed.
+All three source files match the checkpoint exactly.
+
+Lead CMake Debug ASan/UBSan safety passed3/3 in790.85seconds: Live126.27,
+Studio216.76,Offline447.81, with leak detection and halt-on-error. These checks
+do not replace fixed spectral or complete dense qualification. All24 dense
+Release shards (every bin17..2031, both signs, all profiles), exact-head native
+checks and source quality remain required before core merge. Product controls
+and parallel engine routing are a separate schema16 increment. Manual tests
+remain deferred and no target-machine deadline is claimed.
+
+## Prepared quality application / main reconciliation — 2026-11-16
+
+At ed4f08c7be92673fb3f477b577c66addeb17031c, native run43864563672 passed all
+seven Linux/macOS jobs, including Linux ASan/UBSan, product tests and macOS AU
+validation. Source-quality run43864563653 also passed. Earlier failed attempts
+remain historical failures. The ARM malformed-metadata fixture now compares the
+complete captured sound snapshot and bypass exactly, avoiding an assumed exact
+float normalization roundtrip for -5dB without relaxing state atomicity.
+
+A normal PR45 merge was rejected because main had independently integrated the
+qualified Character core. This branch now merges main ee4a3c9039a1c39f2f61cb9734f8c48481075c35
+without changing either qualified DSP implementation or application routing. Four
+append-only documentation conflicts preserve both histories; CMake and source
+merged automatically. New exact-head native/source checks remain required before
+normal integration. Character application routing remains separate.
+
+Fresh Release configuration and warning-as-error engine/core build on the
+reconciled sources passed. The five core.lifecycle/gain/buffers/realtime/render
+CTest suites passed5/5 (0.02 seconds). Incoming Character source/header/tests
+passed clang-format19 dry-run; whitespace and credential/dependency scans passed.
+This targeted local check does not rerun the complete Character/application
+matrices; exact-head CI remains pending.
