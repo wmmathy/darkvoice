@@ -69,6 +69,42 @@ void operator delete(void *memory, std::size_t, std::align_val_t alignment) noex
 void operator delete[](void *memory, std::size_t, std::align_val_t alignment) noexcept {
     ::operator delete(memory, alignment);
 }
+// Route nothrow allocations through the same malloc/free-backed guard pair.
+// Otherwise sanitizer-provided nothrow new would be paired with our free-based delete.
+void *operator new(std::size_t size, const std::nothrow_t &) noexcept {
+    try {
+        return ::operator new(size);
+    } catch (...) {
+        return nullptr;
+    }
+}
+void *operator new[](std::size_t size, const std::nothrow_t &tag) noexcept {
+    return ::operator new(size, tag);
+}
+void operator delete(void *memory, const std::nothrow_t &) noexcept {
+    ::operator delete(memory);
+}
+void operator delete[](void *memory, const std::nothrow_t &tag) noexcept {
+    ::operator delete(memory, tag);
+}
+void *operator new(std::size_t size, std::align_val_t alignment, const std::nothrow_t &) noexcept {
+    try {
+        return ::operator new(size, alignment);
+    } catch (...) {
+        return nullptr;
+    }
+}
+void *operator new[](std::size_t size, std::align_val_t alignment,
+                     const std::nothrow_t &tag) noexcept {
+    return ::operator new(size, alignment, tag);
+}
+void operator delete(void *memory, std::align_val_t alignment, const std::nothrow_t &) noexcept {
+    ::operator delete(memory, alignment);
+}
+void operator delete[](void *memory, std::align_val_t alignment,
+                       const std::nothrow_t &tag) noexcept {
+    ::operator delete(memory, alignment, tag);
+}
 namespace {
 using namespace darkvoice;
 struct Fixture {
@@ -366,8 +402,20 @@ void guardSelfTest() {
     ::operator delete(normal);
     void *aligned = ::operator new(64, std::align_val_t{64});
     ::operator delete(aligned, std::align_val_t{64});
+    void *array = ::operator new[](19);
+    ::operator delete[](array);
+    void *alignedArray = ::operator new[](64, std::align_val_t{64});
+    ::operator delete[](alignedArray, std::align_val_t{64});
+    void *nothrow = ::operator new(19, std::nothrow);
+    ::operator delete(nothrow, std::nothrow);
+    void *nothrowArray = ::operator new[](19, std::nothrow);
+    ::operator delete[](nothrowArray, std::nothrow);
+    void *alignedNothrow = ::operator new(64, std::align_val_t{64}, std::nothrow);
+    ::operator delete(alignedNothrow, std::align_val_t{64}, std::nothrow);
+    void *alignedNothrowArray = ::operator new[](64, std::align_val_t{64}, std::nothrow);
+    ::operator delete[](alignedNothrowArray, std::align_val_t{64}, std::nothrow);
     callback = false;
-    check(allocations.load() == 2 && deallocations.load() == 2, "allocation guards ineffective");
+    check(allocations.load() == 8 && deallocations.load() == 8, "allocation guards ineffective");
     allocations.store(0);
     deallocations.store(0);
 }
