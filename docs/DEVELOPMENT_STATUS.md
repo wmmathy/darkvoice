@@ -884,6 +884,36 @@ and safety checks pass, while engine/UI integration and dense/native gates remai
 Pitch diagnostic work is checkpointed independently and stays outside products.
 Manual host/microphone/listening qualification remains deferred.
 
+
+
+## Breath texture dependent work packages — 2026-10-26
+
+Launch plan: engine task breath_engine owns only AudioEngine.hpp/.cpp and
+engine_tests.cpp on feature/sculptor/breathiness-engine in its matching isolated
+worktree. Host task breath_host owns only ParameterSchema, PluginProcessor/Editor,
+PresetBank and plugin/preset/gui tests on feature/sculptor/breathiness-host.
+Both depend on the qualified7fc6fe6 core and schema12 tone integration bd5d452;
+the merged base and exact schema13 contract are recorded in COMPONENT_CONTRACTS.
+Lead owns CMake/docs/integration. No core source changes during host work.
+
+Acceptance: neutral identity, deterministic active texture, all rates/layouts,
+frozen histories through bypass/resume, unchanged56sample alignment and limiter,
+strict v1..12 migrations, prior62 definitions/factories unchanged,62 sound controls
+in13 groups. Engine uses strictO2 standalone regression linked with engine sources;
+lead runs cmake --build build/products --parallel2 then ctest with
+--output-on-failure --no-tests=error, sequential Release/ASan and real GUI checks.
+Read-only QA independently reviews and executes probes after writers freeze.
+These are finite session tasks, not a persistent scheduler. Manual tests deferred.
+
+## Breath texture host qualification — 2026-10-26
+
+Engine/host integration is implemented under schema13:63 state/62 sound fields,
+13 groups. Independent QA rebuilt16642 strictO2 engine checks, all eight new
+composed routes and eight prior tone routes matched exactly. All62 prior schema
+definitions remain unchanged; actual/forced bypass freezes RMS/FIR/PRNG and
+resume resets only Colour. Final gain and enabled limiter cover every unbypassed
+sample. Core files remain frozen; factories retain all prior settings and new0.
+
 Initial fullproduct run passed21/22, including host129.21sec, but one positive
 preset fixture mislabeled62 sound fields as schema12. Production correctly
 rejected that map. Changed only helper default to currentSchemaVersion and future
@@ -936,3 +966,29 @@ builds now keep Debug assertions/symbols with-O1, and the expanded engine suite
 has a600-second operational budget. Final sanitizer completion is not yet
 verified. This checkpoint is not a claim of a qualified release or main merge.
 Manual host/listening tests remain deferred.
+
+## Character core qualification integration — 2026-11-12
+
+The committed Character contribution is now registered as an independent core
+library consumer and CTest target using the qualified16x profile helper. All
+three fixed cores previously passed34,506 checks per mode; fresh checkpoint
+safety passed98,757 across all modes. The new workflow covers every integer
+bin17..2031, both character signs, across24 complete Release shards.
+Application routing and schema16 UI controls remain a dependent increment.
+Safety sanitizer, independent review and exact-head native/dense checks are
+required before normal merge. No manual or realtime-deadline claim.
+
+## Prepared quality application integration update — 2026-11-16
+
+PR45 source head ed4f08c passed all seven native Linux/macOS jobs plus source
+quality. It is reconciled with main's qualified Character core in this checkpoint;
+new exact-head validation is pending. The Character library is linked and tested
+independently, while application Character routing/schema16 remains a later
+increment. No manual/listening qualification or completed product is claimed.
+
+## Character application ancestry update — 2026-11-16
+
+The schema16 Character branch now includes prepared-quality integration0528e90
+and main's qualified cores through a normal merge. Application DSP/host behavior
+is unchanged by reconciliation; CI gains retained diagnostic logs. Exact merged
+head checks and normal review still gate PR48; no merge or release is claimed.

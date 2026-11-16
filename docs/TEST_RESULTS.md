@@ -911,3 +911,71 @@ this branch's fresh linked rerun and native CI remain pending.
 The earlier local instrumented engine regression has now completed:1/1 passed
 425.03seconds with ASan/UBSan leak/halt checks, all30,788 assertions and60route
 comparisons retained. Earlier timeout attempts remain historical failures.
+
+## ARM quality-state invariant fixture correction — 2026-11-14
+
+The resumed macOS15 product job built successfully but failed the malformed
+quality-metadata atomicity assertion. That fixture assumed normalized inputDb
+would store the exact literal-5. A controlled float reconstruction gives-5 with
+separate operations and-4.999999523162842 with fused multiply-add, matching the
+ARM-sensitive assumption. The production canonical metadata parser is unchanged.
+
+The rejection fixture now captures the actual prior complete sound snapshot and
+bypass value and requires EXACT preservation of both, alongside requested/active
+quality and latency. No tolerance is introduced; the assertion is stronger than
+the prior single-field check. Source formatting/whitespace/scans pass. Native
+product rerun on the new head remains required; no macOS pass is claimed yet.
+
+## Character core native qualification package — 2026-11-12
+
+Frozen Character425a75b passed strict fixed cores34,506/0 each and fresh safety
+98,757/0 across profiles. Independent QA reproduced Live34,506/0 and42 public
+FFT cases (both signs, seven critical bins, all modes); worst supplemental
+alias -96.5046dB/inputRMS. Independent DC/harmonic/Nyquist calibration passed.
+All three source files match the checkpoint exactly.
+
+Lead CMake Debug ASan/UBSan safety passed3/3 in790.85seconds: Live126.27,
+Studio216.76,Offline447.81, with leak detection and halt-on-error. These checks
+do not replace fixed spectral or complete dense qualification. All24 dense
+Release shards (every bin17..2031, both signs, all profiles), exact-head native
+checks and source quality remain required before core merge. Product controls
+and parallel engine routing are a separate schema16 increment. Manual tests
+remain deferred and no target-machine deadline is claimed.
+
+## Prepared quality application / main reconciliation — 2026-11-16
+
+At ed4f08c7be92673fb3f477b577c66addeb17031c, native run43864563672 passed all
+seven Linux/macOS jobs, including Linux ASan/UBSan, product tests and macOS AU
+validation. Source-quality run43864563653 also passed. Earlier failed attempts
+remain historical failures. The ARM malformed-metadata fixture now compares the
+complete captured sound snapshot and bypass exactly, avoiding an assumed exact
+float normalization roundtrip for -5dB without relaxing state atomicity.
+
+A normal PR45 merge was rejected because main had independently integrated the
+qualified Character core. This branch now merges main ee4a3c9039a1c39f2f61cb9734f8c48481075c35
+without changing either qualified DSP implementation or application routing. Four
+append-only documentation conflicts preserve both histories; CMake and source
+merged automatically. New exact-head native/source checks remain required before
+normal integration. Character application routing remains separate.
+
+Fresh Release configuration and warning-as-error engine/core build on the
+reconciled sources passed. The five core.lifecycle/gain/buffers/realtime/render
+CTest suites passed5/5 (0.02 seconds). Incoming Character source/header/tests
+passed clang-format19 dry-run; whitespace and credential/dependency scans passed.
+This targeted local check does not rerun the complete Character/application
+matrices; exact-head CI remains pending.
+
+## Character application / quality ancestry reconciliation — 2026-11-16
+
+Merged quality integration0528e90f94c7e1cade08c1c02d33c1365f94974d into the
+Character application after the host-reference repair. Three documentation
+conflicts preserve both histories. Character application source, schema16,
+parallel routing, all plugin test statements and sanitizer-O1/600-second engine
+budget are unchanged by this merge. Incoming CI log-retention/diagnostic changes
+are retained. Qualified Colour/Character source and fixed tests match main
+ee4a3c9039a1c39f2f61cb9734f8c48481075c35 byte for byte.
+
+The pre-merge root linked processor/preset rerun passed in95.33seconds (lead
+evidence); it is not a new merged-head run. Fresh exact-head native, source and
+relevant automated gates remain required before normal PR48 integration. No
+manual/DAW/listening qualification is claimed.
