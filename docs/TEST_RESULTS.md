@@ -1033,3 +1033,19 @@ lifecycle gate and callback allocation probe. Only inherited CI log retention,
 diagnostics and historical documentation are added. Existing test runs remain
 evidence for their source checkpoints; exact merged-head CI and normal review
 remain required before integration. No manual/listening/DAW test is claimed.
+
+## Preview sanitizer completion — 2026-11-16
+
+The unchanged full renderer matrix passed ASan/UBSan1/1 in275.76seconds under
+the600second suite budget. Player passed1/1 in.08seconds after matching guarded
+nothrow allocations; leak/halt and allocator-mismatch detection remained enabled.
+The service suite also passed with Service.cpp, its test and the complete engine/
+renderer/player instrumented; JUCE and immutable asset archives were reused from
+the uninstrumented Release build, so this is scoped project-code instrumentation,
+not full JUCE sanitizer coverage. Command/evidence retained locally under
+build/verification/sanitizer-service. No sanitizer findings were suppressed.
+
+The initial180.13second renderer timeout and test-allocation mismatch remain
+recorded failures. Actual renderer/player/service/processor/UI behavior and
+thresholds were unchanged by the later ancestry merge d6bf9a8. Native exact-head
+CI remains a merge gate; manual listening/microphone/DAW checks remain deferred.

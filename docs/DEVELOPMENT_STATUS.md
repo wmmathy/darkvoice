@@ -7,8 +7,9 @@ Bundled source recordings and license/cue checks passed. Linked worker and proce
 suites plus the real popup smoke passed; both vocal choices, A/B/Stop and unchanged
 live state were checked. QA accepted the worker shutdown race fix, including its
 concurrent lifecycle regression. Player ASan/UBSan passed after correcting matching
-nothrow test allocations; renderer/service sanitizer runs and native CI remain
-pending. Draft PR47 is not merged or released. Preview does not change live sound
+nothrow test allocations. The full renderer sanitizer suite passed275.76s and the
+service suite passed with project-code instrumentation (JUCE archive uninstrumented).
+Exact-head native CI remains pending. Draft PR47 is not merged or released. Preview does not change live sound
 parameters.
 
 Prepared quality application PR45 passed all exact-head Linux/macOS/source checks
