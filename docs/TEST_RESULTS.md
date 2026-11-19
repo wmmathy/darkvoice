@@ -834,9 +834,97 @@ Manual host/mic/listening remains deferred, not passed.
 
 Manual host/microphone/listening qualification remains deferred.
 
+## In-progress Voice Sculptor qualification — 2026-10-31
+
+Depth/resonance schema14 host PR43 mergedcbfe8fd after exacthead4564c4c passed
+all7native/source checks40666786309/40666786514. Manual qualification deferred.
+
+Colour v1 fixedmatrix passed, but independent nearNyquist683 revealed~-14.7dB
+alias. Outputguardv2 stillfailed17/238Live scan cases from inputimages. Bothguard
+v3 passeddeclaredstep17scan but independent1720..1724 neighbors failed~-53.64dB
+from8x19thharmonicfold. Preserveallnegative logs; noneexposed asqualifiedbank.
+V4 uses16x shaping/nativeguardedboundaries and actualdelay124/184/368. Initial
+Live/Studio core1211checks each pass; remaining/optimized/SAN/native/full dense
+qualification pending. DenseRelease scan is all2015bins perstyle/profile, split
+eight disjointinclusive ranges for24CIjobs; every shard required beforemerge.
+Debug/SAN safety tests are separately named, never reported as numericalmatrix.
+
+Qualityengine v4 strictO2 passed26444checks/0,36composedroutes exact0,51.49s
+cloudwalltime. No deadlineclaim. Hostpreset tests passed. Firstvalidlegacystate
+fixture incorrectly selected APVTSchildrenbyposition; now uses stableIDs and
+productionvalidation isunchanged. Priorpartialbuild hadstaletesthelperAPI and
+is not a successfulfreshvalidation. Subsequentfresh16xDebugproductbuild passed,
+presets passed.75s butplugin suite TIMEOUT180.10sec (no assertion reported).
+This is test-runtime failure, notpassed or evidence of acceptable targetCPU.
+Preparedsparse-kernel performance work and measured rerun remainpending.
+V1SANLive100.66s/Studio161.82s passed,OfflineTIMEOUT180.12s; these were obsolete
+8xprofiles and do NOT validatecurrent16xbank.
+
+WORLD fixedcomparators remainednegative: DIO40/42,Harvest24/42,YIN31/42. Fixed
+REAPERnarrow3passed,full42pending. No productpitchcontrols/backendqualification.
+
 Final optimized v4 strict O2 cores also passed1,211/0 each: Live31.273s,
 Studio47.711s,Offline108.308s in this cloud session. All three profiles executed
 the full fixed/reference/complex matrices. Full dense scans remain pending CI.
+
+## Prepared quality modes: Release product rerun — 2026-11-12
+
+Fresh Release Vocal/plugin and preset targets rebuilt successfully in
+build/flanger-products. Affected suites passed2/2 in33.83seconds: presets.08s,
+plugin.state_and_audio33.75s. All state/audio assertions executed under the
+unchanged180-second budget. This resolves Release application validation; the
+earlier Debug180-second timeout remains recorded and is not described as passed.
+Exact-head native CI and any remaining sanitizer checks still gate merge.
+
+## Character application validation in progress — 2026-11-14
+
+Release engine/preset/plugin suites passed3/3 in131.32seconds (41.44/.11/89.75).
+Independent strict O2 rebuilt all16 DSP sources:30,788/0 and all60 composed
+routes exact. All65 prior parameter definitions remain unchanged. GUI65controls
+and13groups passed; build/verification/character.png inspected with all7Sculptor
+rows visible. The test-only normalized-state invariant correction from the ARM
+quality run is applied here too; final affected plugin rerun remains required.
+
+The first unoptimized Debug ASan/UBSan engine run exceeded its explicit900-second
+limit and is NOT passed. The expanded16x parallel chain incurs substantial
+unoptimized per-tap overhead. Sanitizer builds now retain Debug assertions,
+symbols, leak/halt checks and every fixture while adding-O1 (without fastmath).
+Normal Debug builds remain unoptimized; Release numeric gates are unchanged.
+The initial-O1 instrumented CTest run also exceeded the former180-second
+engine budget. The complete expanded suite is being measured separately and
+the engine suite runtime budget is now600seconds; all30,788 assertions and
+60route comparisons remain enabled. A timeout or sanitizer report remains a
+failure, and no callback deadline or numerical threshold is changed. No target realtime deadline follows.
+
+## Character host reference correction — 2026-11-16
+
+Mac product CI run43768368582 failed the direct-engine Character mapping oracle;
+its other native jobs passed. The independent reference had assumed literal
+EngineParameters defaults, while JUCE normalizes and converts even untouched
+APVTS defaults back to floats. Those values can differ on ARM. The reference
+now reads all65 public host values by stable ID independently of the production
+snapshot mapping. The2e-7 bound and full mode/rate/layout/sign matrix remain.
+Independent source QA verified every field and accepted the correction. The
+combined preview branch linked processor suite passed93.67seconds with this fix;
+this branch's fresh linked rerun and native CI remain pending.
+
+The earlier local instrumented engine regression has now completed:1/1 passed
+425.03seconds with ASan/UBSan leak/halt checks, all30,788 assertions and60route
+comparisons retained. Earlier timeout attempts remain historical failures.
+
+## ARM quality-state invariant fixture correction — 2026-11-14
+
+The resumed macOS15 product job built successfully but failed the malformed
+quality-metadata atomicity assertion. That fixture assumed normalized inputDb
+would store the exact literal-5. A controlled float reconstruction gives-5 with
+separate operations and-4.999999523162842 with fused multiply-add, matching the
+ARM-sensitive assumption. The production canonical metadata parser is unchanged.
+
+The rejection fixture now captures the actual prior complete sound snapshot and
+bypass value and requires EXACT preservation of both, alongside requested/active
+quality and latency. No tolerance is introduced; the assertion is stronger than
+the prior single-field check. Source formatting/whitespace/scans pass. Native
+product rerun on the new head remains required; no macOS pass is claimed yet.
 
 ## Character core native qualification package — 2026-11-12
 
@@ -853,3 +941,41 @@ Release shards (every bin17..2031, both signs, all profiles), exact-head native
 checks and source quality remain required before core merge. Product controls
 and parallel engine routing are a separate schema16 increment. Manual tests
 remain deferred and no target-machine deadline is claimed.
+
+## Prepared quality application / main reconciliation — 2026-11-16
+
+At ed4f08c7be92673fb3f477b577c66addeb17031c, native run43864563672 passed all
+seven Linux/macOS jobs, including Linux ASan/UBSan, product tests and macOS AU
+validation. Source-quality run43864563653 also passed. Earlier failed attempts
+remain historical failures. The ARM malformed-metadata fixture now compares the
+complete captured sound snapshot and bypass exactly, avoiding an assumed exact
+float normalization roundtrip for -5dB without relaxing state atomicity.
+
+A normal PR45 merge was rejected because main had independently integrated the
+qualified Character core. This branch now merges main ee4a3c9039a1c39f2f61cb9734f8c48481075c35
+without changing either qualified DSP implementation or application routing. Four
+append-only documentation conflicts preserve both histories; CMake and source
+merged automatically. New exact-head native/source checks remain required before
+normal integration. Character application routing remains separate.
+
+Fresh Release configuration and warning-as-error engine/core build on the
+reconciled sources passed. The five core.lifecycle/gain/buffers/realtime/render
+CTest suites passed5/5 (0.02 seconds). Incoming Character source/header/tests
+passed clang-format19 dry-run; whitespace and credential/dependency scans passed.
+This targeted local check does not rerun the complete Character/application
+matrices; exact-head CI remains pending.
+
+## Character application / quality ancestry reconciliation — 2026-11-16
+
+Merged quality integration0528e90f94c7e1cade08c1c02d33c1365f94974d into the
+Character application after the host-reference repair. Three documentation
+conflicts preserve both histories. Character application source, schema16,
+parallel routing, all plugin test statements and sanitizer-O1/600-second engine
+budget are unchanged by this merge. Incoming CI log-retention/diagnostic changes
+are retained. Qualified Colour/Character source and fixed tests match main
+ee4a3c9039a1c39f2f61cb9734f8c48481075c35 byte for byte.
+
+The pre-merge root linked processor/preset rerun passed in95.33seconds (lead
+evidence); it is not a new merged-head run. Fresh exact-head native, source and
+relevant automated gates remain required before normal PR48 integration. No
+manual/DAW/listening qualification is claimed.

@@ -856,6 +856,35 @@ claim. Manual qualification deferred as requested.
 
 Manual host/microphone/listening qualification remains deferred.
 
+## Planned genuine quality-mode integration — 2026-10-28
+
+Engine and host packages follow prepared quality/global state v15 contract,
+separate owned files/worktrees. Bank1905strictchecks passed, QA underway.
+Actual prepared FIR profile affects CPU and latency, global metadata preserves
+mode without preset side effects. No live callback rebuild or unsafe latency swap.
+
+## Prepared quality-mode application checkpoint — 2026-11-12
+
+The guarded16x Colour library is merged in PR44 at61e8667 after all seven native
+jobs, source quality and24 complete dense-alias shards passed on5946de2.
+Application integration now prepares an actual Live/Studio/Offline profile with
+124/184/368-sample alignment, lifecycle-only mode switching, active/pending UI
+and strict schema15 global metadata. Presets preserve the requested mode; all65
+existing parameter definitions remain unchanged.
+
+Engine strict O2 passed26,444 checks and36 composed routes matched exactly.
+The latest full Debug product run passed24/25 suites: plugin.state_and_audio
+hit its180-second runtime limit. No assertion failure was reported in that run;
+it is still a failed test, not a passing qualification. A Release product rebuild
+and affected-suite rerun are in progress. Native validation on the integration
+head remains required. This checkpoint is committed for review, not yet merged.
+
+Character source checkpoint425a75b is pushed separately; its three fixed modes
+and safety checks pass, while engine/UI integration and dense/native gates remain.
+Pitch diagnostic work is checkpointed independently and stays outside products.
+Manual host/microphone/listening qualification remains deferred.
+
+
 
 ## Breath texture dependent work packages — 2026-10-26
 
@@ -913,6 +942,31 @@ recorded v1 contract; dependency frozen new bandlimited profile helper supplied
 by lead. Parallel additive output avoids serial Colour latency and stays audible
 independently of Colour mix. All alias/functional gates before host exposure.
 
+## Planned Character application packages — 2026-11-12
+
+Shared schema16/parallel-routing contract established before assignments. Engine
+writer owns three files in character-engine; host writer owns parameter/processor/
+editor/preset/test files in character-host. Both use this frozen combined base,
+preserve quality global metadata and all previous parameter definitions, and
+add one independently audible Character control without serial extra latency.
+Lead handles builds, core/dense/native qualification and normal gated integration.
+
+## Character application safety checkpoint — 2026-11-15
+
+The parallel Character engine and schema16 application changes are checkpointed
+for loss protection. Release engine/preset/plugin tests previously passed3/3;
+independent engine QA passed30,788/0 with60 exact composed routes, and the
+65-control/13-group GUI passed. All65 previous parameter definitions are intact.
+The test-only ARM float-state invariant fix is included; its latest affected
+plugin rerun and exact-head native validation remain required.
+
+Unoptimized sanitizer execution exceeded900seconds; the subsequent-O1 run
+exceeded the old180-second CTest budget. Every assertion is retained. Sanitizer
+builds now keep Debug assertions/symbols with-O1, and the expanded engine suite
+has a600-second operational budget. Final sanitizer completion is not yet
+verified. This checkpoint is not a claim of a qualified release or main merge.
+Manual host/listening tests remain deferred.
+
 ## Character core qualification integration — 2026-11-12
 
 The committed Character contribution is now registered as an independent core
@@ -923,3 +977,18 @@ bin17..2031, both character signs, across24 complete Release shards.
 Application routing and schema16 UI controls remain a dependent increment.
 Safety sanitizer, independent review and exact-head native/dense checks are
 required before normal merge. No manual or realtime-deadline claim.
+
+## Prepared quality application integration update — 2026-11-16
+
+PR45 source head ed4f08c passed all seven native Linux/macOS jobs plus source
+quality. It is reconciled with main's qualified Character core in this checkpoint;
+new exact-head validation is pending. The Character library is linked and tested
+independently, while application Character routing/schema16 remains a later
+increment. No manual/listening qualification or completed product is claimed.
+
+## Character application ancestry update — 2026-11-16
+
+The schema16 Character branch now includes prepared-quality integration0528e90
+and main's qualified cores through a normal merge. Application DSP/host behavior
+is unchanged by reconciliation; CI gains retained diagnostic logs. Exact merged
+head checks and normal review still gate PR48; no merge or release is claimed.

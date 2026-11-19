@@ -1206,6 +1206,58 @@ plugin/preset/gui tests in separate worktrees. Lead owns contracts/CMake/docs/
 integration; v2 core source frozen during host work. Release/ASan/product/GUI/
 independentQA/native checks before normal merge; manual testing deferred.
 
+## Prepared quality engine v1 / global quality state v15 — 2026-10-28
+
+Replace active AudioEngine Colour member with BandlimitedColour, keeping legacy
+Colour library/tests unchanged. prepare(rate,maxFrames,channels,QualityMode=Live)
+is non-real-time, quality immutable until next prepare. optional qualityMode()
+returns active mode only while prepared; latencySamples=120/176/352 or0unprepared.
+Raw bypass and dry mix queue maximum352, actual modulo activeL. No extra block
+latency. Existing3arg prepare uses Live. No EngineParameters quality field.
+Failure/release leave engine unprepared and mode none. Validate invalid enum.
+Colour dry alignment and global raw bypass share actual activeL.
+
+Resume after actual bypass resets only Colour (other effects histories frozen as
+before), raw guard exactly activeL, then fade length max(128,2*activeL) samples.
+Raw guard is still under output gain/final limiter after bypass exits. Reset/start
+normal pipeline has no bypass resume guard. Preserve parameter output-clock timing,
+all dynamic/mix/final limiter behavior, invalid process atomicity. No callback
+alloc/locks/I/O. Preserve all existing17342 engine checks' intent; replace explicit
+old latency56 with derived new activeL, update composed references to actual new
+core, never blanket flush/relax numeric gates. Add all3mode latency/raw-bit mix0
+and bypass/guard/fade/stereo/lifecycle/partition/automation/allocation oracles.
+
+Global host quality is lifecycle configuration, NOT an automatable sound parameter.
+API bool requestQualityMode(QualityMode) noexcept validates then atomically stores;
+requestedQualityMode() returns request; activeQualityMode() optional returns last
+successful prepared mode. Changing requested mode never reconfigures callback or
+updates latency live. prepareToPlay snapshots request once, prepares matching bank
+and reports actual latency outside callback; release sets active none. GUI combo
+Live/Studio/Offline plus clear active/pending status; changes apply at reprepare
+(or reopen). No false claim of seamless switching. Display actual reported latency.
+
+State/preset schema15; parameterSchema unchanged65state/64sound and all old
+IDs/ranges/hints identical. parameterCountForVersion14 and15 both65. Full plugin
+state XML root metadata qualityMode canonical string0/1/2 REQUIRED forv15, strict
+validation atomic with all sound state. Invalid/missing/whitespace/fractional/
+overflow/unknown mode rejects whole snapshot and preserves both state and request.
+Oldv1..14 state defaults requested Live; active still unchanged until prepare.
+Serialize requested mode so pending choice survives state. Schema15 preset JSON
+remains64sound fields and NEVER stores/changes quality metadata; legacy preset
+migrations unchanged. Loading/choosing presets preserves requested/active quality.
+Current valid-state fixtures include metadata; legacy fixtures remove it, future
+version rejection derives current+1. Keep malformed-version/boolean/count tests.
+GUI remains64sound controls/13groups, quality combo outside sound sliders.
+
+Engine writer /workspace/worktrees/quality-engine branchfeature/sculptor/quality-engine
+owns ONLY AudioEngine.hpp/.cpp and engine_tests.cpp. Lead supplies frozen bank
+files, owns CMake/docs/integration. Strict O2/Werror with all core source modules
+and actual new bank, no stale archives. Host writer separate isolated worktree
+owns ParameterSchema.hpp,PluginProcessor.hpp/.cpp,PluginEditor.hpp/.cpp,
+PresetBank.cpp only ifrequired, plugin/preset/gui tests. No unrelated edits.
+Independent QA plus actual Release/sanitizer/product/native gates before merge.
+Manual testing deferred. Character parallel contribution is a subsequent contract.
+
 ## Harmonic Character contribution v1 — 2026-10-28
 
 Independent additive harmonic-character DSP, not pitch/formant shifting or a
@@ -1255,6 +1307,61 @@ src/HarmonicCharacter.cpp, tests/harmonic_character_tests.cpp. Lead supplies fro
 QualityMode.hpp/BandlimitedColour.hpp/helper from qualified writer, owns CMake/docs.
 No engine/host edits. Strict O2/Werror tests and per-mode time measurements; lead
 ASan/native/independent QA before integration. No commit/push yet.
+
+## Character application routing and schema16 v1 — 2026-11-12
+
+Dependencies: prepared-quality integration c22d580 and frozen16x Character425a75b,
+qualified guarded Colour61e8667. Final profile delays124/184/368 and maximum368
+supersede old v1values. Character core remains separate qualification; no main
+merge until relevant independent/native/dense gates pass.
+
+Append float EngineParameters::sculptCharacter=0 after sculptResonanceDb, valid
+finite[-1,1]. Preserve all previous fields and26,444 engine-check intent. Prepare
+HarmonicCharacter with the SAME immutable quality and preallocate two character
+scratch vectors to maxFrames outside callbacks. After SpaceReverb, copy its
+output to scratch, process Character delta in scratch and Colour in existing wet
+buffers PARALLEL, then sum delta into Colour before existing global mix/output
+gain/final limiter. NO serial extra latency. Skip addition for exact zero delta
+to preserve prior signed-zero bits; nonzero sum uses double and existing bounded
+float conversion. Character remains independently audible at colourMix0.
+
+Set Character targets in setParameters only after the full snapshot validates.
+Normal reset resets both modules and settles targets. Actual bypass freezes both
+histories; exit resets BOTH Colour and Character, raw guardL and fade2L unchanged.
+Old tone/texture/time histories retain existing freeze rules. Raw bypass remains
+bit exact, including nonfinite payloads, globalmix0 alignment unchanged. Quality
+request/active state, current latency, allocation/layout/invalid-process atomicity
+and output-clock automation remain unchanged. No callback allocations/locks/I/O.
+
+Append host parameter index65, ID sculptCharacter, name Character, range[-1,1],
+step.001, linear, default exact0, AU version hint16. State schema16:66 total
+parameters/65sound,13groups and7 Voice Sculptor rows in900x780 editor. All65
+previous IDs/ranges/defaults/steps/skews/hints identical. Signed-zero mapping
+anchor only newfield (retain existing old anchors). Existingfactory sounds add
+neutral Character0 and preserve their previous values.
+
+parameterCountForVersion14=65,15=65,16=66; do not return current array size for
+old14/15. Versions15 and16 fullstate require canonical root qualityMode0/1/2;
+v1..14 migrate requested Live; active mode remains until nextprepare. All old
+state/preset rejection/atomicity checks retained. v1..15 migrate Character0,
+strict current snapshot/preset requires newfield. Presets exclude globalquality
+and never change it. New hint16 permits no sound parameter at hint15.
+
+Engine writer owns ONLY AudioEngine.hpp/.cpp and engine_tests.cpp in isolated
+character-engine worktree. Host writer owns ONLY ParameterSchema.hpp,
+PluginProcessor.hpp/.cpp,PluginEditor.hpp/.cpp,PresetBank.cpp ifrequired and
+plugin/preset/gui tests in isolated character-host worktree. Lead owns CMake,
+shared docs/workflows and core files. Both branches start at this frozen base.
+
+Acceptance: preserve allold numeric gates; allmodes/rates/layouts composed
+parallel routes with independent manual module chain and output clock. Test
+neutral bit identity, both Character signs with Colour on/off, amountautomation,
+invalid snapshots, reset/reprepare/partition, noalloc, raw bypass and resume
+through final limiter. Host roundtrip/migrations/strictmetadata/preset independence,
+audible audio comparisons to direct engine, allold parameter definitions and
+65-control/13-group actual GUI smoke. Record runtime failures honestly; no
+manual/host/listening claim. StrictO2, Release, sanitizer and exact-head native
+checks plus independent QA before normal merge. No pitch/formant controls added.
 
 ## Character core current profile confirmation v4 — 2026-11-12
 

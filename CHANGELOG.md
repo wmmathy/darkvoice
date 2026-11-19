@@ -1,5 +1,19 @@
 # Changelog
 
+## Character application control
+
+- Add an independently audible bipolar Character control and schema16 migration.
+- Route Character and Colour in parallel, preserving profile latency and raw bypass.
+- Preserve existing sound parameters and global quality/preset separation.
+- Retain all numerical checks while extending sanitizer execution for the larger suite.
+
+## Prepared quality-mode application integration
+
+- Prepare genuine Colour quality profiles with124/184/368-sample dry and bypass alignment.
+- Add active/pending mode selection, applying changes on audio-engine restart or plugin reload.
+- Persist global quality separately from sound presets with strict schema15 migration.
+- Keep final product/native qualification pending; preserve the Debug test timeout evidence.
+
 ## Harmonic Character core
 
 - Add an independent bipolar harmonic contribution with exact neutral output.

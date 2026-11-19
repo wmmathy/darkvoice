@@ -27,7 +27,8 @@ juce::AudioProcessorValueTreeState::ParameterLayout DarkVoiceProcessor::createPa
                 juce::String(spec.id) == "sculptWarmthDb" ||
                 juce::String(spec.id) == "sculptPresenceDb" ||
                 juce::String(spec.id) == "sculptDepthDb" ||
-                juce::String(spec.id) == "sculptResonanceDb") {
+                juce::String(spec.id) == "sculptResonanceDb" ||
+                juce::String(spec.id) == "sculptCharacter") {
                 // Anchor these signed controls at zero. Start-relative snapping and affine
                 // conversion can leave a nonzero residual under fused multiply-add.
                 range = juce::NormalisableRange<float>{
@@ -148,13 +149,18 @@ darkvoice::EngineParameters DarkVoiceProcessor::snapshot() const noexcept {
     p.sculptBreathiness = raw_[62]->load(std::memory_order_relaxed);
     p.sculptDepthDb = raw_[63]->load(std::memory_order_relaxed);
     p.sculptResonanceDb = raw_[64]->load(std::memory_order_relaxed);
+    p.sculptCharacter = raw_[65]->load(std::memory_order_relaxed);
     return p;
 }
 void DarkVoiceProcessor::prepareToPlay(double rate, int maxFrames) {
     hostTempoBpm_.store(0, std::memory_order_relaxed);
     maximumFrames_ = maxFrames > 0 ? static_cast<std::size_t>(maxFrames) : 0;
-    prepared_ =
-        engine_.prepare(rate, maximumFrames_, static_cast<std::size_t>(getTotalNumInputChannels()));
+    const auto quality = requestedQualityMode();
+    activeQuality_.store(-1, std::memory_order_relaxed);
+    prepared_ = engine_.prepare(rate, maximumFrames_,
+                                static_cast<std::size_t>(getTotalNumInputChannels()), quality);
+    if (prepared_)
+        activeQuality_.store(static_cast<int>(quality), std::memory_order_relaxed);
     if (prepared_) {
         (void)engine_.setParameters(snapshot());
         engine_.reset();
@@ -167,7 +173,14 @@ void DarkVoiceProcessor::prepareToPlay(double rate, int maxFrames) {
     outputPeak_.store(0, std::memory_order_relaxed);
     setLatencySamples(static_cast<int>(engine_.latencySamples()));
 }
+bool DarkVoiceProcessor::requestQualityMode(darkvoice::QualityMode mode) noexcept {
+    if (!darkvoice::validQualityMode(mode))
+        return false;
+    requestedQuality_.store(static_cast<int>(mode), std::memory_order_relaxed);
+    return true;
+}
 void DarkVoiceProcessor::releaseResources() {
+    activeQuality_.store(-1, std::memory_order_relaxed);
     hostTempoBpm_.store(0, std::memory_order_relaxed);
     prepared_ = false;
     dryAnalysis_.release();
@@ -233,6 +246,7 @@ juce::AudioProcessorEditor *DarkVoiceProcessor::createEditor() {
 void DarkVoiceProcessor::getStateInformation(juce::MemoryBlock &destination) {
     auto state = parameters.copyState();
     state.setProperty("schemaVersion", darkvoice::currentSchemaVersion, nullptr);
+    state.setProperty("qualityMode", static_cast<int>(requestedQualityMode()), nullptr);
     // JUCE numeric var-to-String conversion follows the global C++ locale.
     // Serialize a canonical decimal representation without changing process locale.
     for (auto child : state) {
@@ -254,8 +268,16 @@ void DarkVoiceProcessor::setStateInformation(const void *data, int bytes) {
     const auto version = xml->getStringAttribute("schemaVersion");
     if (version != "1" && version != "2" && version != "3" && version != "4" && version != "5" &&
         version != "6" && version != "7" && version != "8" && version != "9" && version != "10" &&
-        version != "11" && version != "12" && version != "13" && version != "14")
+        version != "11" && version != "12" && version != "13" && version != "14" &&
+        version != "15" && version != "16")
         return;
+    auto quality = darkvoice::QualityMode::Live;
+    if (version == "15" || version == "16") {
+        const auto text = xml->getStringAttribute("qualityMode");
+        if (text != "0" && text != "1" && text != "2")
+            return;
+        quality = static_cast<darkvoice::QualityMode>(text.getIntValue());
+    }
     const auto count = darkvoice::parameterCountForVersion(version.getIntValue());
     const auto state = juce::ValueTree::fromXml(*xml);
     if (!state.isValid() || state.getNumChildren() != static_cast<int>(count))
@@ -308,6 +330,7 @@ void DarkVoiceProcessor::setStateInformation(const void *data, int bytes) {
         migrated.addChild(child, -1, nullptr);
     }
     parameters.replaceState(migrated);
+    requestedQuality_.store(static_cast<int>(quality), std::memory_order_relaxed);
 }
 darkvoice::PresetValues DarkVoiceProcessor::snapshotPresetValues() const {
     darkvoice::PresetValues values;

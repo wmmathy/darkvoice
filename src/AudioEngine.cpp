@@ -76,17 +76,20 @@ void measure(float value, float &peak) noexcept {
 
 } // namespace
 
-bool AudioEngine::prepare(double sampleRate, std::size_t maxFrames, std::size_t channels) noexcept {
+bool AudioEngine::prepare(double sampleRate, std::size_t maxFrames, std::size_t channels,
+                          QualityMode quality) noexcept {
     release();
     if ((sampleRate != 44100.0 && sampleRate != 48000.0 && sampleRate != 88200.0 &&
          sampleRate != 96000.0) ||
-        maxFrames == 0 || maxFrames > 65536 || (channels != 1 && channels != 2))
+        maxFrames == 0 || maxFrames > 65536 || (channels != 1 && channels != 2) ||
+        !validQualityMode(quality))
         return false;
     // Preparation is explicitly non-real-time. All storage required by process
     // is allocated here; failed allocation leaves the engine unprepared.
     try {
         for (std::size_t c = 0; c < channels; ++c) {
             wet_[c].resize(maxFrames);
+            characterScratch_[c].resize(maxFrames);
             aligned_[c].resize(maxFrames);
         }
     } catch (...) {
@@ -102,9 +105,12 @@ bool AudioEngine::prepare(double sampleRate, std::size_t maxFrames, std::size_t 
         !doubler_.prepare(sampleRate, maxFrames, channels) ||
         !stereoDelay_.prepare(sampleRate, maxFrames, channels) ||
         !spaceReverb_.prepare(sampleRate, maxFrames, channels) ||
-        !colour_.prepare(sampleRate, maxFrames, channels) ||
+        !colour_.prepare(sampleRate, maxFrames, channels, quality) ||
+        !character_.prepare(sampleRate, maxFrames, channels, quality) ||
         !limiter_.prepare(sampleRate, maxFrames, channels))
         return false;
+    latency_ = colour_.latencySamples();
+    resumeFadeLength_ = std::max(std::size_t{128}, 2 * latency_);
     rate_ = sampleRate;
     maxFrames_ = maxFrames;
     channels_ = channels;
@@ -124,8 +130,10 @@ bool AudioEngine::setParameters(const EngineParameters &p) noexcept {
         !Flanger::valid({p.flangerRateHz, p.flangerDepthMs, p.flangerFeedback, p.flangerMix}) ||
         !VocalLimiter::valid({p.limiterCeilingDb, p.limiterReleaseMs}) ||
         !StereoDelay::valid(stereoDelayParameters(p)) || !Doubler::valid(doublerParameters(p)) ||
-        !SpaceReverb::valid(spaceParameters(p)) || !Colour::valid(colourParameters(p)) ||
-        !VoiceSculptor::valid(sculptorParameters(p)) || !Breathiness::valid({p.sculptBreathiness}))
+        !SpaceReverb::valid(spaceParameters(p)) || !BandlimitedColour::valid(colourParameters(p)) ||
+        !VoiceSculptor::valid(sculptorParameters(p)) ||
+        !Breathiness::valid({p.sculptBreathiness}) ||
+        !HarmonicCharacter::valid({p.sculptCharacter}))
         return false;
     // All snapshots are fully validated before any target is replaced.
     if (!effects_.setParameters(toneParameters(p)))
@@ -140,6 +148,7 @@ bool AudioEngine::setParameters(const EngineParameters &p) noexcept {
     (void)stereoDelay_.setParameters(stereoDelayParameters(p));
     (void)limiter_.setParameters({p.limiterCeilingDb, p.limiterReleaseMs});
     (void)colour_.setParameters(colourParameters(p));
+    (void)character_.setParameters({p.sculptCharacter});
     (void)sculptor_.setParameters(sculptorParameters(p));
     (void)breathiness_.setParameters({p.sculptBreathiness});
     if (p.limiterEnabled != target_.limiterEnabled)
@@ -150,10 +159,12 @@ bool AudioEngine::setParameters(const EngineParameters &p) noexcept {
 
 void AudioEngine::release() noexcept {
     rate_ = 0;
+    latency_ = 0;
+    resumeFadeLength_ = 2 * BandlimitedColour::latencyForQuality(QualityMode::Live);
     maxFrames_ = channels_ = 0;
     rawQueue_ = {};
     rawPosition_ = resumeGuard_ = 0;
-    resumeFade_ = 128;
+    resumeFade_ = resumeFadeLength_;
     bypassed_ = limiterResetPending_ = false;
     meters_ = {};
 }
@@ -166,7 +177,7 @@ void AudioEngine::reset() noexcept {
     current_ = target_;
     rawQueue_ = {};
     rawPosition_ = resumeGuard_ = 0;
-    resumeFade_ = 128;
+    resumeFade_ = resumeFadeLength_;
     bypassed_ = limiterResetPending_ = false;
     effects_.reset();
     gate_.reset();
@@ -179,6 +190,7 @@ void AudioEngine::reset() noexcept {
     stereoDelay_.reset();
     spaceReverb_.reset();
     colour_.reset();
+    character_.reset();
     limiter_.reset();
 }
 
@@ -218,7 +230,7 @@ bool AudioEngine::processInternal(std::span<float *> channels, std::size_t frame
                 measure(fromBits(delayed), meters_.outputPeak);
             }
         }
-        rawPosition_ = rawPosition_ + 1 == 56 ? 0 : rawPosition_ + 1;
+        rawPosition_ = rawPosition_ + 1 == latency_ ? 0 : rawPosition_ + 1;
     }
     if (bypass) {
         bypassed_ = true;
@@ -226,7 +238,8 @@ bool AudioEngine::processInternal(std::span<float *> channels, std::size_t frame
     }
     if (bypassed_) {
         colour_.reset();
-        resumeGuard_ = 56;
+        character_.reset();
+        resumeGuard_ = latency_;
         resumeFade_ = 0;
         bypassed_ = false;
     }
@@ -278,9 +291,21 @@ bool AudioEngine::processInternal(std::span<float *> channels, std::size_t frame
         !flanger_.process(std::span<float *>(wetChannels.data(), channels_), frames) ||
         !doubler_.process(std::span<float *>(wetChannels.data(), channels_), frames) ||
         !stereoDelay_.process(std::span<float *>(wetChannels.data(), channels_), frames) ||
-        !spaceReverb_.process(std::span<float *>(wetChannels.data(), channels_), frames) ||
-        !colour_.process(std::span<float *>(wetChannels.data(), channels_), frames))
+        !spaceReverb_.process(std::span<float *>(wetChannels.data(), channels_), frames))
         return false; // Prepared capacities/layout have already been validated.
+    // Both branches observe the same post-space signal and have the same prepared
+    // latency. Character contributes only a delta; no extra serial delay is added.
+    for (std::size_t c = 0; c < channels_; ++c)
+        std::copy_n(wet_[c].data(), frames, characterScratch_[c].data());
+    std::array<float *, 2> characterChannels{characterScratch_[0].data(),
+                                             characterScratch_[1].data()};
+    if (!character_.process(std::span<float *>(characterChannels.data(), channels_), frames) ||
+        !colour_.process(std::span<float *>(wetChannels.data(), channels_), frames))
+        return false;
+    for (std::size_t c = 0; c < channels_; ++c)
+        for (std::size_t i = 0; i < frames; ++i)
+            if (characterScratch_[c][i] != 0)
+                wet_[c][i] = bounded(static_cast<double>(wet_[c][i]) + characterScratch_[c][i]);
     for (std::size_t i = 0; i < frames; ++i) {
         smooth(current_.outputDb, target_.outputDb);
         smooth(current_.mix, target_.mix);
@@ -289,8 +314,8 @@ bool AudioEngine::processInternal(std::span<float *> channels, std::size_t frame
         if (resumeGuard_ != 0) {
             weight = 0;
             --resumeGuard_;
-        } else if (resumeFade_ < 128) {
-            weight = static_cast<double>(++resumeFade_) / 128;
+        } else if (resumeFade_ < resumeFadeLength_) {
+            weight = static_cast<double>(++resumeFade_) / resumeFadeLength_;
         }
         for (std::size_t c = 0; c < channels.size(); ++c) {
             const float dry = processedDry(aligned_[c][i]);

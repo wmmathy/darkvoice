@@ -33,6 +33,16 @@ jobs:
         run: cmake --build build --config ${{ matrix.configuration }} --parallel 2
       - name: Run core and DSP regression suites
         run: python3 tools/ci-build.py build/test-run.log ctest --test-dir build --build-config ${{ matrix.configuration }} --output-on-failure --no-tests=error
+      - name: Retain core test evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: core-test-logs-${{ matrix.os }}-${{ matrix.configuration }}
+          path: |
+            build/Testing/Temporary/
+            build/test-run.log
+          if-no-files-found: warn
+          retention-days: 14
 
   sanitizers:
     name: Core / Linux / ASan and UBSan
@@ -52,6 +62,16 @@ jobs:
           ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
           UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
         run: python3 tools/ci-build.py build/test-run.log ctest --test-dir build --output-on-failure --no-tests=error
+      - name: Retain sanitizer test evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: sanitizer-test-logs-linux
+          path: |
+            build/Testing/Temporary/
+            build/test-run.log
+          if-no-files-found: warn
+          retention-days: 14
 
   products:
     name: JUCE products / ${{ matrix.os }}
