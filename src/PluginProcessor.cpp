@@ -150,6 +150,8 @@ darkvoice::EngineParameters DarkVoiceProcessor::snapshot() const noexcept {
     p.sculptDepthDb = raw_[63]->load(std::memory_order_relaxed);
     p.sculptResonanceDb = raw_[64]->load(std::memory_order_relaxed);
     p.sculptCharacter = raw_[65]->load(std::memory_order_relaxed);
+    p.transducerModel = discrete(raw_[66]->load(std::memory_order_relaxed), 2);
+    p.transducerMix = raw_[67]->load(std::memory_order_relaxed);
     return p;
 }
 void DarkVoiceProcessor::prepareToPlay(double rate, int maxFrames) {
@@ -282,10 +284,10 @@ void DarkVoiceProcessor::setStateInformation(const void *data, int bytes) {
     if (version != "1" && version != "2" && version != "3" && version != "4" && version != "5" &&
         version != "6" && version != "7" && version != "8" && version != "9" && version != "10" &&
         version != "11" && version != "12" && version != "13" && version != "14" &&
-        version != "15" && version != "16")
+        version != "15" && version != "16" && version != "17")
         return;
     auto quality = darkvoice::QualityMode::Live;
-    if (version == "15" || version == "16") {
+    if (version == "15" || version == "16" || version == "17") {
         const auto text = xml->getStringAttribute("qualityMode");
         if (text != "0" && text != "1" && text != "2")
             return;
@@ -316,7 +318,8 @@ void DarkVoiceProcessor::setStateInformation(const void *data, int bytes) {
         if ((id == "stereoDelayMode" && !darkvoice::exactSmallIntegerNumber(numberText, 2)) ||
             (id == "stereoDelayDivision" && !darkvoice::exactSmallIntegerNumber(numberText, 5)) ||
             (id == "spaceModel" && !darkvoice::exactSmallIntegerNumber(numberText, 2)) ||
-            (id == "colourModel" && !darkvoice::exactSmallIntegerNumber(numberText, 1)))
+            (id == "colourModel" && !darkvoice::exactSmallIntegerNumber(numberText, 1)) ||
+            (id == "transducerModel" && !darkvoice::exactSmallIntegerNumber(numberText, 2)))
             return;
         std::istringstream parser(numberText);
         parser.imbue(std::locale::classic());
@@ -327,7 +330,7 @@ void DarkVoiceProcessor::setStateInformation(const void *data, int bytes) {
             (spec.boolean && value != 0 && value != 1))
             return;
         if ((id == "stereoDelayMode" || id == "stereoDelayDivision" || id == "spaceModel" ||
-             id == "colourModel") &&
+             id == "colourModel" || id == "transducerModel") &&
             std::trunc(value) != value)
             return;
         seen[index] = true;

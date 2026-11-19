@@ -74,7 +74,7 @@ int main(int argc, char **argv) {
                 button && button->getName() == "Load preset")
                 load = button;
         }
-        if (controls != 65 || !input || !bypass || !presetSelection || !load)
+        if (controls != 67 || !input || !bypass || !presetSelection || !load)
             return 2;
         if (!quality || !qualityStatus || quality->getNumItems() != 3 ||
             !editor->getLocalBounds().contains(quality->getBounds()) ||
@@ -96,7 +96,7 @@ int main(int argc, char **argv) {
         bypass->setToggleState(true, juce::sendNotificationSync);
         if (processor.parameters.getRawParameterValue("bypass")->load() != 1.0f)
             return 4;
-        constexpr std::array<const char *, 65> names{"INPUT GAIN",
+        constexpr std::array<const char *, 67> names{"INPUT GAIN",
                                                      "OUTPUT GAIN",
                                                      "HIGH-PASS",
                                                      "WARMTH DRIVE",
@@ -160,7 +160,9 @@ int main(int argc, char **argv) {
                                                      "BREATH TEXTURE",
                                                      "DEPTH LOWS",
                                                      "RESONANCE 700 Hz",
-                                                     "CHARACTER"};
+                                                     "CHARACTER",
+                                                     "TRANSDUCER MODEL",
+                                                     "TRANSDUCER MIX"};
         std::size_t soundIndex = 0;
         for (const auto &spec : darkvoice::parameterSchema) {
             if (juce::String(spec.id) == "bypass")
@@ -266,7 +268,7 @@ int main(int argc, char **argv) {
                 if (tabs->getOrientation() != juce::TabbedButtonBar::TabsAtLeft ||
                     tabs->getTabBarDepth() < 160)
                     return 22;
-                if (tabs->getNumTabs() != 13)
+                if (tabs->getNumTabs() != 14)
                     return 17;
                 for (int i = 0; i < tabs->getNumTabs(); ++i) {
                     const auto *button = tabs->getTabbedButtonBar().getTabButton(i);
@@ -349,6 +351,36 @@ int main(int argc, char **argv) {
         character->setValue(0, juce::sendNotificationSync);
         if (processor.parameters.getRawParameterValue("sculptCharacter")->load() != 0)
             return 40;
+        juce::Slider *transducerModel = nullptr, *transducerMix = nullptr;
+        for (auto *component : components) {
+            if (auto *slider = dynamic_cast<juce::Slider *>(component)) {
+                if (slider->getName() == "TRANSDUCER MODEL")
+                    transducerModel = slider;
+                if (slider->getName() == "TRANSDUCER MIX")
+                    transducerMix = slider;
+            }
+            if (auto *tabs = dynamic_cast<juce::TabbedComponent *>(component)) {
+                tabs->setCurrentTabIndex(13);
+                if (tabs->getCurrentTabName() != "TRANSDUCER")
+                    return 51;
+            }
+        }
+        if (!transducerModel || !transducerMix)
+            return 52;
+        for (int model = 0; model < 3; ++model) {
+            transducerModel->setValue(model, juce::sendNotificationSync);
+            if (processor.parameters.getRawParameterValue("transducerModel")->load() != model ||
+                transducerModel->getTextFromValue(model) != juce::String(model == 0   ? "Telephone"
+                                                                         : model == 1 ? "Megaphone"
+                                                                                      : "Radio"))
+                return 53;
+        }
+        transducerMix->setValue(.731, juce::sendNotificationSync);
+        if (std::abs(processor.parameters.getRawParameterValue("transducerMix")->load() - .731f) >
+            .001f)
+            return 54;
+        transducerModel->setValue(0, juce::sendNotificationSync);
+        transducerMix->setValue(0, juce::sendNotificationSync);
         juce::TextButton *previewButton = nullptr;
         for (auto *component : components)
             if (auto *button = dynamic_cast<juce::TextButton *>(component);
@@ -465,7 +497,7 @@ int main(int argc, char **argv) {
             if (!stream || !juce::PNGImageFormat().writeImageToStream(image, *stream))
                 return 6;
         }
-        std::cout << "GUI smoke passed: 65 controls, all parameter attachments, bypass, actual "
+        std::cout << "GUI smoke passed: 67 controls, all parameter attachments, bypass, actual "
                      "factory preset audio, dry-pitch feedback, snapshot\n";
         return 0;
     }();
