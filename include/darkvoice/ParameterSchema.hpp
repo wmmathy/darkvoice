@@ -12,7 +12,7 @@ inline constexpr std::size_t legacyParameterCount = 8;
 inline constexpr std::size_t effectsParameterCount = 21;
 inline constexpr std::size_t gateParameterCount = 24;
 inline constexpr std::size_t deEsserParameterCount = 27;
-inline constexpr std::array<ParameterSpec, 66> parameterSchema{{
+inline constexpr std::array<ParameterSpec, 68> parameterSchema{{
     {"inputDb", "Input", -24.0f, 24.0f, 0.0f, 0.1f, 1.0f, false},
     {"outputDb", "Output", -24.0f, 24.0f, 0.0f, 0.1f, 1.0f, false},
     {"highPassHz", "High-pass", 20.0f, 400.0f, 20.0f, 1.0f, 0.5f, false},
@@ -79,8 +79,10 @@ inline constexpr std::array<ParameterSpec, 66> parameterSchema{{
     {"sculptDepthDb", "Depth lows", -6, 6, 0, .1f, 1, false},
     {"sculptResonanceDb", "Resonance 700 Hz", -6, 6, 0, .1f, 1, false},
     {"sculptCharacter", "Character", -1, 1, 0, .001f, 1, false},
+    {"transducerModel", "Transducer model", 0, 2, 0, 1, 1, false},
+    {"transducerMix", "Transducer mix", 0, 1, 0, .001f, 1, false},
 }};
-inline constexpr int currentSchemaVersion = 16;
+inline constexpr int currentSchemaVersion = 17;
 constexpr std::size_t parameterCountForVersion(int version) noexcept {
     return version == 1                     ? legacyParameterCount
            : version == 2                   ? effectsParameterCount
@@ -96,7 +98,8 @@ constexpr std::size_t parameterCountForVersion(int version) noexcept {
            : version == 12                  ? 62
            : version == 13                  ? 63
            : version == 14 || version == 15 ? 65
-           : version == 16                  ? parameterSchema.size()
+           : version == 16                  ? 66
+           : version == 17                  ? parameterSchema.size()
                                             : 0;
 }
 constexpr int parameterVersion(std::size_t index) noexcept {
@@ -114,6 +117,7 @@ constexpr int parameterVersion(std::size_t index) noexcept {
            : index < 62                    ? 12
            : index < 63                    ? 13
            : index < 65                    ? 14
-                                           : 16;
+           : index < 66                    ? 16
+                                           : 17;
 }
 } // namespace darkvoice

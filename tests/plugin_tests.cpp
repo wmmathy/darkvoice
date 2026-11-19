@@ -2,6 +2,7 @@
 #include "PresetBank.hpp"
 #include <array>
 #include <bit>
+#include <chrono>
 #include <cmath>
 #include <complex>
 #include <cstdint>
@@ -10,6 +11,7 @@
 #include <limits>
 #include <locale>
 #include <stdexcept>
+#include <thread>
 
 namespace {
 constexpr int latency =
@@ -99,7 +101,7 @@ void qualityModeTests() {
                     processor.requestedQualityMode() == mode,
                 "Invalid quality request must be atomic");
         const auto sound = processor.snapshotPresetValues();
-        require(sound.size() == 65 && sound.find("qualityMode") == sound.end(),
+        require(sound.size() == 67 && sound.find("qualityMode") == sound.end(),
                 "Quality must remain outside sound presets");
         require(processor.requestQualityMode(alternate), "Pending preset guard request rejected");
         require(processor.applyPreset(sound) && processor.requestedQualityMode() == alternate &&
@@ -195,10 +197,11 @@ void qualityModeTests() {
 }
 void characterStateTests() {
     using darkvoice::QualityMode;
-    require(darkvoice::parameterSchema.size() == 66 &&
+    require(darkvoice::parameterSchema.size() == 68 &&
                 darkvoice::parameterCountForVersion(14) == 65 &&
                 darkvoice::parameterCountForVersion(15) == 65 &&
-                darkvoice::parameterCountForVersion(16) == 66,
+                darkvoice::parameterCountForVersion(16) == 66 &&
+                darkvoice::parameterCountForVersion(17) == 68,
             "Character appends one schema16 field without enlarging prior snapshots");
     DarkVoiceProcessor source, restored;
     const auto &range = source.parameters.getParameter("sculptCharacter")->getNormalisableRange();
@@ -264,10 +267,14 @@ void characterStateTests() {
                     restored.activeQualityMode() == QualityMode::Studio,
                 "Invalid Character rejects both sound and quality atomically");
     }
-    for (int version : {15, 16})
+    for (int version : {15, 16, 17})
         for (int fault = 0; fault < 3; ++fault) {
             auto tree = currentState(source);
             tree.setProperty("schemaVersion", version, nullptr);
+            if (version < 17) {
+                tree.removeChild(tree.getChildWithProperty("id", "transducerModel"), nullptr);
+                tree.removeChild(tree.getChildWithProperty("id", "transducerMix"), nullptr);
+            }
             if (version == 15)
                 tree.removeChild(tree.getChildWithProperty("id", "sculptCharacter"), nullptr);
             if (fault == 0)
@@ -417,7 +424,8 @@ void stateTests() {
                                                                               : i < 62 ? 12
                                                                               : i < 63 ? 13
                                                                               : i < 65 ? 14
-                                                                                       : 16),
+                                                                              : i < 66 ? 16
+                                                                                       : 17),
                 "AU version hint changed");
         require(std::abs(raw(restored, spec.id) - raw(source, spec.id)) < 0.001f,
                 "Full v16 state roundtrip failed");
@@ -472,7 +480,8 @@ void stateTests() {
     for (int child = legacy.getNumChildren() - 1; child >= 0; --child)
         if (legacy.getChild(child).getProperty("id").toString().startsWith("space") ||
             legacy.getChild(child).getProperty("id").toString().startsWith("colour") ||
-            legacy.getChild(child).getProperty("id").toString().startsWith("sculpt"))
+            legacy.getChild(child).getProperty("id").toString().startsWith("sculpt") ||
+            legacy.getChild(child).getProperty("id").toString().startsWith("transducer"))
             legacy.removeChild(child, nullptr);
     for (int child = legacy.getNumChildren() - 1; child >= 0; --child)
         if (legacy.getChild(child).getProperty("id").toString().startsWith("doubler"))
@@ -508,7 +517,8 @@ void stateTests() {
     for (int child = v2.getNumChildren() - 1; child >= 0; --child)
         if (v2.getChild(child).getProperty("id").toString().startsWith("space") ||
             v2.getChild(child).getProperty("id").toString().startsWith("colour") ||
-            v2.getChild(child).getProperty("id").toString().startsWith("sculpt"))
+            v2.getChild(child).getProperty("id").toString().startsWith("sculpt") ||
+            v2.getChild(child).getProperty("id").toString().startsWith("transducer"))
             v2.removeChild(child, nullptr);
     for (int child = v2.getNumChildren() - 1; child >= 0; --child)
         if (v2.getChild(child).getProperty("id").toString().startsWith("doubler"))
@@ -550,7 +560,8 @@ void stateTests() {
     for (int child = v3.getNumChildren() - 1; child >= 0; --child)
         if (v3.getChild(child).getProperty("id").toString().startsWith("space") ||
             v3.getChild(child).getProperty("id").toString().startsWith("colour") ||
-            v3.getChild(child).getProperty("id").toString().startsWith("sculpt"))
+            v3.getChild(child).getProperty("id").toString().startsWith("sculpt") ||
+            v3.getChild(child).getProperty("id").toString().startsWith("transducer"))
             v3.removeChild(child, nullptr);
     for (int child = v3.getNumChildren() - 1; child >= 0; --child)
         if (v3.getChild(child).getProperty("id").toString().startsWith("doubler"))
@@ -587,7 +598,8 @@ void stateTests() {
     for (int child = v4.getNumChildren() - 1; child >= 0; --child)
         if (v4.getChild(child).getProperty("id").toString().startsWith("space") ||
             v4.getChild(child).getProperty("id").toString().startsWith("colour") ||
-            v4.getChild(child).getProperty("id").toString().startsWith("sculpt"))
+            v4.getChild(child).getProperty("id").toString().startsWith("sculpt") ||
+            v4.getChild(child).getProperty("id").toString().startsWith("transducer"))
             v4.removeChild(child, nullptr);
     for (int child = v4.getNumChildren() - 1; child >= 0; --child)
         if (v4.getChild(child).getProperty("id").toString().startsWith("doubler"))
@@ -617,7 +629,8 @@ void stateTests() {
     for (int child = v5.getNumChildren() - 1; child >= 0; --child)
         if (v5.getChild(child).getProperty("id").toString().startsWith("space") ||
             v5.getChild(child).getProperty("id").toString().startsWith("colour") ||
-            v5.getChild(child).getProperty("id").toString().startsWith("sculpt"))
+            v5.getChild(child).getProperty("id").toString().startsWith("sculpt") ||
+            v5.getChild(child).getProperty("id").toString().startsWith("transducer"))
             v5.removeChild(child, nullptr);
     for (int child = v5.getNumChildren() - 1; child >= 0; --child)
         if (v5.getChild(child).getProperty("id").toString().startsWith("doubler"))
@@ -1007,7 +1020,7 @@ void stateTests() {
                 "Invalid ID set partially changed state");
     }
     auto values = source.snapshotPresetValues();
-    require(values.size() == 65 && values.count("bypass") == 0,
+    require(values.size() == 67 && values.count("bypass") == 0,
             "Preset must contain only sound parameters");
     values["inputDb"] = 10.0f;
     values["delayMix"] = 0.2f;
@@ -1102,8 +1115,167 @@ darkvoice::EngineParameters hostReferenceParameters(DarkVoiceProcessor &processo
     result.sculptDepthDb = raw(processor, "sculptDepthDb");
     result.sculptResonanceDb = raw(processor, "sculptResonanceDb");
     result.sculptCharacter = raw(processor, "sculptCharacter");
+    result.transducerModel = static_cast<int>(raw(processor, "transducerModel"));
+    result.transducerMix = raw(processor, "transducerMix");
     return result;
 }
+void transducerStateTests() {
+    using darkvoice::QualityMode;
+    DarkVoiceProcessor source, restored;
+    for (const auto *id : {"transducerModel", "transducerMix"})
+        require(raw(source, id) == 0 && source.parameters.getParameter(id)->getVersionHint() == 17,
+                "Transducer defaults and AU hints");
+    set(source, "transducerModel", 2);
+    set(source, "transducerMix", .731f);
+    set(source, "sculptCharacter", -.625f);
+    require(source.requestQualityMode(QualityMode::Offline), "Transducer quality request");
+    restored.prepareToPlay(48000, 73);
+    juce::MemoryBlock saved;
+    source.getStateInformation(saved);
+    restored.setStateInformation(saved.getData(), static_cast<int>(saved.getSize()));
+    require(restored.snapshotPresetValues() == source.snapshotPresetValues() &&
+                restored.requestedQualityMode() == QualityMode::Offline &&
+                restored.activeQualityMode() == QualityMode::Live,
+            "Schema17 restores both transducer controls without activating pending quality");
+    for (int version = 1; version <= 16; ++version) {
+        auto tree = currentState(source);
+        tree.setProperty("schemaVersion", version, nullptr);
+        if (version < 15)
+            tree.removeProperty("qualityMode", nullptr);
+        const auto count = darkvoice::parameterCountForVersion(version);
+        for (int child = tree.getNumChildren() - 1; child >= 0; --child) {
+            bool retained = false;
+            for (std::size_t i = 0; i < count; ++i)
+                retained |= tree.getChild(child).getProperty("id").toString() ==
+                            darkvoice::parameterSchema[i].id;
+            if (!retained)
+                tree.removeChild(child, nullptr);
+        }
+        set(restored, "transducerModel", 1);
+        set(restored, "transducerMix", .8f);
+        juce::MemoryBlock bytes;
+        juce::AudioProcessor::copyXmlToBinary(*tree.createXml(), bytes);
+        restored.setStateInformation(bytes.getData(), static_cast<int>(bytes.getSize()));
+        require(raw(restored, "transducerModel") == 0 && raw(restored, "transducerMix") == 0,
+                "Every v1-v16 state migrates neutral Transducer");
+        for (std::size_t i = 0; i < count; ++i)
+            require(raw(restored, darkvoice::parameterSchema[i].id) ==
+                        raw(source, darkvoice::parameterSchema[i].id),
+                    "Transducer migration preserves every previous host value");
+        require(restored.requestedQualityMode() ==
+                    (version >= 15 ? QualityMode::Offline : QualityMode::Live),
+                "Transducer migration preserves quality policy");
+    }
+    for (const auto *id : {"transducerModel", "transducerMix"})
+        for (const auto *fault : {"missing", "-1", "3", "nan", "inf", "bad"}) {
+            auto tree = currentState(source);
+            auto child = tree.getChildWithProperty("id", id);
+            if (juce::String(fault) == "missing")
+                tree.removeChild(child, nullptr);
+            else
+                child.setProperty("value", fault, nullptr);
+            const auto before = restored.snapshotPresetValues();
+            const auto quality = restored.requestedQualityMode();
+            juce::MemoryBlock bytes;
+            juce::AudioProcessor::copyXmlToBinary(*tree.createXml(), bytes);
+            restored.setStateInformation(bytes.getData(), static_cast<int>(bytes.getSize()));
+            require(restored.snapshotPresetValues() == before &&
+                        restored.requestedQualityMode() == quality,
+                    "Missing or invalid transducer state rejects atomically");
+        }
+    for (const auto *fraction : {"0.5", "1e-50", "1.00000001"}) {
+        auto tree = currentState(source);
+        tree.getChildWithProperty("id", "transducerModel").setProperty("value", fraction, nullptr);
+        const auto before = restored.snapshotPresetValues();
+        juce::MemoryBlock bytes;
+        juce::AudioProcessor::copyXmlToBinary(*tree.createXml(), bytes);
+        restored.setStateInformation(bytes.getData(), static_cast<int>(bytes.getSize()));
+        require(restored.snapshotPresetValues() == before,
+                "Exact integer transducer state required");
+    }
+    auto sound = source.snapshotPresetValues();
+    const auto quality = restored.requestedQualityMode();
+    require(restored.applyPreset(sound) && restored.requestedQualityMode() == quality &&
+                raw(restored, "transducerModel") == 2 &&
+                raw(restored, "transducerMix") == raw(source, "transducerMix"),
+            "Transducer sound preset preserves quality");
+    sound["transducerModel"] = .5f;
+    const auto before = restored.snapshotPresetValues();
+    require(!restored.applyPreset(sound) && restored.snapshotPresetValues() == before,
+            "Fractional transducer preset rejected atomically");
+}
+
+void transducerAudioTests() {
+    juce::MidiBuffer midi;
+    for (auto quality : {darkvoice::QualityMode::Live, darkvoice::QualityMode::Studio,
+                         darkvoice::QualityMode::Offline})
+        for (int channels : {1, 2})
+            for (int model = 0; model < 3; ++model) {
+                DarkVoiceProcessor processor;
+                layout(processor, channels);
+                require(processor.requestQualityMode(quality), "Transducer audio quality");
+                set(processor, "transducerModel", static_cast<float>(model));
+                set(processor, "transducerMix", .731f);
+                processor.prepareToPlay(48000, 73);
+                auto parameters = hostReferenceParameters(processor);
+                darkvoice::AudioEngine expected, neutral;
+                require(expected.prepare(48000, 73, channels, quality) &&
+                            expected.setParameters(parameters),
+                        "Transducer direct setup");
+                parameters.transducerMix = 0;
+                require(neutral.prepare(48000, 73, channels, quality) &&
+                            neutral.setParameters(parameters),
+                        "Neutral transducer setup");
+                expected.reset();
+                neutral.reset();
+                double error = 0, difference = 0, energy = 0;
+                for (int offset = 0; offset < 4096;) {
+                    const int frames = std::min(offset % 2 ? 31 : 73, 4096 - offset);
+                    juce::AudioBuffer<float> host(channels, frames), reference(channels, frames),
+                        dry(channels, frames);
+                    std::array<float *, 2> r{}, d{};
+                    for (int c = 0; c < channels; ++c) {
+                        for (int i = 0; i < frames; ++i) {
+                            const double t = (offset + i) / 48000.;
+                            const float value = static_cast<float>(
+                                .1 * std::sin(2 * juce::MathConstants<double>::pi *
+                                              (c ? 170 : 110) * t) +
+                                .07 * std::sin(2 * juce::MathConstants<double>::pi * 1600 * t) +
+                                .04 * std::sin(2 * juce::MathConstants<double>::pi * 7500 * t));
+                            host.setSample(c, i, value);
+                            reference.setSample(c, i, value);
+                            dry.setSample(c, i, value);
+                        }
+                        r[c] = reference.getWritePointer(c);
+                        d[c] = dry.getWritePointer(c);
+                    }
+                    processor.processBlock(host, midi);
+                    require(
+                        expected.process({r.data(), static_cast<std::size_t>(channels)}, frames) &&
+                            neutral.process({d.data(), static_cast<std::size_t>(channels)}, frames),
+                        "Transducer reference processing");
+                    for (int c = 0; c < channels; ++c)
+                        for (int i = 0; i < frames; ++i) {
+                            error =
+                                std::max(error, std::abs(static_cast<double>(host.getSample(c, i)) -
+                                                         reference.getSample(c, i)));
+                            const auto delta = host.getSample(c, i) - dry.getSample(c, i);
+                            difference += delta * delta;
+                            energy += dry.getSample(c, i) * dry.getSample(c, i);
+                        }
+                    offset += frames;
+                }
+                require(error < 2e-7,
+                        "Actual Transducer host mapping differs from independent engine");
+                require(energy > .01 && difference / energy > 1e-4,
+                        "Every Transducer model must change actual host audio");
+                require(
+                    processor.getLatencySamples() ==
+                        static_cast<int>(darkvoice::BandlimitedColour::latencyForQuality(quality)),
+                    "Transducer adds no algorithmic delay");
+            }
+}
+
 void characterAudioTests() {
     juce::MidiBuffer midi;
     for (auto quality : {darkvoice::QualityMode::Live, darkvoice::QualityMode::Studio,
@@ -1676,11 +1848,13 @@ class TempoPlayHead final : public juce::AudioPlayHead {
   public:
     juce::Optional<double> bpm{120.};
     bool hasPosition = true;
+    bool recording = false;
     juce::Optional<PositionInfo> getPosition() const override {
         if (!hasPosition)
             return {};
         PositionInfo info;
         info.setBpm(bpm);
+        info.setIsRecording(recording);
         return info;
     }
 };
@@ -2132,12 +2306,81 @@ void renderingTests() {
             "Unsupported prepare must silence and clear latency");
 }
 } // namespace
+void effectPreviewHostTests() {
+    DarkVoiceProcessor p;
+    layout(p, 2);
+    p.prepareToPlay(48000, 512);
+    require(p.effectPreview().status().prepared,
+            "Optional preview prepares with working live engine");
+    const auto catalog = darkvoice::previewCatalog();
+    require(!catalog.empty(), "Preview has implemented effects");
+    juce::MemoryBlock before;
+    p.getStateInformation(before);
+    const auto quality = p.activeQualityMode();
+    TempoPlayHead playhead;
+    p.setPlayHead(&playhead);
+    juce::AudioBuffer<float> buffer(2, 512);
+    juce::MidiBuffer midi;
+    for (int scenario = 0; scenario < 4; ++scenario) {
+        require(p.effectPreview().request(catalog.front().id, darkvoice::PreviewVoice::Male,
+                                          darkvoice::PreviewSampleKind::Speech),
+                "Host preview request accepted");
+        if (scenario == 0)
+            p.setNonRealtime(true);
+        if (scenario == 1)
+            playhead.recording = true;
+        if (scenario == 2)
+            set(p, "bypass", 1);
+        buffer.clear();
+        if (scenario == 3)
+            p.processBlockBypassed(buffer, midi);
+        else
+            p.processBlock(buffer, midi);
+        require(p.effectPreview().status().blocked,
+                "Preview blocked by offline/recording/global/host bypass");
+        for (int ch = 0; ch < 2; ++ch)
+            for (int i = 0; i < buffer.getNumSamples(); ++i)
+                require(buffer.getSample(ch, i) == 0, "Blocked preview never inserts audio");
+        p.setNonRealtime(false);
+        playhead.recording = false;
+        set(p, "bypass", 0);
+        p.processBlock(buffer, midi);
+    }
+    // Request, render and audible playback use an isolated engine and leave state untouched.
+    require(p.effectPreview().request(catalog.front().id, darkvoice::PreviewVoice::Female,
+                                      darkvoice::PreviewSampleKind::Singing),
+            "Female singing request accepted");
+    const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(20);
+    bool played = false;
+    while (std::chrono::steady_clock::now() < deadline) {
+        buffer.clear();
+        p.processBlock(buffer, midi);
+        if (p.effectPreview().status().state == darkvoice::PreviewState::Playing) {
+            played = true;
+            break;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(2));
+    }
+    require(played, "Prepared preview reaches host audio callback");
+    p.effectPreview().setProcessed(false);
+    p.effectPreview().setProcessed(true);
+    p.effectPreview().stop();
+    juce::MemoryBlock after;
+    p.getStateInformation(after);
+    require(before == after && p.activeQualityMode() == quality,
+            "Preview preserves full live/preset/quality state");
+    p.releaseResources();
+    require(!p.effectPreview().status().prepared, "Host release stops optional preview");
+}
 int main() {
     juce::ScopedJuceInitialiser_GUI runtime;
     try {
+        effectPreviewHostTests();
         qualityModeTests();
         stateTests();
         characterStateTests();
+        transducerStateTests();
+        transducerAudioTests();
         colourAudioTests();
         sculptorToneAudioTests();
         characterAudioTests();

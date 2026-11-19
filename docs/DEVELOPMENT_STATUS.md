@@ -1,3 +1,36 @@
+# Current checkpoint — 2026-11-19
+
+Prepared Live/Studio/Offline quality modes and the Character control are merged
+into main through PR48 (6064e64); PR45 is also marked merged through its included
+history. All seven native jobs, source checks and48 dense Colour/Character shards
+passed at the reviewed head. The earlier ARM test-reference issue is corrected.
+Manual listening/microphone/DAW qualification remains deferred by user request.
+
+Effect examples remain in draft PR47:27 curated examples, male/female speech and
+singing recordings, Dry/Effect switching and host-output playback. Local renderer,
+player, service, processor and real popup checks passed. Renderer/player sanitizer
+checks passed; service project code passed instrumentation with JUCE itself
+uninstrumented. The macOS service-test compile failure is corrected with a
+portable joining-thread helper; its linked Release rerun passed25.37seconds.
+Fresh native CI remains required. No preview merge or release is claimed.
+
+Telephone, Megaphone and Radio linear filter cores are implemented and reviewed
+on feature/effects/transducer-integration. Their response, spectral purity,
+automation, lifecycle and callback allocation checks passed; the integrated
+Release core test passed3.85seconds after correcting the allocation test probe.
+Schema17 engine/host/UI integration and three matching previews pass local linked
+processor, preset and display tests, including both voices for every new model.
+Engine Release passed44,108 checks and132 exact routes. Its600second sanitizer
+attempt timed out; the unchanged full suite is being measured with a1200second
+budget. Draft PR49 still requires completed sanitizer and native gates.
+They are generic filter designs, not proprietary device emulations. No nonlinear
+distortion, codec degradation or RF noise is claimed by these models.
+
+Qualified product pitch/formant processing remains outstanding; the candidate is
+still an offline experiment. Harmony, reference-aware correction, Voice DNA,
+production/standalone workflows, mixing, mastering and export remain in the
+baseline roadmap. The chronological entries below retain historical results.
+
 # Development status — 2026-10-21
 
 Current phase: M1 application foundation implemented and validated locally on
@@ -967,6 +1000,15 @@ has a600-second operational budget. Final sanitizer completion is not yet
 verified. This checkpoint is not a claim of a qualified release or main merge.
 Manual host/listening tests remain deferred.
 
+## Effect examples preview packages planned — 2026-11-15
+
+A versioned preview contract and shared headers precede independent catalog/
+renderer, realtime player, worker/service and popup/host assignments. The user
+requested male/female clean sources and additional vocal FX references. Licensed
+natural speech and singing assets are being integrated separately. The initial
+catalog covers existing real DSP; future transducer/ringmod/phaser/rhythmic and
+pitch-dependent features remain explicit backlog, not simulated preview entries.
+
 ## Character core qualification integration — 2026-11-12
 
 The committed Character contribution is now registered as an independent core
@@ -992,3 +1034,9 @@ The schema16 Character branch now includes prepared-quality integration0528e90
 and main's qualified cores through a normal merge. Application DSP/host behavior
 is unchanged by reconciliation; CI gains retained diagnostic logs. Exact merged
 head checks and normal review still gate PR48; no merge or release is claimed.
+
+## Preview ancestry update — 2026-11-16
+
+Preview now includes Character/quality integration ancestry without modifying
+preview runtime, UI, tests or build definitions. All active contracts and test
+repairs are retained. Exact-head validation remains pending before normal merge.

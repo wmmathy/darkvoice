@@ -1,5 +1,14 @@
 # Changelog
 
+## Effect examples and Transducer development
+
+- Add local male/female speech and singing effect examples, Dry/Effect playback
+  and recording credits; native qualification remains pending in PR47.
+- Implement original Telephone, Megaphone and Radio linear filter cores with
+  independent response, spectral-purity and realtime-safety tests.
+- Keep Transducer controls and matching previews under integration until their
+  engine, state, UI and native checks pass.
+
 ## Character application control
 
 - Add an independently audible bipolar Character control and schema16 migration.

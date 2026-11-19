@@ -1,4 +1,5 @@
 #pragma once
+#include "EffectPreviewPanel.hpp"
 #include "PluginProcessor.hpp"
 #include <algorithm>
 #include <array>
@@ -33,10 +34,10 @@ class DarkVoiceEditor final : public juce::AudioProcessorEditor, private juce::T
     DarkVoiceProcessor &processor_;
     DarkVoiceLookAndFeel look_;
     juce::TabbedComponent tabs_{juce::TabbedButtonBar::TabsAtLeft};
-    std::array<juce::Component, 13> pages_;
-    std::array<juce::Slider, 65> sliders_;
-    std::array<juce::Label, 65> labels_;
-    std::array<std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>, 65>
+    std::array<juce::Component, 14> pages_;
+    std::array<juce::Slider, 67> sliders_;
+    std::array<juce::Label, 67> labels_;
+    std::array<std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>, 67>
         attachments_;
     juce::ToggleButton bypass_{"Bypass processing"};
     std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> bypassAttachment_;
@@ -47,6 +48,8 @@ class DarkVoiceEditor final : public juce::AudioProcessorEditor, private juce::T
     juce::ToggleButton favoritesOnly_{"Favorites"}, favorite_{"Favorite"};
     juce::TextButton load_{"Load"}, save_{"Save as"}, rename_{"Rename"}, import_{"Import"},
         export_{"Export"};
+    juce::TextButton preview_{"Preview effects..."};
+    std::unique_ptr<juce::DialogWindow> previewWindow_;
     std::vector<juce::String> visibleIds_;
     std::unique_ptr<juce::FileChooser> chooser_;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(DarkVoiceEditor)

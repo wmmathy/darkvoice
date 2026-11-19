@@ -13,6 +13,7 @@
 #include <darkvoice/SpaceReverb.hpp>
 #include <darkvoice/StereoDelay.hpp>
 #include <darkvoice/ToneEffects.hpp>
+#include <darkvoice/Transducer.hpp>
 #include <darkvoice/VocalLimiter.hpp>
 #include <darkvoice/VoiceSculptor.hpp>
 #include <optional>
@@ -52,6 +53,8 @@ struct EngineParameters {
     float sculptBreathiness = 0;
     float sculptDepthDb = 0, sculptResonanceDb = 0;
     float sculptCharacter = 0;
+    int transducerModel = 0;
+    float transducerMix = 0;
 };
 struct EngineMeters {
     float inputPeak = 0.0f;
@@ -94,6 +97,7 @@ class AudioEngine {
     Flanger flanger_;
     Doubler doubler_;
     StereoDelay stereoDelay_;
+    Transducer transducer_;
     SpaceReverb spaceReverb_;
     VocalLimiter limiter_;
     BandlimitedColour colour_;

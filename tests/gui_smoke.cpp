@@ -74,7 +74,7 @@ int main(int argc, char **argv) {
                 button && button->getName() == "Load preset")
                 load = button;
         }
-        if (controls != 65 || !input || !bypass || !presetSelection || !load)
+        if (controls != 67 || !input || !bypass || !presetSelection || !load)
             return 2;
         if (!quality || !qualityStatus || quality->getNumItems() != 3 ||
             !editor->getLocalBounds().contains(quality->getBounds()) ||
@@ -96,7 +96,7 @@ int main(int argc, char **argv) {
         bypass->setToggleState(true, juce::sendNotificationSync);
         if (processor.parameters.getRawParameterValue("bypass")->load() != 1.0f)
             return 4;
-        constexpr std::array<const char *, 65> names{"INPUT GAIN",
+        constexpr std::array<const char *, 67> names{"INPUT GAIN",
                                                      "OUTPUT GAIN",
                                                      "HIGH-PASS",
                                                      "WARMTH DRIVE",
@@ -160,7 +160,9 @@ int main(int argc, char **argv) {
                                                      "BREATH TEXTURE",
                                                      "DEPTH LOWS",
                                                      "RESONANCE 700 Hz",
-                                                     "CHARACTER"};
+                                                     "CHARACTER",
+                                                     "TRANSDUCER MODEL",
+                                                     "TRANSDUCER MIX"};
         std::size_t soundIndex = 0;
         for (const auto &spec : darkvoice::parameterSchema) {
             if (juce::String(spec.id) == "bypass")
@@ -266,7 +268,7 @@ int main(int argc, char **argv) {
                 if (tabs->getOrientation() != juce::TabbedButtonBar::TabsAtLeft ||
                     tabs->getTabBarDepth() < 160)
                     return 22;
-                if (tabs->getNumTabs() != 13)
+                if (tabs->getNumTabs() != 14)
                     return 17;
                 for (int i = 0; i < tabs->getNumTabs(); ++i) {
                     const auto *button = tabs->getTabbedButtonBar().getTabButton(i);
@@ -349,6 +351,156 @@ int main(int argc, char **argv) {
         character->setValue(0, juce::sendNotificationSync);
         if (processor.parameters.getRawParameterValue("sculptCharacter")->load() != 0)
             return 40;
+        juce::Slider *transducerModel = nullptr, *transducerMix = nullptr;
+        for (auto *component : components) {
+            if (auto *slider = dynamic_cast<juce::Slider *>(component)) {
+                if (slider->getName() == "TRANSDUCER MODEL")
+                    transducerModel = slider;
+                if (slider->getName() == "TRANSDUCER MIX")
+                    transducerMix = slider;
+            }
+            if (auto *tabs = dynamic_cast<juce::TabbedComponent *>(component)) {
+                tabs->setCurrentTabIndex(13);
+                if (tabs->getCurrentTabName() != "TRANSDUCER")
+                    return 51;
+            }
+        }
+        if (!transducerModel || !transducerMix)
+            return 52;
+        for (int model = 0; model < 3; ++model) {
+            transducerModel->setValue(model, juce::sendNotificationSync);
+            if (processor.parameters.getRawParameterValue("transducerModel")->load() != model ||
+                transducerModel->getTextFromValue(model) != juce::String(model == 0   ? "Telephone"
+                                                                         : model == 1 ? "Megaphone"
+                                                                                      : "Radio"))
+                return 53;
+        }
+        transducerMix->setValue(.731, juce::sendNotificationSync);
+        if (std::abs(processor.parameters.getRawParameterValue("transducerMix")->load() - .731f) >
+            .001f)
+            return 54;
+        transducerModel->setValue(0, juce::sendNotificationSync);
+        transducerMix->setValue(0, juce::sendNotificationSync);
+        juce::TextButton *previewButton = nullptr;
+        for (auto *component : components)
+            if (auto *button = dynamic_cast<juce::TextButton *>(component);
+                button && button->getButtonText() == "Preview effects...")
+                previewButton = button;
+        if (!previewButton || previewButton->getBounds() != juce::Rectangle<int>(744, 141, 132, 30))
+            return 41;
+        previewButton->onClick();
+        juce::DialogWindow *previewWindow = nullptr;
+        for (int i = 0; i < juce::TopLevelWindow::getNumTopLevelWindows(); ++i)
+            if (auto *window =
+                    dynamic_cast<juce::DialogWindow *>(juce::TopLevelWindow::getTopLevelWindow(i));
+                window && window->getName() == "Effect examples")
+                previewWindow = window;
+        if (!previewWindow || !previewWindow->isVisible())
+            return 42;
+        std::vector<juce::Component *> previewComponents;
+        std::set<juce::Component *> previewVisited;
+        collect(*previewWindow, previewComponents, previewVisited);
+        juce::ComboBox *voice = nullptr, *effect = nullptr;
+        juce::TextButton *play = nullptr, *stop = nullptr;
+        juce::ToggleButton *processed = nullptr;
+        for (auto *component : previewComponents) {
+            if (auto *combo = dynamic_cast<juce::ComboBox *>(component);
+                combo && combo->getName() == "Preview voice")
+                voice = combo;
+            if (auto *combo = dynamic_cast<juce::ComboBox *>(component);
+                combo && combo->getName() == "Preview effect")
+                effect = combo;
+            if (auto *button = dynamic_cast<juce::TextButton *>(component)) {
+                if (button->getButtonText() == "Play")
+                    play = button;
+                if (button->getButtonText() == "Stop")
+                    stop = button;
+            }
+            if (auto *button = dynamic_cast<juce::ToggleButton *>(component);
+                button && button->getButtonText() == "Effect (off = Dry)")
+                processed = button;
+        }
+        if (!voice || !effect || effect->getNumItems() != 30 || !play || !stop || !processed)
+            return 43;
+        juce::MemoryBlock previewBefore;
+        processor.getStateInformation(previewBefore);
+        for (int selectedEffect : {1, 28, 29, 30}) {
+            effect->setSelectedId(selectedEffect, juce::sendNotificationSync);
+            for (int selectedVoice : {1, 2}) {
+                voice->setSelectedId(selectedVoice, juce::sendNotificationSync);
+                play->onClick();
+                const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(20);
+                bool playing = false;
+                juce::AudioBuffer<float> previewAudio(2, 512);
+                juce::MidiBuffer previewMidi;
+                while (std::chrono::steady_clock::now() < deadline) {
+                    previewAudio.clear();
+                    processor.processBlock(previewAudio, previewMidi);
+                    juce::Timer::callPendingTimersSynchronously();
+                    if (processor.effectPreview().status().state ==
+                        darkvoice::PreviewState::Playing) {
+                        playing = true;
+                        break;
+                    }
+                    std::this_thread::sleep_for(std::chrono::milliseconds(2));
+                }
+                if (!playing || processor.effectPreview().status().effect != selectedEffect ||
+                    processor.effectPreview().status().voice !=
+                        (selectedVoice == 1 ? darkvoice::PreviewVoice::Male
+                                            : darkvoice::PreviewVoice::Female))
+                    return 44;
+                float previewPeak = 0;
+                for (int block = 0; block < 96; ++block) {
+                    previewAudio.clear();
+                    processor.processBlock(previewAudio, previewMidi);
+                    previewPeak = std::max(
+                        previewPeak, previewAudio.getMagnitude(0, previewAudio.getNumSamples()));
+                }
+                if (previewPeak <= .0001f)
+                    return 49;
+                const auto cursor = processor.effectPreview().status().positionFrames;
+                processed->setToggleState(false, juce::dontSendNotification);
+                processed->onClick();
+                previewAudio.clear();
+                processor.processBlock(previewAudio, previewMidi);
+                if (processor.effectPreview().status().processed ||
+                    processor.effectPreview().status().positionFrames <= cursor)
+                    return 45;
+                processed->setToggleState(true, juce::dontSendNotification);
+                processed->onClick();
+                if (!processor.effectPreview().status().processed)
+                    return 46;
+                stop->onClick();
+                for (int i = 0; i < 32; ++i) {
+                    previewAudio.clear();
+                    processor.processBlock(previewAudio, previewMidi);
+                }
+                if (processor.effectPreview().status().state == darkvoice::PreviewState::Playing)
+                    return 47;
+            }
+        }
+        if (argc > 2) {
+            // Let the progress bar's own timer observe the stopped playback
+            // before capturing; audio above deliberately runs faster than wall time.
+            for (int tick = 0; tick < 2; ++tick) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                juce::Timer::callPendingTimersSynchronously();
+            }
+            auto previewImage =
+                previewWindow->createComponentSnapshot(previewWindow->getLocalBounds());
+            auto output = juce::File::getCurrentWorkingDirectory().getChildFile(argv[2]);
+            output.deleteFile();
+            auto stream = output.createOutputStream();
+            if (!stream || !juce::PNGImageFormat().writeImageToStream(previewImage, *stream))
+                return 50;
+        }
+        previewWindow->closeButtonPressed();
+        if (previewWindow->isVisible())
+            return 48;
+        juce::MemoryBlock previewAfter;
+        processor.getStateInformation(previewAfter);
+        if (previewBefore != previewAfter)
+            return 49;
         auto image = editor->createComponentSnapshot(editor->getLocalBounds());
         if (image.isNull())
             return 5;
@@ -359,7 +511,7 @@ int main(int argc, char **argv) {
             if (!stream || !juce::PNGImageFormat().writeImageToStream(image, *stream))
                 return 6;
         }
-        std::cout << "GUI smoke passed: 65 controls, all parameter attachments, bypass, actual "
+        std::cout << "GUI smoke passed: 67 controls, all parameter attachments, bypass, actual "
                      "factory preset audio, dry-pitch feedback, snapshot\n";
         return 0;
     }();

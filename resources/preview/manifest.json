@@ -1,0 +1,166 @@
+{
+  "schemaVersion": 1,
+  "creditsFile": "CREDITS.md",
+  "originalAssetBytesUnchanged": true,
+  "cuePolicy": "Suggested excerpts only; original WAV files are unchanged. Runtime adds shared edge fades and effects.",
+  "assets": [
+    {
+      "id": "male_speech",
+      "file": "male_speech.wav",
+      "voice": "male",
+      "kind": "speech",
+      "speakerId": "bdl",
+      "publishedVoiceLabel": "male",
+      "sampleRate": 16000,
+      "channels": 1,
+      "bitsPerSample": 16,
+      "frames": 110400,
+      "cueStartFrame": 0,
+      "cueFrames": 54077,
+      "sourceSha256": "31b4d6166009ea6c7367a01f5441d72c1f4bbeb9784781e3c5462f46a66651d3",
+      "destinationSha256": "31b4d6166009ea6c7367a01f5441d72c1f4bbeb9784781e3c5462f46a66651d3",
+      "source": {
+        "repository": "JimLiu/baocut",
+        "commit": "bc57be6f9afde8d738e25d3c8438da0377efd041",
+        "path": "packages/models/assets/tts-voices/en-male.wav",
+        "url": "https://raw.githubusercontent.com/JimLiu/baocut/bc57be6f9afde8d738e25d3c8438da0377efd041/packages/models/assets/tts-voices/en-male.wav",
+        "publishedMetadataUrl": "https://raw.githubusercontent.com/JimLiu/baocut/bc57be6f9afde8d738e25d3c8438da0377efd041/packages/models/src/speech-voices.ts",
+        "licenceNoticeUrl": "https://raw.githubusercontent.com/JimLiu/baocut/bc57be6f9afde8d738e25d3c8438da0377efd041/packages/models/assets/tts-voices/COPYING.txt",
+        "recordingOrigin": "CMU ARCTIC cmu_us_bdl_arctic, wav/arctic_a0001.wav and wav/arctic_a0002.wav",
+        "priorChanges": [
+          "Publisher concatenated original arctic_a0001.wav and arctic_a0002.wav with 0.3 seconds of silence.",
+          "Publisher trimmed outer silence retaining 0.15 seconds padding and peak-normalized to -3.5 dBFS.",
+          "Publisher reports no speed or spoken-content changes."
+        ]
+      },
+      "licence": {
+        "id": "LicenseRef-CMU-Arctic",
+        "file": "licenses/CMU_ARCTIC_COPYING.txt",
+        "sha256": "1e6cc6149cb8b08f9ad429973af9e4924e3706e32089910150be457dba266bf3",
+        "url": "http://www.festvox.org/cmu_arctic/"
+      },
+      "provenance": {
+        "primaryArchiveByteIdentityVerified": false,
+        "note": "Pinned mirror supplies the recording provenance, published voice labels, complete CMU licence and prior-change notice; no primary archive byte comparison was performed."
+      }
+    },
+    {
+      "id": "female_speech",
+      "file": "female_speech.wav",
+      "voice": "female",
+      "kind": "speech",
+      "speakerId": "slt",
+      "publishedVoiceLabel": "female",
+      "sampleRate": 16000,
+      "channels": 1,
+      "bitsPerSample": 16,
+      "frames": 117120,
+      "cueStartFrame": 0,
+      "cueFrames": 56002,
+      "sourceSha256": "b152266467379260650c9c9959956efda37f3dc1e4bb3eeb4c5aad672b71501b",
+      "destinationSha256": "b152266467379260650c9c9959956efda37f3dc1e4bb3eeb4c5aad672b71501b",
+      "source": {
+        "repository": "JimLiu/baocut",
+        "commit": "bc57be6f9afde8d738e25d3c8438da0377efd041",
+        "path": "packages/models/assets/tts-voices/en-female.wav",
+        "url": "https://raw.githubusercontent.com/JimLiu/baocut/bc57be6f9afde8d738e25d3c8438da0377efd041/packages/models/assets/tts-voices/en-female.wav",
+        "publishedMetadataUrl": "https://raw.githubusercontent.com/JimLiu/baocut/bc57be6f9afde8d738e25d3c8438da0377efd041/packages/models/src/speech-voices.ts",
+        "licenceNoticeUrl": "https://raw.githubusercontent.com/JimLiu/baocut/bc57be6f9afde8d738e25d3c8438da0377efd041/packages/models/assets/tts-voices/COPYING.txt",
+        "recordingOrigin": "CMU ARCTIC cmu_us_slt_arctic, wav/arctic_a0001.wav and wav/arctic_a0002.wav",
+        "priorChanges": [
+          "Publisher concatenated original arctic_a0001.wav and arctic_a0002.wav with 0.3 seconds of silence.",
+          "Publisher trimmed outer silence retaining 0.15 seconds padding and peak-normalized to -3.5 dBFS.",
+          "Publisher reports no speed or spoken-content changes."
+        ]
+      },
+      "licence": {
+        "id": "LicenseRef-CMU-Arctic",
+        "file": "licenses/CMU_ARCTIC_COPYING.txt",
+        "sha256": "1e6cc6149cb8b08f9ad429973af9e4924e3706e32089910150be457dba266bf3",
+        "url": "http://www.festvox.org/cmu_arctic/"
+      },
+      "provenance": {
+        "primaryArchiveByteIdentityVerified": false,
+        "note": "Pinned mirror supplies the recording provenance, published voice labels, complete CMU licence and prior-change notice; no primary archive byte comparison was performed."
+      }
+    },
+    {
+      "id": "male_singing",
+      "file": "male_singing.wav",
+      "voice": "male",
+      "kind": "singing",
+      "speakerId": "m8",
+      "publishedVoiceLabel": "male",
+      "sampleRate": 44100,
+      "channels": 1,
+      "bitsPerSample": 16,
+      "frames": 459437,
+      "cueStartFrame": 0,
+      "cueFrames": 264600,
+      "sourceSha256": "9adce8c9c6d3bc93c1c8f3d4604d2007e5a9f0c83b0670e4be29570ef1d35628",
+      "destinationSha256": "9adce8c9c6d3bc93c1c8f3d4604d2007e5a9f0c83b0670e4be29570ef1d35628",
+      "source": {
+        "repository": "mblackman/vocalset-vowel-voicebanks",
+        "commit": "c48ab544e94e9788fec11be52b365026bb4a017c",
+        "path": "source/vocalset/m8_long_straight_a.wav",
+        "url": "https://raw.githubusercontent.com/mblackman/vocalset-vowel-voicebanks/c48ab544e94e9788fec11be52b365026bb4a017c/source/vocalset/m8_long_straight_a.wav",
+        "publishedMetadataUrl": "https://raw.githubusercontent.com/mblackman/vocalset-vowel-voicebanks/c48ab544e94e9788fec11be52b365026bb4a017c/source/vocalset/README-vocalset.txt",
+        "licenceNoticeUrl": "https://raw.githubusercontent.com/mblackman/vocalset-vowel-voicebanks/c48ab544e94e9788fec11be52b365026bb4a017c/source/vocalset/LICENSE-vocalset.txt",
+        "recordingOrigin": "VocalSet v1.2, https://zenodo.org/records/1442513",
+        "priorChanges": [
+          "The mirror identifies source/vocalset files as full source recordings, separate from its processed 80 ms voicebank clips.",
+          "DarkVoice retains these downloaded source bytes unchanged."
+        ]
+      },
+      "licence": {
+        "id": "CC-BY-4.0",
+        "file": "licenses/VOCALSET_LICENSE.txt",
+        "sha256": "9cf1345fa81eecfcaf9aba014923c02f87dcf9e57bdd91e7458454c4ef614735",
+        "url": "https://creativecommons.org/licenses/by/4.0/"
+      },
+      "provenance": {
+        "primaryArchiveByteIdentityVerified": false,
+        "note": "The pinned mirror explicitly supplies original recording CC BY 4.0 notice and singer metadata. Direct primary Zenodo/DataCite access was denied by environment network policy; original archive byte identity has not been independently verified."
+      }
+    },
+    {
+      "id": "female_singing",
+      "file": "female_singing.wav",
+      "voice": "female",
+      "kind": "singing",
+      "speakerId": "f1",
+      "publishedVoiceLabel": "female",
+      "sampleRate": 44100,
+      "channels": 1,
+      "bitsPerSample": 16,
+      "frames": 521379,
+      "cueStartFrame": 0,
+      "cueFrames": 264600,
+      "sourceSha256": "e1ff90d89de7e30a4dd717dd642173e57b083832f38e74eb8033d349c02bc340",
+      "destinationSha256": "e1ff90d89de7e30a4dd717dd642173e57b083832f38e74eb8033d349c02bc340",
+      "source": {
+        "repository": "mblackman/vocalset-vowel-voicebanks",
+        "commit": "c48ab544e94e9788fec11be52b365026bb4a017c",
+        "path": "source/vocalset/f1_long_straight_a.wav",
+        "url": "https://raw.githubusercontent.com/mblackman/vocalset-vowel-voicebanks/c48ab544e94e9788fec11be52b365026bb4a017c/source/vocalset/f1_long_straight_a.wav",
+        "publishedMetadataUrl": "https://raw.githubusercontent.com/mblackman/vocalset-vowel-voicebanks/c48ab544e94e9788fec11be52b365026bb4a017c/source/vocalset/README-vocalset.txt",
+        "licenceNoticeUrl": "https://raw.githubusercontent.com/mblackman/vocalset-vowel-voicebanks/c48ab544e94e9788fec11be52b365026bb4a017c/source/vocalset/LICENSE-vocalset.txt",
+        "recordingOrigin": "VocalSet v1.2, https://zenodo.org/records/1442513",
+        "priorChanges": [
+          "The mirror identifies source/vocalset files as full source recordings, separate from its processed 80 ms voicebank clips.",
+          "DarkVoice retains these downloaded source bytes unchanged."
+        ]
+      },
+      "licence": {
+        "id": "CC-BY-4.0",
+        "file": "licenses/VOCALSET_LICENSE.txt",
+        "sha256": "9cf1345fa81eecfcaf9aba014923c02f87dcf9e57bdd91e7458454c4ef614735",
+        "url": "https://creativecommons.org/licenses/by/4.0/"
+      },
+      "provenance": {
+        "primaryArchiveByteIdentityVerified": false,
+        "note": "The pinned mirror explicitly supplies original recording CC BY 4.0 notice and singer metadata. Direct primary Zenodo/DataCite access was denied by environment network policy; original archive byte identity has not been independently verified."
+      }
+    }
+  ]
+}

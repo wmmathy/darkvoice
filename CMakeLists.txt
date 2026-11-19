@@ -11,7 +11,7 @@ target_compile_features(darkvoice_core INTERFACE cxx_std_20)
 target_include_directories(darkvoice_core INTERFACE
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>")
 
-add_library(darkvoice_engine STATIC src/AudioEngine.cpp src/ToneEffects.cpp src/PitchDetector.cpp src/NoiseGate.cpp src/DeEsser.cpp src/ModulationEffects.cpp src/Flanger.cpp src/VocalLimiter.cpp src/StereoDelay.cpp src/Doubler.cpp src/SpaceReverb.cpp src/Colour.cpp src/BandlimitedColour.cpp src/HarmonicCharacter.cpp src/VoiceSculptor.cpp src/Breathiness.cpp)
+add_library(darkvoice_engine STATIC src/AudioEngine.cpp src/ToneEffects.cpp src/PitchDetector.cpp src/NoiseGate.cpp src/DeEsser.cpp src/ModulationEffects.cpp src/Flanger.cpp src/VocalLimiter.cpp src/StereoDelay.cpp src/Doubler.cpp src/SpaceReverb.cpp src/Colour.cpp src/BandlimitedColour.cpp src/HarmonicCharacter.cpp src/VoiceSculptor.cpp src/Breathiness.cpp src/EffectPreview.cpp src/EffectPreviewPlayer.cpp src/Transducer.cpp)
 add_library(DarkVoice::Engine ALIAS darkvoice_engine)
 target_link_libraries(darkvoice_engine PUBLIC DarkVoice::Core)
 set_target_properties(darkvoice_engine PROPERTIES POSITION_INDEPENDENT_CODE ON CXX_EXTENSIONS OFF)
@@ -43,6 +43,23 @@ if(DARKVOICE_ENABLE_SANITIZERS)
 endif()
 
 if(BUILD_TESTING)
+    add_executable(darkvoice_transducer_tests tests/transducer_tests.cpp)
+    target_link_libraries(darkvoice_transducer_tests PRIVATE DarkVoice::Engine)
+    set_target_properties(darkvoice_transducer_tests PROPERTIES CXX_EXTENSIONS OFF)
+    darkvoice_strict_warnings(darkvoice_transducer_tests)
+    add_test(NAME effects.transducer COMMAND darkvoice_transducer_tests)
+    set_tests_properties(effects.transducer PROPERTIES TIMEOUT 120)
+    find_package(Threads REQUIRED)
+    foreach(component IN ITEMS effect_preview effect_preview_player)
+        add_executable(darkvoice_${component}_tests tests/${component}_tests.cpp)
+        target_link_libraries(darkvoice_${component}_tests PRIVATE DarkVoice::Engine Threads::Threads)
+        set_target_properties(darkvoice_${component}_tests PROPERTIES CXX_EXTENSIONS OFF)
+        darkvoice_strict_warnings(darkvoice_${component}_tests)
+        add_test(NAME preview.${component} COMMAND darkvoice_${component}_tests)
+        # Full-chain examples include prepared 16x nonlinear processing. This
+        # bounds instrumented/Debug suite runtime, not an audio callback deadline.
+        set_tests_properties(preview.${component} PROPERTIES TIMEOUT 600)
+    endforeach()
     add_executable(darkvoice_breathiness_tests tests/breathiness_tests.cpp)
     target_link_libraries(darkvoice_breathiness_tests PRIVATE DarkVoice::Engine)
     set_target_properties(darkvoice_breathiness_tests PROPERTIES CXX_EXTENSIONS OFF)
@@ -141,10 +158,11 @@ if(BUILD_TESTING)
     set_target_properties(darkvoice_engine_tests PROPERTIES CXX_EXTENSIONS OFF)
     darkvoice_strict_warnings(darkvoice_engine_tests)
     add_test(NAME engine.regression COMMAND darkvoice_engine_tests)
-    # Parallel Character adds full-chain work and sixty independent routing
-    # oracles. This bounds suite runtime, not a callback deadline; every
-    # numerical, allocation and lifecycle assertion remains enabled.
-    set_tests_properties(engine.regression PROPERTIES TIMEOUT 600)
+    # Parallel Character and Transducer retain 132 independent composed routes
+    # plus expanded warmed-state checks (44,108 assertions). The instrumented
+    # suite exceeded 600 seconds. This is a test runtime budget, not a callback
+    # deadline; every numerical, allocation and lifecycle case stays enabled.
+    set_tests_properties(engine.regression PROPERTIES TIMEOUT 1200)
 
     add_executable(darkvoice_effects_tests tests/effects_tests.cpp)
     target_link_libraries(darkvoice_effects_tests PRIVATE DarkVoice::Engine)
@@ -207,6 +225,14 @@ if(DARKVOICE_BUILD_PRODUCTS)
         message(FATAL_ERROR "DarkVoice requires JUCE 8.0.6; got ${darkvoice_juce_version}")
     endif()
 
+    juce_add_binary_data(DarkVoicePreviewAssets
+        HEADER_NAME DarkVoicePreviewAssets.h NAMESPACE DarkVoicePreviewAssets
+        SOURCES resources/preview/male_speech.wav resources/preview/female_speech.wav
+            resources/preview/male_singing.wav resources/preview/female_singing.wav
+            resources/preview/CREDITS.md resources/preview/licenses/CMU_ARCTIC_COPYING.txt
+            resources/preview/licenses/VOCALSET_ATTRIBUTION.md
+            resources/preview/licenses/VOCALSET_LICENSE.txt)
+
     set(darkvoice_plugin_formats VST3)
     if(APPLE)
         list(APPEND darkvoice_plugin_formats AU)
@@ -236,9 +262,9 @@ if(DARKVOICE_BUILD_PRODUCTS)
             COPY_PLUGIN_AFTER_BUILD FALSE
             VST3_CATEGORIES Fx
             AU_MAIN_TYPE kAudioUnitType_Effect)
-        target_sources(${target} PRIVATE src/PluginProcessor.cpp src/PluginEditor.cpp src/PresetBank.cpp src/DryPitchAnalyzer.cpp)
+        target_sources(${target} PRIVATE src/PluginProcessor.cpp src/PluginEditor.cpp src/PresetBank.cpp src/DryPitchAnalyzer.cpp src/EffectPreviewService.cpp src/EffectPreviewPanel.cpp)
         target_include_directories(${target} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src")
-        target_link_libraries(${target} PRIVATE DarkVoice::Engine juce::juce_audio_utils
+        target_link_libraries(${target} PRIVATE DarkVoice::Engine DarkVoicePreviewAssets juce::juce_audio_utils
             juce::juce_recommended_config_flags)
         target_compile_features(${target} PRIVATE cxx_std_20)
         target_compile_definitions(${target} PUBLIC
@@ -254,6 +280,15 @@ if(DARKVOICE_BUILD_PRODUCTS)
     darkvoice_product(DarkVoiceStudio "DarkVoice Studio" Dvst 0 Standalone)
 
     if(BUILD_TESTING)
+        add_executable(darkvoice_effect_preview_service_tests tests/effect_preview_service_tests.cpp)
+        target_link_libraries(darkvoice_effect_preview_service_tests PRIVATE DarkVoiceVocal)
+        target_include_directories(darkvoice_effect_preview_service_tests PRIVATE
+            "${darkvoice_juce_dir}/modules" "${CMAKE_CURRENT_SOURCE_DIR}/include")
+        target_compile_features(darkvoice_effect_preview_service_tests PRIVATE cxx_std_20)
+        target_compile_definitions(darkvoice_effect_preview_service_tests PRIVATE JUCE_GLOBAL_MODULE_SETTINGS_INCLUDED=1)
+        add_test(NAME preview.service COMMAND darkvoice_effect_preview_service_tests)
+        set_tests_properties(preview.service PROPERTIES TIMEOUT 180
+            FAIL_REGULAR_EXPRESSION "JUCE Assertion failure;Leaked objects detected")
         add_executable(darkvoice_plugin_tests tests/plugin_tests.cpp)
         # Reuse Vocal's shared-code archive instead of compiling JUCE modules again.
         target_link_libraries(darkvoice_plugin_tests PRIVATE DarkVoiceVocal)

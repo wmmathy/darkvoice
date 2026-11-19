@@ -896,6 +896,49 @@ the engine suite runtime budget is now600seconds; all30,788 assertions and
 60route comparisons remain enabled. A timeout or sanitizer report remains a
 failure, and no callback deadline or numerical threshold is changed. No target realtime deadline follows.
 
+## Effect preview integration — 2026-11-16
+
+The combined preview branch now includes the 27-example renderer, bounded player,
+local asset worker and popup/processor integration. CMake registers independent
+renderer/player suites and the linked JUCE service suite, and embeds four original
+recordings plus their credits/license notices. Credits are read from those bundled
+notices rather than duplicated text.
+
+Release CTest preview renderer/player: 2/2 passed (42.84 seconds). Asset checker:
+four original attributed WAVs passed, including 33 malformed/missing/corrupt guards.
+Linked service, plugin and GUI checks are still pending at this checkpoint; these
+core results do not establish audible quality or host qualification.
+
+Character application sanitizer engine regression completed successfully in the
+previous root build: 1/1, 425.03 seconds, retaining all 30,788 assertions and sixty
+route checks. Earlier 180/900-second timeout attempts remain failures/incomplete.
+Remote Character application macOS product run43768368582 failed the actual-host
+Character mapping oracle; diagnosis remains open. Linux product/core/sanitizer
+jobs passed. No Character application merge is claimed.
+
+Preview linked Release validation: service1/1 passed26.00seconds, including all
+four voice/type assets and30 concurrent UI/lifecycle cycles. Processor suite1/1
+passed93.67seconds with the actual-host Character reference values and preview
+state/audio checks. Independent review accepted both fixes without weakening
+thresholds. Display-backed GUI smoke passed65controls, both preview voices,
+A/B/cursor/Stop and unchanged state. Popup screenshot inspected. Initial bare-Xvfb
+attempts failed (segfault then missing-X11-atom errors); explicitly initializing
+standard window-manager atoms allowed the actual GUI test to run successfully.
+A reusable wrapper is added for CI. These results do not establish macOS native
+or manual listening/DAW qualification.
+
+The first combined ASan/UBSan preview run failed: renderer timed out180.13s;
+player allocator probe reported operator-new(nothrow)/free mismatch because its
+test replacements lacked matching nothrow allocation overloads. Neither is passed.
+Renderer suite budget is now600s for full-chain instrumented/Debug examples,
+without removing cases or changing numerical bounds. Matching probe overloads
+are being corrected with sanitizer mismatch detection left enabled.
+
+Preview player probe correction728b76a was independently rebuilt in the combined
+ASan/UBSan tree:1/1 passed.08seconds,734checks, mismatch detection retained.
+Character-only branch fresh linked processor rerun passed1/1 in95.33seconds;
+its separate native check run remains pending.
+
 ## Character host reference correction — 2026-11-16
 
 Mac product CI run43768368582 failed the direct-engine Character mapping oracle;
@@ -979,3 +1022,108 @@ The pre-merge root linked processor/preset rerun passed in95.33seconds (lead
 evidence); it is not a new merged-head run. Fresh exact-head native, source and
 relevant automated gates remain required before normal PR48 integration. No
 manual/DAW/listening qualification is claimed.
+
+## Preview / Character ancestry reconciliation — 2026-11-16
+
+The preview branch incorporates Character application68e66d3 and prepared-quality
+ancestry0528e90 through a normal merge. Three documentation conflicts retain both
+histories. Compared with preview checkpoint309c496, CMake and all src/include/tests
+are unchanged, including the independently repaired host mapping oracle, preview
+lifecycle gate and callback allocation probe. Only inherited CI log retention,
+diagnostics and historical documentation are added. Existing test runs remain
+evidence for their source checkpoints; exact merged-head CI and normal review
+remain required before integration. No manual/listening/DAW test is claimed.
+
+## Preview sanitizer completion — 2026-11-16
+
+The unchanged full renderer matrix passed ASan/UBSan1/1 in275.76seconds under
+the600second suite budget. Player passed1/1 in.08seconds after matching guarded
+nothrow allocations; leak/halt and allocator-mismatch detection remained enabled.
+The service suite also passed with Service.cpp, its test and the complete engine/
+renderer/player instrumented; JUCE and immutable asset archives were reused from
+the uninstrumented Release build, so this is scoped project-code instrumentation,
+not full JUCE sanitizer coverage. Command/evidence retained locally under
+build/verification/sanitizer-service. No sanitizer findings were suppressed.
+
+The initial180.13second renderer timeout and test-allocation mismatch remain
+recorded failures. Actual renderer/player/service/processor/UI behavior and
+thresholds were unchanged by the later ancestry merge d6bf9a8. Native exact-head
+CI remains a merge gate; manual listening/microphone/DAW checks remain deferred.
+
+## Transducer core checkpoint — 2026-11-16
+
+Writer strict O2 and ASan/UBSan suites each passed21,779,986checks (6.20/22.87s).
+Worst model complex-response errors were1.40e-8/6.67e-9/1.76e-8; worst spectral
+purity residuals−150.44/−150.70/−148.88dB. Response and omitted-peak/trim,
+swapped-model, identity and clipping negative controls passed, including Radio
+emphasis. Independent source review accepted the core. Application is pending.
+
+Lead CMake Release(-O3) integration build exposed an allocator-probe compiler
+warning treated as error: replacement new inlining produced mismatched-new-delete
+analysis in the test probe. This build is failed, not passed; writer is correcting
+the probe with no warning suppression. DSP thresholds and implementation unchanged.
+
+## Preview macOS test portability — 2026-11-19
+
+Native macOS products failed to compile the service tests because the pinned
+Apple libc++ does not supply std::jthread/stop_token. Production uses std::thread
+already. The test helper now uses std::thread with an atomic stop flag and RAII
+stop/join, preserving exception cleanup and both concurrency tests. Fresh linked
+Release service suite passed1/1 in25.37seconds. A capacity failure prevented the
+macOS Release core job from acquiring a runner; it is not a DSP failure or pass.
+Native checks must rerun at the corrected head before merging preview.
+
+Character and prepared quality application were merged through PR48 on2026-11-19
+at6064e6488ce7902d614f258d07916d2d4dc2d3ac. All seven native jobs, source quality
+and48 dense Colour/Character shards passed at its reviewed head68e66d3. PR45 is
+also marked merged because its history is included. Earlier timeout failures
+remain historical evidence; no manual host/listening validation is claimed.
+
+## Transducer Release integration rerun — 2026-11-19
+
+The allocation probe now retains observable noinline entry points under GCC
+Release optimization, without disabling compiler or sanitizer diagnostics. Fresh
+CMake Release core suite passed1/1 in3.85seconds; all21,779,986 assertions retained.
+Exhaustive cppcheck passed implementation, public header and tests. The earlier
+-O3 build failure remains recorded. Engine/host/UI integration is still pending.
+
+## Transducer application checkpoint — 2026-11-19
+
+Engine Release suite passed44,108 checks/zero failures in79.308seconds, including
+all132 composed routes with exact zero error (sixty retained plus72 new routes).
+Coverage includes active StereoDelay before Transducer, automation, bypass/freeze/
+resume, reset/reprepare, warmed invalid snapshots and raw nonfinite bypass payloads.
+An intermediate test accidentally requested5ms StereoDelay below its20ms minimum;
+the correctly rejected fixture was fixed to20ms without changing DSP or gates.
+Engine sanitizer execution is pending.
+
+The30-example renderer CTest passed1/1 in30.61seconds, including new actual-model
+metadata, differences from dry and pairwise differences among all three Transducer
+models. Host changes passed six translation-unit syntax checks and5,426 linked
+preset assertions; independent review found no source blockers. Full linked state/
+audio, display smoke and native CI remain required. All66 prior parameter
+definitions are unchanged; schema17 adds two parameters with neutral migrations.
+
+Transducer linked preset CTest passed1/1 in.14seconds. Display smoke passed all67
+controls and14groups, including named model selection and actual playback for
+Telephone, Megaphone and Radio with both vocal samples, plus retained high-pass
+preview checks. Dry/Effect switching, cursor continuity, Stop and unchanged live
+state were exercised. Editor and popup screenshots inspected. Screenshot capture
+now lets two UI timer ticks observe Stop because test audio runs faster than wall
+time; this changes test capture timing, not product playback. Engine sanitizer and
+full linked processor tests remain pending at this checkpoint.
+
+## Transducer linked processor and sanitizer budget — 2026-11-19
+
+Full linked Release CTest passed2/2 in117.08seconds: preview service25.37seconds
+and plugin state/audio91.70seconds. New schema17 state/preset migrations, strict
+rejections, actual host/engine audio comparisons and prior tests all executed.
+Expanded display smoke passed again, including all three Transducer effects with
+both vocal choices. Final editor and stopped Radio preview screenshots inspected.
+
+The full instrumented engine suite timed out600.13seconds with exit8; no assertion
+or sanitizer diagnostic appeared before termination, but the run is incomplete.
+All44,108 assertions and132 composed routes remain enabled. The engine test
+runtime budget is now1200seconds; a bounded rerun of the unchanged instrumented
+binary is in progress. This does not change DSP limits or claim a callback deadline.
+Existing native jobs already allow45minutes; no CI job limit was relaxed.
