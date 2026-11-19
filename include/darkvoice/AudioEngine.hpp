@@ -13,6 +13,7 @@
 #include <darkvoice/SpaceReverb.hpp>
 #include <darkvoice/StereoDelay.hpp>
 #include <darkvoice/ToneEffects.hpp>
+#include <darkvoice/Transducer.hpp>
 #include <darkvoice/VocalLimiter.hpp>
 #include <darkvoice/VoiceSculptor.hpp>
 #include <optional>
@@ -96,6 +97,7 @@ class AudioEngine {
     Flanger flanger_;
     Doubler doubler_;
     StereoDelay stereoDelay_;
+    Transducer transducer_;
     SpaceReverb spaceReverb_;
     VocalLimiter limiter_;
     BandlimitedColour colour_;
