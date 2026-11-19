@@ -77,3 +77,29 @@ error exits. If calibration cannot discriminate a wrong control under the frozen
 metrics, report the limitation and discuss it before backend work; do not silently
 loosen gates. Lead owns this contract and later backend interfaces. Successful
 calibration is a dependency, not permission to represent dynamic backend success.
+
+## Calibration amendment v2: explicit octave ambiguity — 2026-11-19
+
+The v1 calibration failed to reject two wrong controls. At vibrato100Hz and
+pitch+12, octave-high output had full-cycle correlation>=.99998334, median error
+.0007436cents, P95.002669cents, envelope error.03013 and apparent odd energy
+>=4.2164e-8. Even-only output showed a similar false odd floor. These are retained
+negative results: dynamic phase/amplitude interpolation invalidates a numerical-zero
+odd-energy test. Do not describe v1 as passed or begin backend evaluation.
+
+Add a stricter ambiguity guard, without changing any existing gate, fixture,
+search window or timeline. In the same six-cycle phase windows, also measure
+normalized correlation at HALF the expected cycle. When full-cycle correlation
+exceeds.8 and half-cycle correlation is>=.995, classify the result octave-ambiguous;
+it must never be an unqualified pitch pass. Publish per-window half-cycle values,
+summary extrema and ambiguity fraction. Wrong octave-high/even-only controls must
+fail or be ambiguous; correct controls must pass applicable gates without ambiguity,
+or calibration remains failed. Keep the original v1 outputs for comparison.
+
+The.995 threshold is a conservative engineering guard for almost duplicate half
+cycles: unit-normalized difference power is about.5% per signal. It is not a
+universal fundamental detector. Legitimate signals with very weak odd harmonics
+may remain unresolved; do not force a pitch label or relax the guard to admit
+them. No backend behavior changes or natural-vocal qualification follow from a
+synthetic calibration pass. Any remaining wrong-control pass must be reported
+before another contract change.
