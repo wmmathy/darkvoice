@@ -1103,3 +1103,12 @@ models. Host changes passed six translation-unit syntax checks and5,426 linked
 preset assertions; independent review found no source blockers. Full linked state/
 audio, display smoke and native CI remain required. All66 prior parameter
 definitions are unchanged; schema17 adds two parameters with neutral migrations.
+
+Transducer linked preset CTest passed1/1 in.14seconds. Display smoke passed all67
+controls and14groups, including named model selection and actual playback for
+Telephone, Megaphone and Radio with both vocal samples, plus retained high-pass
+preview checks. Dry/Effect switching, cursor continuity, Stop and unchanged live
+state were exercised. Editor and popup screenshots inspected. Screenshot capture
+now lets two UI timer ticks observe Stop because test audio runs faster than wall
+time; this changes test capture timing, not product playback. Engine sanitizer and
+full linked processor tests remain pending at this checkpoint.

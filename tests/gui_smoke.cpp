@@ -480,6 +480,12 @@ int main(int argc, char **argv) {
             }
         }
         if (argc > 2) {
+            // Let the progress bar's own timer observe the stopped playback
+            // before capturing; audio above deliberately runs faster than wall time.
+            for (int tick = 0; tick < 2; ++tick) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                juce::Timer::callPendingTimersSynchronously();
+            }
             auto previewImage =
                 previewWindow->createComponentSnapshot(previewWindow->getLocalBounds());
             auto output = juce::File::getCurrentWorkingDirectory().getChildFile(argv[2]);
