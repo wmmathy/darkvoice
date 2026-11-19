@@ -104,6 +104,7 @@ bool AudioEngine::prepare(double sampleRate, std::size_t maxFrames, std::size_t 
         !flanger_.prepare(sampleRate, maxFrames, channels) ||
         !doubler_.prepare(sampleRate, maxFrames, channels) ||
         !stereoDelay_.prepare(sampleRate, maxFrames, channels) ||
+        !transducer_.prepare(sampleRate, maxFrames, channels) ||
         !spaceReverb_.prepare(sampleRate, maxFrames, channels) ||
         !colour_.prepare(sampleRate, maxFrames, channels, quality) ||
         !character_.prepare(sampleRate, maxFrames, channels, quality) ||
@@ -133,7 +134,8 @@ bool AudioEngine::setParameters(const EngineParameters &p) noexcept {
         !SpaceReverb::valid(spaceParameters(p)) || !BandlimitedColour::valid(colourParameters(p)) ||
         !VoiceSculptor::valid(sculptorParameters(p)) ||
         !Breathiness::valid({p.sculptBreathiness}) ||
-        !HarmonicCharacter::valid({p.sculptCharacter}))
+        !HarmonicCharacter::valid({p.sculptCharacter}) ||
+        !Transducer::valid({p.transducerModel, p.transducerMix}))
         return false;
     // All snapshots are fully validated before any target is replaced.
     if (!effects_.setParameters(toneParameters(p)))
@@ -143,6 +145,7 @@ bool AudioEngine::setParameters(const EngineParameters &p) noexcept {
     (void)modulation_.setParameters({p.chorusRateHz, p.chorusDepthMs, p.chorusMix, p.stereoWidth});
     (void)flanger_.setParameters(
         {p.flangerRateHz, p.flangerDepthMs, p.flangerFeedback, p.flangerMix});
+    (void)transducer_.setParameters({p.transducerModel, p.transducerMix});
     (void)spaceReverb_.setParameters(spaceParameters(p));
     (void)doubler_.setParameters(doublerParameters(p));
     (void)stereoDelay_.setParameters(stereoDelayParameters(p));
@@ -188,6 +191,7 @@ void AudioEngine::reset() noexcept {
     flanger_.reset();
     doubler_.reset();
     stereoDelay_.reset();
+    transducer_.reset();
     spaceReverb_.reset();
     colour_.reset();
     character_.reset();
@@ -291,6 +295,7 @@ bool AudioEngine::processInternal(std::span<float *> channels, std::size_t frame
         !flanger_.process(std::span<float *>(wetChannels.data(), channels_), frames) ||
         !doubler_.process(std::span<float *>(wetChannels.data(), channels_), frames) ||
         !stereoDelay_.process(std::span<float *>(wetChannels.data(), channels_), frames) ||
+        !transducer_.process(std::span<float *>(wetChannels.data(), channels_), frames) ||
         !spaceReverb_.process(std::span<float *>(wetChannels.data(), channels_), frames))
         return false; // Prepared capacities/layout have already been validated.
     // Both branches observe the same post-space signal and have the same prepared

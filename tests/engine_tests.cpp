@@ -818,7 +818,7 @@ void integratedLimiter(double rate) {
 // by floating point equality or arithmetic.
 void rawAlignment(double rate, std::size_t count,
                   darkvoice::QualityMode quality = darkvoice::QualityMode::Live,
-                  float characterAmount = 0) {
+                  float characterAmount = 0, int transducerModel = -1) {
     const auto latency = darkvoice::BandlimitedColour::latencyForQuality(quality);
     darkvoice::AudioEngine engine;
     check(engine.prepare(rate, 513, count, quality) && engine.latencySamples() == latency &&
@@ -836,6 +836,8 @@ void rawAlignment(double rate, std::size_t count,
     darkvoice::EngineParameters p;
     p.colourMix = 1;
     p.sculptCharacter = characterAmount;
+    p.transducerModel = transducerModel < 0 ? 0 : transducerModel;
+    p.transducerMix = transducerModel < 0 ? 0 : .83f;
     p.limiterEnabled = true;
     p.outputDb = 24;
     for (std::size_t block = 0; block < 14; ++block) {
@@ -1729,7 +1731,8 @@ void depthResonanceRoutingOracle(double rate, std::size_t count,
 
 // Independent post-Space parallel branch composition; existing legacy route tests stay unchanged.
 void characterRoutingOracle(double rate, std::size_t count,
-                            darkvoice::QualityMode quality = darkvoice::QualityMode::Live) {
+                            darkvoice::QualityMode quality = darkvoice::QualityMode::Live,
+                            int transducerModel = -1) {
     const auto latency = darkvoice::BandlimitedColour::latencyForQuality(quality);
     const auto fadeLength = 2 * latency;
     darkvoice::AudioEngine actual, partitioned;
@@ -1739,6 +1742,8 @@ void characterRoutingOracle(double rate, std::size_t count,
     darkvoice::ToneEffects legacy;
     darkvoice::BandlimitedColour colour;
     darkvoice::HarmonicCharacter character;
+    darkvoice::Transducer transducer;
+    darkvoice::StereoDelay stereoDelay;
     darkvoice::SpaceReverb space;
     darkvoice::VocalLimiter limiter;
     check(actual.prepare(rate, 257, count, quality) &&
@@ -1746,10 +1751,17 @@ void characterRoutingOracle(double rate, std::size_t count,
               sculptor.prepare(rate, 1, count) && breathiness.prepare(rate, 1, count) &&
               legacy.prepare(rate, 1, count) && colour.prepare(rate, 1, count, quality) &&
               character.prepare(rate, 1, count, quality) && space.prepare(rate, 1, count) &&
-              limiter.prepare(rate, 1, count),
+              limiter.prepare(rate, 1, count) && transducer.prepare(rate, 1, count) &&
+              stereoDelay.prepare(rate, 1, count),
           "Character parallel independently composed route preparation all rates/layouts");
     darkvoice::EngineParameters p;
     p.highPassHz = 80;
+    if (transducerModel >= 0) {
+        p.stereoDelayMs = 20;
+        p.stereoDelayFeedback = .21f;
+        p.stereoDelayMix = .23f;
+        p.stereoDelayMode = 1;
+    }
     p.deEssHz = 3000;
     p.deEssThresholdDb = -40;
     p.deEssReductionDb = 6;
@@ -1783,11 +1795,16 @@ void characterRoutingOracle(double rate, std::size_t count,
     check(actual.setParameters(p) && partitioned.setParameters(p) &&
               deEsser.setParameters({p.deEssHz, p.deEssThresholdDb, p.deEssReductionDb}) &&
               legacy.setParameters(tone) &&
+              stereoDelay.setParameters({p.stereoDelayMs, p.stereoDelayFeedback, p.stereoDelayMix,
+                                         p.stereoDelayBpm, p.stereoDelayMode, p.stereoDelaySync,
+                                         p.stereoDelayDivision}) &&
               colour.setParameters({p.colourModel, p.colourDrive, p.colourToneHz, p.colourMix}) &&
               space.setParameters(
                   {p.spaceModel, p.spaceDecay, p.spaceToneHz, p.spacePreDelayMs, p.spaceMix}) &&
               limiter.setParameters({p.limiterCeilingDb, p.limiterReleaseMs}),
           "Character parallel independent route parameter setup");
+    transducer.reset();
+    stereoDelay.reset();
     actual.reset();
     partitioned.reset();
     deEsser.reset();
@@ -1814,6 +1831,7 @@ void characterRoutingOracle(double rate, std::size_t count,
         bool bypass, force;
         float body, warmth, presence, amount, depth, resonance, character, colourMix, mix, output;
     };
+    std::size_t segmentIndex = 0;
     for (const auto segment : std::array<Segment, 12>{
              {{1700, 257, false, false, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0},
               {1201, 137, false, false, 0, 0, 0, .731f, 6, 0, -.75f, 0, 1, 6},
@@ -1827,6 +1845,9 @@ void characterRoutingOracle(double rate, std::size_t count,
               {1601, 71, false, false, -4, 3, 6, .853f, -6, -6, .4f, .4f, .85f, 12},
               {601, 101, false, false, 6, 6, 6, 1, 6, 6, -.4f, .2f, .6f, 6},
               {307, 59, false, false, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0}}}) {
+        p.transducerModel = transducerModel < 0 ? 0 : (transducerModel + segmentIndex) % 3;
+        p.transducerMix = transducerModel < 0 || segmentIndex % 3 == 0 ? 0 : .8f;
+        ++segmentIndex;
         p.bypass = segment.bypass;
         p.sculptBodyDb = segment.body;
         p.sculptWarmthDb = segment.warmth;
@@ -1843,6 +1864,7 @@ void characterRoutingOracle(double rate, std::size_t count,
         const bool accepted = actual.setParameters(p) && partitioned.setParameters(p);
         rejectAllocations.store(false);
         check(accepted && allocations.load() == beforeSet &&
+                  transducer.setParameters({p.transducerModel, p.transducerMix}) &&
                   sculptor.setParameters({segment.body, segment.warmth, segment.presence,
                                           segment.depth, segment.resonance}) &&
                   breathiness.setParameters({segment.amount}) &&
@@ -1893,7 +1915,8 @@ void characterRoutingOracle(double rate, std::size_t count,
                     const double addition = static_cast<double>(sample[c]) - beforeTexture[c];
                     textureEnergy += addition * addition;
                 }
-                referenceOkay &= legacy.process(channels, 1) && space.process(channels, 1);
+                referenceOkay &= legacy.process(channels, 1) && stereoDelay.process(channels, 1) &&
+                                 transducer.process(channels, 1) && space.process(channels, 1);
                 auto delta = sample;
                 std::array<float *, 2> deltaPointers{&delta[0], &delta[1]};
                 referenceOkay &=
@@ -1968,9 +1991,10 @@ void characterRoutingOracle(double rate, std::size_t count,
           "Character parallel engine automation and bypass partition invariant all rates/layouts");
     check(protectedAudio,
           "combined Colour/Character contribution never exceeds enabled final limiter ceiling");
-    check(touchedCeiling, "combined Character route actually engages final limiting");
-    std::printf("Character parallel route %.0f Hz/%zu channels max error %.9g\n", rate, count,
-                maxError);
+    check(transducerModel >= 0 || touchedCeiling,
+          "combined Character route actually engages final limiting");
+    std::printf("Character parallel route %.0f Hz/%zu channels transducer=%d max error %.9g\n",
+                rate, count, transducerModel, maxError);
 }
 
 void sculptorInvalidAtomicity(double rate, std::size_t count) {
@@ -2246,6 +2270,118 @@ void characterInvalidAndReset(double rate, std::size_t count, darkvoice::Quality
           "Character reprepare discards the old profile and histories without serial latency");
 }
 
+void transducerInvalidAndReset(double rate, std::size_t count, darkvoice::QualityMode quality,
+                               int model) {
+    darkvoice::AudioEngine actual, reference, fresh;
+    check(actual.prepare(rate, 257, count, quality) &&
+              reference.prepare(rate, 257, count, quality) &&
+              fresh.prepare(rate, 257, count, quality),
+          "Transducer atomicity/reset preparation");
+    darkvoice::EngineParameters p;
+    p.transducerModel = model;
+    p.transducerMix = .713f;
+    p.sculptBreathiness = .653f;
+    p.sculptCharacter = count == 1 ? -.83f : .71f;
+    p.spaceMix = .2f;
+    p.sculptBodyDb = 6;
+    p.sculptDepthDb = 5.3f;
+    p.sculptResonanceDb = -4.7f;
+    p.colourMix = .4f;
+    p.limiterEnabled = true;
+    p.limiterCeilingDb = -6;
+    check(actual.setParameters(p) && reference.setParameters(p) && fresh.setParameters(p),
+          "Transducer valid active snapshot");
+    // Warm the private IIR/Colour/Character histories before rejecting snapshots.
+    std::array<std::array<float, 257>, 2> seed{}, seedReference{};
+    std::array<float *, 2> seedA{seed[0].data(), seed[1].data()};
+    std::array<float *, 2> seedB{seedReference[0].data(), seedReference[1].data()};
+    for (int block = 0; block < 3; ++block) {
+        for (std::size_t c = 0; c < count; ++c)
+            for (std::size_t i = 0; i < 257; ++i)
+                seed[c][i] = seedReference[c][i] =
+                    static_cast<float>(.4 * std::sin((block * 257 + i) * (.031 + c * .09)));
+        check(actual.process({seedA.data(), count}, 257) &&
+                  reference.process({seedB.data(), count}, 257),
+              "Transducer warm history before invalid snapshots");
+    }
+    for (float invalid :
+         {-.001f, 1.001f, std::numeric_limits<float>::quiet_NaN(),
+          std::numeric_limits<float>::infinity(), -std::numeric_limits<float>::infinity()}) {
+        auto candidate = p;
+        candidate.transducerMix = invalid;
+        candidate.outputDb = -24;
+        candidate.limiterEnabled = false;
+        check(!actual.setParameters(candidate), "Invalid transducer mix rejects complete snapshot");
+    }
+    for (int invalid : {-1, 3, std::numeric_limits<int>::min(), std::numeric_limits<int>::max()}) {
+        auto candidate = p;
+        candidate.transducerModel = invalid;
+        candidate.transducerMix = 0;
+        candidate.inputDb = 24;
+        check(!actual.setParameters(candidate),
+              "Invalid transducer model rejects complete snapshot");
+    }
+    std::array<std::array<float, 257>, 2> audio{}, expected{};
+    std::array<float *, 2> a{audio[0].data(), audio[1].data()};
+    std::array<float *, 2> b{expected[0].data(), expected[1].data()};
+    const auto ca = std::span<float *>(a.data(), count);
+    const auto cb = std::span<float *>(b.data(), count);
+    bool equivalent = true;
+    for (std::size_t block = 0; block < 6; ++block) {
+        for (std::size_t c = 0; c < count; ++c)
+            for (std::size_t i = 0; i < 257; ++i)
+                audio[c][i] = expected[c][i] =
+                    static_cast<float>(.5 * std::sin((block * 257 + i) * (.07 + c * .03)));
+        const auto before = allocations.load();
+        rejectAllocations.store(true);
+        equivalent &= !actual.processBypassed(ca, 258) && actual.processBypassed(ca, 0) &&
+                      actual.process(ca, 257) && reference.process(cb, 257);
+        rejectAllocations.store(false);
+        equivalent &= allocations.load() == before;
+        for (std::size_t c = 0; c < count; ++c)
+            equivalent &= audio[c] == expected[c];
+    }
+    check(equivalent,
+          "Transducer invalid snapshots/blocks and empty bypass preserve targets/history/PRNG");
+    actual.reset();
+    fresh.reset();
+    bool resetEquivalent = true;
+    for (std::size_t block = 0; block < 4; ++block) {
+        for (std::size_t c = 0; c < count; ++c)
+            for (std::size_t i = 0; i < 257; ++i)
+                audio[c][i] = expected[c][i] =
+                    static_cast<float>(.4 * std::cos((block * 257 + i) * (.043 + c * .037)));
+        resetEquivalent &= actual.process(ca, 257) && fresh.process(cb, 257);
+        for (std::size_t c = 0; c < count; ++c)
+            resetEquivalent &= audio[c] == expected[c];
+    }
+    check(resetEquivalent, "Transducer engine reset reproduces fresh prepared RMS/FIR/PRNG and "
+                           "settled Transducer controls");
+    const auto nextQuality =
+        static_cast<darkvoice::QualityMode>((static_cast<int>(quality) + 1) % 3);
+    darkvoice::AudioEngine newlyPrepared;
+    check(actual.prepare(rate, 257, count, nextQuality) &&
+              newlyPrepared.prepare(rate, 257, count, nextQuality) && actual.setParameters(p) &&
+              newlyPrepared.setParameters(p),
+          "active Character reprepare accepts a new quality mode");
+    actual.reset();
+    newlyPrepared.reset();
+    bool newQualityEquivalent = true;
+    for (std::size_t block = 0; block < 5; ++block) {
+        for (std::size_t c = 0; c < count; ++c)
+            for (std::size_t i = 0; i < 257; ++i)
+                audio[c][i] = expected[c][i] =
+                    static_cast<float>(.3 * std::sin((block * 257 + i) * (.051 + c * .013)));
+        newQualityEquivalent &= actual.process(ca, 257) && newlyPrepared.process(cb, 257);
+        for (std::size_t c = 0; c < count; ++c)
+            newQualityEquivalent &= audio[c] == expected[c];
+    }
+    check(newQualityEquivalent && actual.qualityMode() == nextQuality &&
+              actual.latencySamples() ==
+                  darkvoice::HarmonicCharacter::latencyForQuality(nextQuality),
+          "Transducer reprepare discards the old profile and histories without serial latency");
+}
+
 void activeCharacterDryBits(double rate, std::size_t count, darkvoice::QualityMode quality) {
     darkvoice::AudioEngine actual;
     const auto latency = darkvoice::HarmonicCharacter::latencyForQuality(quality);
@@ -2381,6 +2517,11 @@ int main() {
         for (double rate : {44100., 48000., 88200., 96000.})
             for (std::size_t count : {std::size_t{1}, std::size_t{2}}) {
                 characterRoutingOracle(rate, count, quality);
+                for (int model = 0; model < 3; ++model) {
+                    characterRoutingOracle(rate, count, quality, model);
+                    transducerInvalidAndReset(rate, count, quality, model);
+                    rawAlignment(rate, count, quality, .7f, model);
+                }
                 characterInvalidAndReset(rate, count, quality);
                 activeCharacterDryBits(rate, count, quality);
                 rawAlignment(rate, count, quality, count == 1 ? -.7f : .7f);
