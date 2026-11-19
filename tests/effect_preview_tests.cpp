@@ -29,7 +29,8 @@ std::vector<float> fixture(double rate, double seconds = .12) {
 }
 void catalogTests() {
     std::set<darkvoice::PreviewEffectId> ids;
-    check(darkvoice::previewCatalog().size() == 27, "complete effect family catalog");
+    check(darkvoice::previewCatalog().size() == 30, "complete effect family catalog");
+    std::array<std::vector<float>, 3> transducerOutputs;
     darkvoice::AudioEngine validator;
     check(validator.prepare(48000, 512, 2), "validator prepared");
     for (const auto &d : darkvoice::previewCatalog()) {
@@ -54,7 +55,25 @@ void catalogTests() {
             for (std::size_t i = 0; i < out.frames; ++i)
                 difference += std::abs(out.processed[c][i] - out.dry[c][i]);
         check(difference > .001, "example differs audibly in signal domain");
+        if (d.id >= 28 && d.id <= 30) {
+            const auto model = static_cast<std::size_t>(d.id - 28);
+            check(d.example.transducerModel == static_cast<int>(model) &&
+                      d.example.transducerMix == 1 &&
+                      d.recommendedSample == darkvoice::PreviewSampleKind::Speech &&
+                      d.tailSeconds == .25,
+                  "transducer example has actual model and speech recommendation");
+            transducerOutputs[model] = out.processed[0];
+        }
     }
+    for (std::size_t model = 0; model < transducerOutputs.size(); ++model)
+        for (std::size_t other = 0; other < model; ++other) {
+            check(transducerOutputs[model].size() == transducerOutputs[other].size(),
+                  "transducer comparison shares source clock and tail");
+            double difference = 0;
+            for (std::size_t i = 0; i < transducerOutputs[model].size(); ++i)
+                difference += std::abs(transducerOutputs[model][i] - transducerOutputs[other][i]);
+            check(difference > .001, "transducer previews differ from each other");
+        }
     check(!darkvoice::previewDefinition(0) && !darkvoice::previewDefinition(65535),
           "unknown lookup");
 }

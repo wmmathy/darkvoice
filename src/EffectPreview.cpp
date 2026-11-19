@@ -7,7 +7,7 @@
 namespace darkvoice {
 namespace {
 const auto catalog = [] {
-    std::array<PreviewDefinition, 27> result{};
+    std::array<PreviewDefinition, 30> result{};
     std::size_t next = 0;
     auto add = [&](std::string_view name, auto configure,
                    PreviewSampleKind kind = PreviewSampleKind::Singing, double tail = 0,
@@ -130,6 +130,16 @@ const auto catalog = [] {
     add("Resonance", [](P &p) { p.sculptResonanceDb = 6; });
     add("Character: odd harmonics", [](P &p) { p.sculptCharacter = -1; });
     add("Character: even harmonics", [](P &p) { p.sculptCharacter = 1; });
+    for (int model = 0; model < 3; ++model) {
+        constexpr std::array<std::string_view, 3> names{"Telephone", "Megaphone", "Radio"};
+        add(
+            names[static_cast<std::size_t>(model)],
+            [model](P &p) {
+                p.transducerModel = model;
+                p.transducerMix = 1;
+            },
+            K::Speech, .25);
+    }
     return result;
 }();
 } // namespace

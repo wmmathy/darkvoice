@@ -1078,3 +1078,28 @@ at6064e6488ce7902d614f258d07916d2d4dc2d3ac. All seven native jobs, source qualit
 and48 dense Colour/Character shards passed at its reviewed head68e66d3. PR45 is
 also marked merged because its history is included. Earlier timeout failures
 remain historical evidence; no manual host/listening validation is claimed.
+
+## Transducer Release integration rerun — 2026-11-19
+
+The allocation probe now retains observable noinline entry points under GCC
+Release optimization, without disabling compiler or sanitizer diagnostics. Fresh
+CMake Release core suite passed1/1 in3.85seconds; all21,779,986 assertions retained.
+Exhaustive cppcheck passed implementation, public header and tests. The earlier
+-O3 build failure remains recorded. Engine/host/UI integration is still pending.
+
+## Transducer application checkpoint — 2026-11-19
+
+Engine Release suite passed44,108 checks/zero failures in79.308seconds, including
+all132 composed routes with exact zero error (sixty retained plus72 new routes).
+Coverage includes active StereoDelay before Transducer, automation, bypass/freeze/
+resume, reset/reprepare, warmed invalid snapshots and raw nonfinite bypass payloads.
+An intermediate test accidentally requested5ms StereoDelay below its20ms minimum;
+the correctly rejected fixture was fixed to20ms without changing DSP or gates.
+Engine sanitizer execution is pending.
+
+The30-example renderer CTest passed1/1 in30.61seconds, including new actual-model
+metadata, differences from dry and pairwise differences among all three Transducer
+models. Host changes passed six translation-unit syntax checks and5,426 linked
+preset assertions; independent review found no source blockers. Full linked state/
+audio, display smoke and native CI remain required. All66 prior parameter
+definitions are unchanged; schema17 adds two parameters with neutral migrations.

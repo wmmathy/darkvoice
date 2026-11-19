@@ -1,28 +1,31 @@
-# Current checkpoint — 2026-11-16
+# Current checkpoint — 2026-11-19
 
-Effect examples are being integrated on `feature/preview/integration`: 27 curated
-examples, male/female speech and singing recordings, dry/effect comparison and
-host-output playback. Independent renderer/player Release tests passed2/2.
-Bundled source recordings and license/cue checks passed. Linked worker and processor
-suites plus the real popup smoke passed; both vocal choices, A/B/Stop and unchanged
-live state were checked. QA accepted the worker shutdown race fix, including its
-concurrent lifecycle regression. Player ASan/UBSan passed after correcting matching
-nothrow test allocations. The full renderer sanitizer suite passed275.76s and the
-service suite passed with project-code instrumentation (JUCE archive uninstrumented).
-Exact-head native CI remains pending. Draft PR47 is not merged or released. Preview does not change live sound
-parameters.
-
-Prepared quality application PR45 passed all exact-head Linux/macOS/source checks
-at ed4f08c, but main has advanced and requires a conflict-resolution merge followed
-by fresh checks. Character core and qualified Colour core are already on main;
-Character application remains unmerged while an ARM host/reference oracle failure
-is corrected in the test reference. The Character-only linked rerun passed95.33s;
-exact-head native CI still gates draft PR48. Pitch/formant processing remains an offline qualification candidate,
-not a shipped control. Further pitch/harmony, production/standalone, mixing,
-mastering and export requirements remain outstanding in the baseline roadmap.
+Prepared Live/Studio/Offline quality modes and the Character control are merged
+into main through PR48 (6064e64); PR45 is also marked merged through its included
+history. All seven native jobs, source checks and48 dense Colour/Character shards
+passed at the reviewed head. The earlier ARM test-reference issue is corrected.
 Manual listening/microphone/DAW qualification remains deferred by user request.
 
-The chronological entries below retain historical results and limitations.
+Effect examples remain in draft PR47:27 curated examples, male/female speech and
+singing recordings, Dry/Effect switching and host-output playback. Local renderer,
+player, service, processor and real popup checks passed. Renderer/player sanitizer
+checks passed; service project code passed instrumentation with JUCE itself
+uninstrumented. The macOS service-test compile failure is corrected with a
+portable joining-thread helper; its linked Release rerun passed25.37seconds.
+Fresh native CI remains required. No preview merge or release is claimed.
+
+Telephone, Megaphone and Radio linear filter cores are implemented and reviewed
+on feature/effects/transducer-integration. Their response, spectral purity,
+automation, lifecycle and callback allocation checks passed; the integrated
+Release core test passed3.85seconds after correcting the allocation test probe.
+Schema17 engine/host/UI integration and three matching previews are in progress.
+They are generic filter designs, not proprietary device emulations. No nonlinear
+distortion, codec degradation or RF noise is claimed by these models.
+
+Qualified product pitch/formant processing remains outstanding; the candidate is
+still an offline experiment. Harmony, reference-aware correction, Voice DNA,
+production/standalone workflows, mixing, mastering and export remain in the
+baseline roadmap. The chronological entries below retain historical results.
 
 # Development status — 2026-10-21
 
