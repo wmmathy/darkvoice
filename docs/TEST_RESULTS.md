@@ -1112,3 +1112,18 @@ state were exercised. Editor and popup screenshots inspected. Screenshot capture
 now lets two UI timer ticks observe Stop because test audio runs faster than wall
 time; this changes test capture timing, not product playback. Engine sanitizer and
 full linked processor tests remain pending at this checkpoint.
+
+## Transducer linked processor and sanitizer budget — 2026-11-19
+
+Full linked Release CTest passed2/2 in117.08seconds: preview service25.37seconds
+and plugin state/audio91.70seconds. New schema17 state/preset migrations, strict
+rejections, actual host/engine audio comparisons and prior tests all executed.
+Expanded display smoke passed again, including all three Transducer effects with
+both vocal choices. Final editor and stopped Radio preview screenshots inspected.
+
+The full instrumented engine suite timed out600.13seconds with exit8; no assertion
+or sanitizer diagnostic appeared before termination, but the run is incomplete.
+All44,108 assertions and132 composed routes remain enabled. The engine test
+runtime budget is now1200seconds; a bounded rerun of the unchanged instrumented
+binary is in progress. This does not change DSP limits or claim a callback deadline.
+Existing native jobs already allow45minutes; no CI job limit was relaxed.

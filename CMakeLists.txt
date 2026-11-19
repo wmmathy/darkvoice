@@ -158,10 +158,11 @@ if(BUILD_TESTING)
     set_target_properties(darkvoice_engine_tests PROPERTIES CXX_EXTENSIONS OFF)
     darkvoice_strict_warnings(darkvoice_engine_tests)
     add_test(NAME engine.regression COMMAND darkvoice_engine_tests)
-    # Parallel Character adds full-chain work and sixty independent routing
-    # oracles. This bounds suite runtime, not a callback deadline; every
-    # numerical, allocation and lifecycle assertion remains enabled.
-    set_tests_properties(engine.regression PROPERTIES TIMEOUT 600)
+    # Parallel Character and Transducer retain 132 independent composed routes
+    # plus expanded warmed-state checks (44,108 assertions). The instrumented
+    # suite exceeded 600 seconds. This is a test runtime budget, not a callback
+    # deadline; every numerical, allocation and lifecycle case stays enabled.
+    set_tests_properties(engine.regression PROPERTIES TIMEOUT 1200)
 
     add_executable(darkvoice_effects_tests tests/effects_tests.cpp)
     target_link_libraries(darkvoice_effects_tests PRIVATE DarkVoice::Engine)

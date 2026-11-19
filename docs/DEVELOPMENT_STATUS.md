@@ -18,7 +18,11 @@ Telephone, Megaphone and Radio linear filter cores are implemented and reviewed
 on feature/effects/transducer-integration. Their response, spectral purity,
 automation, lifecycle and callback allocation checks passed; the integrated
 Release core test passed3.85seconds after correcting the allocation test probe.
-Schema17 engine/host/UI integration and three matching previews are in progress.
+Schema17 engine/host/UI integration and three matching previews pass local linked
+processor, preset and display tests, including both voices for every new model.
+Engine Release passed44,108 checks and132 exact routes. Its600second sanitizer
+attempt timed out; the unchanged full suite is being measured with a1200second
+budget. Draft PR49 still requires completed sanitizer and native gates.
 They are generic filter designs, not proprietary device emulations. No nonlinear
 distortion, codec degradation or RF noise is claimed by these models.
 
