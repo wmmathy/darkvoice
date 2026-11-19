@@ -23,31 +23,42 @@ void check(bool good, const char *message) {
     }
 }
 } // namespace
-void *operator new(std::size_t size) {
+// Keep replacement allocation entry points observable under Release optimization.
+// Inlining malloc/free through replacement new/delete also produces false
+// mismatched-new-delete diagnostics in GCC; the matching pairs remain checked
+// by ASan without suppressing compiler or sanitizer diagnostics.
+#if defined(_MSC_VER)
+#define DV_NOINLINE __declspec(noinline)
+#elif defined(__GNUC__) || defined(__clang__)
+#define DV_NOINLINE __attribute__((noinline))
+#else
+#define DV_NOINLINE
+#endif
+DV_NOINLINE void *operator new(std::size_t size) {
     if (callback)
         ++allocations;
     if (auto *memory = std::malloc(size == 0 ? 1 : size))
         return memory;
     throw std::bad_alloc();
 }
-void *operator new[](std::size_t size) {
+DV_NOINLINE void *operator new[](std::size_t size) {
     return ::operator new(size);
 }
-void operator delete(void *memory) noexcept {
+DV_NOINLINE void operator delete(void *memory) noexcept {
     if (callback && memory)
         ++deallocations;
     std::free(memory);
 }
-void operator delete[](void *memory) noexcept {
+DV_NOINLINE void operator delete[](void *memory) noexcept {
     ::operator delete(memory);
 }
-void operator delete(void *memory, std::size_t) noexcept {
+DV_NOINLINE void operator delete(void *memory, std::size_t) noexcept {
     ::operator delete(memory);
 }
-void operator delete[](void *memory, std::size_t) noexcept {
+DV_NOINLINE void operator delete[](void *memory, std::size_t) noexcept {
     ::operator delete(memory);
 }
-void *operator new(std::size_t size, std::align_val_t alignment) {
+DV_NOINLINE void *operator new(std::size_t size, std::align_val_t alignment) {
     if (callback)
         ++allocations;
     void *memory = nullptr;
@@ -55,57 +66,60 @@ void *operator new(std::size_t size, std::align_val_t alignment) {
         return memory;
     throw std::bad_alloc();
 }
-void *operator new[](std::size_t size, std::align_val_t alignment) {
+DV_NOINLINE void *operator new[](std::size_t size, std::align_val_t alignment) {
     return ::operator new(size, alignment);
 }
-void operator delete(void *memory, std::align_val_t) noexcept {
+DV_NOINLINE void operator delete(void *memory, std::align_val_t) noexcept {
     ::operator delete(memory);
 }
-void operator delete[](void *memory, std::align_val_t alignment) noexcept {
+DV_NOINLINE void operator delete[](void *memory, std::align_val_t alignment) noexcept {
     ::operator delete(memory, alignment);
 }
-void operator delete(void *memory, std::size_t, std::align_val_t alignment) noexcept {
+DV_NOINLINE void operator delete(void *memory, std::size_t, std::align_val_t alignment) noexcept {
     ::operator delete(memory, alignment);
 }
-void operator delete[](void *memory, std::size_t, std::align_val_t alignment) noexcept {
+DV_NOINLINE void operator delete[](void *memory, std::size_t, std::align_val_t alignment) noexcept {
     ::operator delete(memory, alignment);
 }
 // Route nothrow allocations through the same malloc/free-backed guard pair.
 // Otherwise sanitizer-provided nothrow new would be paired with our free-based delete.
-void *operator new(std::size_t size, const std::nothrow_t &) noexcept {
+DV_NOINLINE void *operator new(std::size_t size, const std::nothrow_t &) noexcept {
     try {
         return ::operator new(size);
     } catch (...) {
         return nullptr;
     }
 }
-void *operator new[](std::size_t size, const std::nothrow_t &tag) noexcept {
+DV_NOINLINE void *operator new[](std::size_t size, const std::nothrow_t &tag) noexcept {
     return ::operator new(size, tag);
 }
-void operator delete(void *memory, const std::nothrow_t &) noexcept {
+DV_NOINLINE void operator delete(void *memory, const std::nothrow_t &) noexcept {
     ::operator delete(memory);
 }
-void operator delete[](void *memory, const std::nothrow_t &tag) noexcept {
+DV_NOINLINE void operator delete[](void *memory, const std::nothrow_t &tag) noexcept {
     ::operator delete(memory, tag);
 }
-void *operator new(std::size_t size, std::align_val_t alignment, const std::nothrow_t &) noexcept {
+DV_NOINLINE void *operator new(std::size_t size, std::align_val_t alignment,
+                               const std::nothrow_t &) noexcept {
     try {
         return ::operator new(size, alignment);
     } catch (...) {
         return nullptr;
     }
 }
-void *operator new[](std::size_t size, std::align_val_t alignment,
-                     const std::nothrow_t &tag) noexcept {
+DV_NOINLINE void *operator new[](std::size_t size, std::align_val_t alignment,
+                                 const std::nothrow_t &tag) noexcept {
     return ::operator new(size, alignment, tag);
 }
-void operator delete(void *memory, std::align_val_t alignment, const std::nothrow_t &) noexcept {
+DV_NOINLINE void operator delete(void *memory, std::align_val_t alignment,
+                                 const std::nothrow_t &) noexcept {
     ::operator delete(memory, alignment);
 }
-void operator delete[](void *memory, std::align_val_t alignment,
-                       const std::nothrow_t &tag) noexcept {
+DV_NOINLINE void operator delete[](void *memory, std::align_val_t alignment,
+                                   const std::nothrow_t &tag) noexcept {
     ::operator delete(memory, alignment, tag);
 }
+#undef DV_NOINLINE
 namespace {
 using namespace darkvoice;
 using Complex = std::complex<double>;
