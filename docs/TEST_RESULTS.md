@@ -1049,3 +1049,19 @@ The initial180.13second renderer timeout and test-allocation mismatch remain
 recorded failures. Actual renderer/player/service/processor/UI behavior and
 thresholds were unchanged by the later ancestry merge d6bf9a8. Native exact-head
 CI remains a merge gate; manual listening/microphone/DAW checks remain deferred.
+
+## Preview macOS test portability — 2026-11-19
+
+Native macOS products failed to compile the service tests because the pinned
+Apple libc++ does not supply std::jthread/stop_token. Production uses std::thread
+already. The test helper now uses std::thread with an atomic stop flag and RAII
+stop/join, preserving exception cleanup and both concurrency tests. Fresh linked
+Release service suite passed1/1 in25.37seconds. A capacity failure prevented the
+macOS Release core job from acquiring a runner; it is not a DSP failure or pass.
+Native checks must rerun at the corrected head before merging preview.
+
+Character and prepared quality application were merged through PR48 on2026-11-19
+at6064e6488ce7902d614f258d07916d2d4dc2d3ac. All seven native jobs, source quality
+and48 dense Colour/Character shards passed at its reviewed head68e66d3. PR45 is
+also marked merged because its history is included. Earlier timeout failures
+remain historical evidence; no manual host/listening validation is claimed.

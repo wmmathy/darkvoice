@@ -10,6 +10,29 @@
 #include <thread>
 
 namespace {
+// libc++ in the pinned Apple toolchain does not provide std::jthread yet.
+// Preserve automatic stop/join on test failure without changing worker coverage.
+class JoiningThread {
+  public:
+    template <typename Work>
+    explicit JoiningThread(Work work)
+        : thread_([this, work = std::move(work)] { work(stopped_); }) {}
+    ~JoiningThread() {
+        request_stop();
+        join();
+    }
+    void request_stop() noexcept {
+        stopped_.store(true);
+    }
+    void join() {
+        if (thread_.joinable())
+            thread_.join();
+    }
+
+  private:
+    std::atomic<bool> stopped_{false};
+    std::thread thread_;
+};
 void require(bool condition, const char *message) {
     if (!condition)
         throw std::runtime_error(message);
@@ -116,10 +139,10 @@ int main() {
         ready(service);
         playToEnd(service);
         // Concurrent callback/UI work: the callback never touches UI/worker locks.
-        std::jthread audio([&](std::stop_token stop) {
+        JoiningThread audio([&](const std::atomic<bool> &stop) {
             std::array<float, 512> a{}, b{};
             std::array<float *, 2> pointers{a.data(), b.data()};
-            while (!stop.stop_requested()) {
+            while (!stop.load()) {
                 service.process(pointers, 512, false);
                 std::this_thread::yield();
             }
@@ -164,8 +187,8 @@ int main() {
         // callback is running during lifecycle changes; UI requests must not
         // create or inspect a worker while shutdown joins and reclaims its slots.
         std::atomic<unsigned> attempts{0};
-        std::jthread requester([&](std::stop_token stop) {
-            while (!stop.stop_requested()) {
+        JoiningThread requester([&](const std::atomic<bool> &stop) {
+            while (!stop.load()) {
                 (void)service.request(id, PreviewVoice::Male, PreviewSampleKind::Speech);
                 attempts.fetch_add(1);
                 std::this_thread::yield();
