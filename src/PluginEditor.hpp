@@ -1,4 +1,5 @@
 #pragma once
+#include "EffectPreviewPanel.hpp"
 #include "PluginProcessor.hpp"
 #include <algorithm>
 #include <array>
@@ -47,6 +48,8 @@ class DarkVoiceEditor final : public juce::AudioProcessorEditor, private juce::T
     juce::ToggleButton favoritesOnly_{"Favorites"}, favorite_{"Favorite"};
     juce::TextButton load_{"Load"}, save_{"Save as"}, rename_{"Rename"}, import_{"Import"},
         export_{"Export"};
+    juce::TextButton preview_{"Preview effects..."};
+    std::unique_ptr<juce::DialogWindow> previewWindow_;
     std::vector<juce::String> visibleIds_;
     std::unique_ptr<juce::FileChooser> chooser_;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(DarkVoiceEditor)

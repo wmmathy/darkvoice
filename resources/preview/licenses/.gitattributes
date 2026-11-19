@@ -1,0 +1,6 @@
+# Preserve third-party notices byte for byte, including their line endings.
+CMU_ARCTIC_COPYING.txt -text
+VOCALSET_LICENSE.txt -text
+VOCALSET_ATTRIBUTION.md -text
+# This metadata has upstream trailing spaces; its full SHA256 is checked.
+VOCALSET_README.txt -text whitespace=-blank-at-eol

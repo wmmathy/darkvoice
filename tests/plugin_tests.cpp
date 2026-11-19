@@ -2,6 +2,7 @@
 #include "PresetBank.hpp"
 #include <array>
 #include <bit>
+#include <chrono>
 #include <cmath>
 #include <complex>
 #include <cstdint>
@@ -10,6 +11,7 @@
 #include <limits>
 #include <locale>
 #include <stdexcept>
+#include <thread>
 
 namespace {
 constexpr int latency =
@@ -1676,11 +1678,13 @@ class TempoPlayHead final : public juce::AudioPlayHead {
   public:
     juce::Optional<double> bpm{120.};
     bool hasPosition = true;
+    bool recording = false;
     juce::Optional<PositionInfo> getPosition() const override {
         if (!hasPosition)
             return {};
         PositionInfo info;
         info.setBpm(bpm);
+        info.setIsRecording(recording);
         return info;
     }
 };
@@ -2132,9 +2136,76 @@ void renderingTests() {
             "Unsupported prepare must silence and clear latency");
 }
 } // namespace
+void effectPreviewHostTests() {
+    DarkVoiceProcessor p;
+    layout(p, 2);
+    p.prepareToPlay(48000, 512);
+    require(p.effectPreview().status().prepared,
+            "Optional preview prepares with working live engine");
+    const auto catalog = darkvoice::previewCatalog();
+    require(!catalog.empty(), "Preview has implemented effects");
+    juce::MemoryBlock before;
+    p.getStateInformation(before);
+    const auto quality = p.activeQualityMode();
+    TempoPlayHead playhead;
+    p.setPlayHead(&playhead);
+    juce::AudioBuffer<float> buffer(2, 512);
+    juce::MidiBuffer midi;
+    for (int scenario = 0; scenario < 4; ++scenario) {
+        require(p.effectPreview().request(catalog.front().id, darkvoice::PreviewVoice::Male,
+                                          darkvoice::PreviewSampleKind::Speech),
+                "Host preview request accepted");
+        if (scenario == 0)
+            p.setNonRealtime(true);
+        if (scenario == 1)
+            playhead.recording = true;
+        if (scenario == 2)
+            set(p, "bypass", 1);
+        buffer.clear();
+        if (scenario == 3)
+            p.processBlockBypassed(buffer, midi);
+        else
+            p.processBlock(buffer, midi);
+        require(p.effectPreview().status().blocked,
+                "Preview blocked by offline/recording/global/host bypass");
+        for (int ch = 0; ch < 2; ++ch)
+            for (int i = 0; i < buffer.getNumSamples(); ++i)
+                require(buffer.getSample(ch, i) == 0, "Blocked preview never inserts audio");
+        p.setNonRealtime(false);
+        playhead.recording = false;
+        set(p, "bypass", 0);
+        p.processBlock(buffer, midi);
+    }
+    // Request, render and audible playback use an isolated engine and leave state untouched.
+    require(p.effectPreview().request(catalog.front().id, darkvoice::PreviewVoice::Female,
+                                      darkvoice::PreviewSampleKind::Singing),
+            "Female singing request accepted");
+    const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(20);
+    bool played = false;
+    while (std::chrono::steady_clock::now() < deadline) {
+        buffer.clear();
+        p.processBlock(buffer, midi);
+        if (p.effectPreview().status().state == darkvoice::PreviewState::Playing) {
+            played = true;
+            break;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(2));
+    }
+    require(played, "Prepared preview reaches host audio callback");
+    p.effectPreview().setProcessed(false);
+    p.effectPreview().setProcessed(true);
+    p.effectPreview().stop();
+    juce::MemoryBlock after;
+    p.getStateInformation(after);
+    require(before == after && p.activeQualityMode() == quality,
+            "Preview preserves full live/preset/quality state");
+    p.releaseResources();
+    require(!p.effectPreview().status().prepared, "Host release stops optional preview");
+}
 int main() {
     juce::ScopedJuceInitialiser_GUI runtime;
     try {
+        effectPreviewHostTests();
         qualityModeTests();
         stateTests();
         characterStateTests();

@@ -153,6 +153,8 @@ darkvoice::EngineParameters DarkVoiceProcessor::snapshot() const noexcept {
     return p;
 }
 void DarkVoiceProcessor::prepareToPlay(double rate, int maxFrames) {
+    preview_.release();
+    hostRecording_ = false;
     hostTempoBpm_.store(0, std::memory_order_relaxed);
     maximumFrames_ = maxFrames > 0 ? static_cast<std::size_t>(maxFrames) : 0;
     const auto quality = requestedQualityMode();
@@ -169,6 +171,9 @@ void DarkVoiceProcessor::prepareToPlay(double rate, int maxFrames) {
         (void)dryAnalysis_.prepare(rate);
     else
         dryAnalysis_.release();
+    if (prepared_)
+        (void)preview_.prepare(
+            {rate, static_cast<std::size_t>(getTotalNumInputChannels()), maximumFrames_, quality});
     inputPeak_.store(0, std::memory_order_relaxed);
     outputPeak_.store(0, std::memory_order_relaxed);
     setLatencySamples(static_cast<int>(engine_.latencySamples()));
@@ -180,6 +185,8 @@ bool DarkVoiceProcessor::requestQualityMode(darkvoice::QualityMode mode) noexcep
     return true;
 }
 void DarkVoiceProcessor::releaseResources() {
+    preview_.release();
+    hostRecording_ = false;
     activeQuality_.store(-1, std::memory_order_relaxed);
     hostTempoBpm_.store(0, std::memory_order_relaxed);
     prepared_ = false;
@@ -191,11 +198,14 @@ void DarkVoiceProcessor::releaseResources() {
 }
 void DarkVoiceProcessor::updateHostTempo() noexcept {
     float tempo = 0;
+    hostRecording_ = false;
     if (auto *playHead = getPlayHead())
-        if (const auto position = playHead->getPosition())
+        if (const auto position = playHead->getPosition()) {
+            hostRecording_ = position->getIsRecording();
             if (const auto bpm = position->getBpm();
                 bpm && std::isfinite(*bpm) && *bpm >= 20 && *bpm <= 300)
                 tempo = static_cast<float>(*bpm);
+        }
     hostTempoBpm_.store(tempo, std::memory_order_relaxed);
 }
 void DarkVoiceProcessor::processBlock(juce::AudioBuffer<float> &audio, juce::MidiBuffer &) {
@@ -215,7 +225,9 @@ void DarkVoiceProcessor::processAudio(juce::AudioBuffer<float> &audio, bool forc
     }
     updateHostTempo();
     dryAnalysis_.push(audio);
-    (void)engine_.setParameters(snapshot());
+    const auto sound = snapshot();
+    (void)engine_.setParameters(sound);
+    const bool previewBlocked = forceBypass || sound.bypass || isNonRealtime() || hostRecording_;
     float inPeak = 0, outPeak = 0;
     const auto frames = static_cast<std::size_t>(audio.getNumSamples());
     std::size_t offset = 0;
@@ -234,7 +246,8 @@ void DarkVoiceProcessor::processAudio(juce::AudioBuffer<float> &audio, bool forc
         }
         const auto meters = engine_.meters();
         inPeak = std::max(inPeak, meters.inputPeak);
-        outPeak = std::max(outPeak, meters.outputPeak);
+        const auto preview = preview_.process(channelSpan, count, previewBlocked);
+        outPeak = std::max(outPeak, preview.replaced ? preview.outputPeak : meters.outputPeak);
         offset += count;
     }
     inputPeak_.store(inPeak, std::memory_order_relaxed);
