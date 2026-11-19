@@ -1062,3 +1062,19 @@ Lead CMake Release(-O3) integration build exposed an allocator-probe compiler
 warning treated as error: replacement new inlining produced mismatched-new-delete
 analysis in the test probe. This build is failed, not passed; writer is correcting
 the probe with no warning suppression. DSP thresholds and implementation unchanged.
+
+## Preview macOS test portability — 2026-11-19
+
+Native macOS products failed to compile the service tests because the pinned
+Apple libc++ does not supply std::jthread/stop_token. Production uses std::thread
+already. The test helper now uses std::thread with an atomic stop flag and RAII
+stop/join, preserving exception cleanup and both concurrency tests. Fresh linked
+Release service suite passed1/1 in25.37seconds. A capacity failure prevented the
+macOS Release core job from acquiring a runner; it is not a DSP failure or pass.
+Native checks must rerun at the corrected head before merging preview.
+
+Character and prepared quality application were merged through PR48 on2026-11-19
+at6064e6488ce7902d614f258d07916d2d4dc2d3ac. All seven native jobs, source quality
+and48 dense Colour/Character shards passed at its reviewed head68e66d3. PR45 is
+also marked merged because its history is included. Earlier timeout failures
+remain historical evidence; no manual host/listening validation is claimed.
