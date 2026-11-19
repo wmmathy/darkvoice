@@ -2,7 +2,7 @@
 #include <cmath>
 namespace {
 const juce::Colour background{0xff111418}, panel{0xff1c2229}, accent{0xffe54b52}, text{0xffecedf0};
-constexpr std::array<const char *, 65> ids{"inputDb",
+constexpr std::array<const char *, 67> ids{"inputDb",
                                            "highPassHz",
                                            "drive",
                                            "thresholdDb",
@@ -66,8 +66,10 @@ constexpr std::array<const char *, 65> ids{"inputDb",
                                            "sculptBreathiness",
                                            "sculptDepthDb",
                                            "sculptResonanceDb",
-                                           "sculptCharacter"};
-constexpr std::array<const char *, 65> names{"INPUT GAIN",
+                                           "sculptCharacter",
+                                           "transducerModel",
+                                           "transducerMix"};
+constexpr std::array<const char *, 67> names{"INPUT GAIN",
                                              "HIGH-PASS",
                                              "WARMTH DRIVE",
                                              "COMPRESSOR THRESHOLD",
@@ -131,13 +133,16 @@ constexpr std::array<const char *, 65> names{"INPUT GAIN",
                                              "BREATH TEXTURE",
                                              "DEPTH LOWS",
                                              "RESONANCE 700 Hz",
-                                             "CHARACTER"};
-constexpr std::array<const char *, 65> suffixes{
-    " dB", " Hz", "", " dB",  ":1",  "",    " dB", " Hz", " dB", " Hz", " dB", "",    " Hz",
-    " dB", " ms", "", "",     "",    "",    "",    " dB", ":1",  " ms", " Hz", " dB", " dB",
-    " Hz", " ms", "", "",     " Hz", " ms", "",    "",    "",    " dB", " ms", "",    " ms",
-    "",    "",    "", " BPM", "",    "",    " ms", " ms", " Hz", "",    "",    "",    " Hz",
-    " ms", "",    "", "",     " Hz", "",    " dB", " dB", " dB", "",    " dB", " dB", ""};
+                                             "CHARACTER",
+                                             "TRANSDUCER MODEL",
+                                             "TRANSDUCER MIX"};
+constexpr std::array<const char *, 67> suffixes{
+    " dB", " Hz", "",    " dB", ":1",  "", " dB",  " Hz", " dB", " Hz", " dB", "",
+    " Hz", " dB", " ms", "",    "",    "", "",     "",    " dB", ":1",  " ms", " Hz",
+    " dB", " dB", " Hz", " ms", "",    "", " Hz",  " ms", "",    "",    "",    " dB",
+    " ms", "",    " ms", "",    "",    "", " BPM", "",    "",    " ms", " ms", " Hz",
+    "",    "",    "",    " Hz", " ms", "", "",     "",    " Hz", "",    " dB", " dB",
+    " dB", "",    " dB", " dB", "",    "", ""};
 juce::File presetDirectory(const juce::File &supplied) {
     if (supplied != juce::File{})
         return supplied;
@@ -197,6 +202,7 @@ DarkVoiceEditor::DarkVoiceEditor(DarkVoiceProcessor &p, juce::File root)
     tabs_.addTab("SPACE REVERB", panel, &pages_[10], false);
     tabs_.addTab("COLOUR", panel, &pages_[11], false);
     tabs_.addTab("VOICE SCULPTOR", panel, &pages_[12], false);
+    tabs_.addTab("TRANSDUCER", panel, &pages_[13], false);
     addAndMakeVisible(tabs_);
     for (std::size_t i = 0; i < sliders_.size(); ++i) {
         auto &slider = sliders_[i];
@@ -206,7 +212,9 @@ DarkVoiceEditor::DarkVoiceEditor(DarkVoiceProcessor &p, juce::File root)
         slider.setName(names[i]);
         slider.setTitle(names[i]);
         slider.setTooltip(
-            i == 64
+            i >= 65 ? "Linear Telephone / Megaphone / Radio bandwidth and resonance coloration. "
+                      "Mix zero is neutral."
+            : i == 64
                 ? "Adds odd harmonics at negative values and even harmonics at positive values, "
                   "independently of Colour mix. Zero is neutral."
             : i == 63 ? "Boost or soften the fixed 700 Hz resonance band."
@@ -252,7 +260,8 @@ DarkVoiceEditor::DarkVoiceEditor(DarkVoiceProcessor &p, juce::File root)
                           : i < 49 ? 9U
                           : i < 54 ? 10U
                           : i < 58 ? 11U
-                                   : 12U;
+                          : i < 65 ? 12U
+                                   : 13U;
         pages_[page].addAndMakeVisible(slider);
         labels_[i].setText(names[i], juce::dontSendNotification);
         labels_[i].setColour(juce::Label::textColourId, juce::Colour(0xffb5bdc7));
@@ -262,6 +271,12 @@ DarkVoiceEditor::DarkVoiceEditor(DarkVoiceProcessor &p, juce::File root)
             p.parameters, ids[i], slider);
     }
     // Discrete controls display musical choices rather than unexplained indices.
+    sliders_[65].textFromValueFunction = [](double value) {
+        constexpr const char *models[]{"Telephone", "Megaphone", "Radio"};
+        return juce::String(models[std::clamp(static_cast<int>(std::round(value)), 0, 2)]);
+    };
+    sliders_[65].setTextBoxStyle(juce::Slider::TextBoxRight, true, 110, 28);
+
     sliders_[37].textFromValueFunction = [](double value) {
         constexpr const char *modes[]{"Stereo", "Single", "Ping-pong"};
         return juce::String(modes[std::clamp(static_cast<int>(std::round(value)), 0, 2)]);
@@ -534,7 +549,8 @@ void DarkVoiceEditor::resized() {
                           : i < 49 ? 9U
                           : i < 54 ? 10U
                           : i < 58 ? 11U
-                                   : 12U;
+                          : i < 65 ? 12U
+                                   : 13U;
         const auto row = i < 7    ? i
                          : i < 14 ? i - 7
                          : i < 20 ? i - 14
@@ -547,7 +563,8 @@ void DarkVoiceEditor::resized() {
                          : i < 49 ? i - 45
                          : i < 54 ? i - 49
                          : i < 58 ? i - 54
-                                  : i - 58;
+                         : i < 65 ? i - 58
+                                  : i - 65;
         const int rowHeight = (tabs_.getHeight() - 48) / (page == 8 ? 9 : 7);
         const int y = 14 + static_cast<int>(row) * rowHeight;
         labels_[i].setBounds(16, y, 205, 24);
