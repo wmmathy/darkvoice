@@ -103,3 +103,25 @@ may remain unresolved; do not force a pitch label or relax the guard to admit
 them. No backend behavior changes or natural-vocal qualification follow from a
 synthetic calibration pass. Any remaining wrong-control pass must be reported
 before another contract change.
+
+## Energy-boundary estimator v1 — 2026-11-19
+
+Close the previously unspecified10ms energy-boundary metric before any backend
+work. Use fixed10ms RMS windows on a5ms hop, with timestamps at window centers;
+use whole windows only, without padding, rescaling or alignment searches. Derive
+one threshold from the INPUT: median strictly positive frame RMS times10^(-30/20).
+Apply this SAME absolute threshold to input and output. Extract ordered inactive/
+active transitions, including an onset at the first frame center if initially
+active and an offset at the last frame center if finally active. Match by order
+and transition kind; a count/kind mismatch fails, rather than dropping edges or
+choosing favorable pairs. Maximum absolute paired displacement must be<=25ms.
+Publish threshold, window/hop, timestamps, edge counts and individual displacements.
+
+All-zero input has no meaningful activity reference: report NotApplicable for
+this metric and retain the strict independent silence RMS/peak gates; never call
+NotApplicable a measured pass. Voiced-to-fricative boundaries without an energy
+crossing are not energy edges; the separate5ms contour/boundary gates still apply.
+This estimator checks activity timing, not consonant intelligibility or waveform
+identity. Calibrate unchanged and gain±3dB signals plus deliberate40/80ms shifted,
+extra-edge and missing-edge controls. Source/output duration and time coordinates
+remain fixed. Do not change the failed octave calibration or any earlier gate.
