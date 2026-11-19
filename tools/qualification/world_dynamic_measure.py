@@ -310,8 +310,140 @@ def silence_metrics(signal):
     return {'rms': rms, 'peak': peak, 'gates': {'rms': rms <= 1e-7, 'peak': peak <= 1e-6}}
 
 
+def energy_boundary_metrics(source, output, rate):
+    """Fixed input-referenced activity timing; no output gain or time search."""
+    if rate not in (48000, 96000):
+        raise ValueError('energy-boundary rate must be48000 or96000')
+    source = vector(source, 'energy source', 3 * rate)
+    output = vector(output, 'energy output', len(source))
+    window, hop = int(.010 * rate), int(.005 * rate)
+    starts = np.arange(0, len(source) - window + 1, hop)
+    times = (starts + window / 2) / rate
+
+    def frame_rms(signal):
+        frames = np.lib.stride_tricks.sliding_window_view(signal, window)[::hop]
+        # Scaling preserves finite RMS for extreme finite amplitudes without
+        # changing the mathematical10ms RMS estimator.
+        scale = np.max(np.abs(frames), axis=1)
+        normalized = np.divide(frames, scale[:, None], out=np.zeros_like(frames),
+                               where=scale[:, None] > 0)
+        return scale * np.sqrt(np.mean(normalized * normalized, axis=1))
+
+    input_rms, output_rms = frame_rms(source), frame_rms(output)
+    result = {'window_samples': window, 'hop_samples': hop,
+              'window_seconds': .010, 'hop_seconds': .005,
+              'frame_center_seconds': times.tolist(),
+              'input_frame_rms': input_rms.tolist(),
+              'output_frame_rms': output_rms.tolist(),
+              'threshold_reference': 'median strictly positive INPUT frame RMS *10^(-30/20)',
+              'threshold_db_below_input_median': -30.,
+              'maximum_allowed_displacement_seconds': .025}
+    if not np.any(source):
+        result.update({'status': 'NotApplicable', 'threshold': None,
+                       'input_positive_median_rms': None,
+                       'input_edges': [], 'output_edges': None,
+                       'input_edge_count': 0, 'output_edge_count': None,
+                       'paired_edges': [], 'maximum_displacement_seconds': None,
+                       'gates': {}, 'silence_output': silence_metrics(output)})
+        return result
+    positive = input_rms[input_rms > 0]
+    if not len(positive):
+        raise ValueError('input activity RMS is outside representable range')
+    median = float(np.median(positive))
+    threshold = float(median * 10 ** (-30 / 20))
+    if threshold <= 0 or not np.isfinite(threshold):
+        raise ValueError('input activity threshold is outside representable range')
+
+    def edges(rms):
+        active = rms >= threshold  # same absolute threshold for both signals
+        found = []
+        if active[0]:
+            found.append({'kind': 'onset', 'time': float(times[0]), 'frame_index': 0})
+        for index in np.flatnonzero(active[1:] != active[:-1]) + 1:
+            found.append({'kind': 'onset' if active[index] else 'offset',
+                          'time': float(times[index]), 'frame_index': int(index)})
+        if active[-1]:
+            found.append({'kind': 'offset', 'time': float(times[-1]),
+                          'frame_index': len(times) - 1})
+        return found
+
+    input_edges, output_edges = edges(input_rms), edges(output_rms)
+    matching = (len(input_edges) == len(output_edges) and
+                [edge['kind'] for edge in input_edges] ==
+                [edge['kind'] for edge in output_edges])
+    paired = []
+    if matching:
+        for before, after in zip(input_edges, output_edges):
+            # Use the integer sample clock so an exact25ms displacement is
+            # accepted inclusively, without floating timestamp subtraction error.
+            displacement = (after['frame_index'] - before['frame_index']) * hop / rate
+            paired.append({'kind': before['kind'], 'input_time': before['time'],
+                           'output_time': after['time'],
+                           'input_frame_index': before['frame_index'],
+                           'output_frame_index': after['frame_index'],
+                           'displacement_seconds': displacement,
+                           'absolute_displacement_seconds': abs(displacement)})
+    maximum = max((edge['absolute_displacement_seconds'] for edge in paired), default=None)
+    timing_passed = maximum is not None and maximum <= .025
+    result.update({'status': 'passed' if matching and timing_passed else 'failed',
+                   'threshold': threshold, 'input_positive_median_rms': median,
+                   'input_edges': input_edges, 'output_edges': output_edges,
+                   'input_edge_count': len(input_edges), 'output_edge_count': len(output_edges),
+                   'paired_edges': paired, 'maximum_displacement_seconds': maximum,
+                   'gates': {'edge_count_and_kind': bool(matching),
+                             'maximum_displacement': bool(timing_passed)}})
+    return result
+
+
+def energy_boundary_calibration():
+    """Predeclared timing controls; report zero input as N/A, not a timing pass."""
+    reports = {}
+    correct, wrong, not_applicable = [], [], []
+    for rate in (48000, 96000):
+        time = np.arange(3 * rate) / rate
+        source = .02 * (np.sin(2 * np.pi * 220 * time) + .4 * np.sin(2 * np.pi * 1370 * time))
+        source *= ((time >= .3) & (time < .95)) | ((time >= 1.6) & (time < 2.4))
+        for name, gain in (('unchanged', 1.), ('gain_minus3db', 10 ** (-3 / 20)),
+                           ('gain_plus3db', 10 ** (3 / 20))):
+            key = f'{rate}_{name}'
+            reports[key] = energy_boundary_metrics(source, source * gain, rate)
+            correct.append(key)
+        for milliseconds in (-80, -40, 40, 80):
+            frames = int(rate * milliseconds / 1000)
+            output = np.zeros_like(source)
+            if frames > 0:
+                output[frames:] = source[:-frames]
+            else:
+                output[:frames] = source[-frames:]
+            key = f'{rate}_shift{milliseconds}ms'
+            reports[key] = energy_boundary_metrics(source, output, rate)
+            wrong.append(key)
+        extra = source.copy()
+        extra[(time >= 1.15) & (time < 1.35)] = .02
+        missing = source.copy()
+        missing[(time >= 1.6) & (time < 2.4)] = 0
+        for name, output in (('extra_edge', extra), ('missing_edge', missing)):
+            key = f'{rate}_{name}'
+            reports[key] = energy_boundary_metrics(source, output, rate)
+            wrong.append(key)
+        key = f'{rate}_all_zero'
+        reports[key] = energy_boundary_metrics(np.zeros_like(source), np.zeros_like(source), rate)
+        not_applicable.append(key)
+    correct_failed = [key for key in correct if not all_gates(reports[key])]
+    wrong_false_pass = [key for key in wrong if all_gates(reports[key])]
+    invalid_na = [key for key in not_applicable
+                  if reports[key]['status'] != 'NotApplicable' or all_gates(reports[key]) or
+                  not all_gates(reports[key]['silence_output'])]
+    return {'status': 'passed' if not (correct_failed or wrong_false_pass or invalid_na) else 'failed',
+            'correct_count': len(correct), 'wrong_control_count': len(wrong),
+            'not_applicable_count': len(not_applicable), 'reports': reports,
+            'correct_controls_failing': correct_failed,
+            'wrong_controls_false_passing': wrong_false_pass,
+            'invalid_not_applicable_results': invalid_na}
+
+
 def all_gates(result):
-    return all(result['gates'].values())
+    return bool(result['gates']) and all(result['gates'].values())
 
 
 def self_test():
@@ -402,8 +534,7 @@ def self_test():
             'v2_calibration': {'status': 'passed' if passed else 'failed',
                                'correct_controls_failing_or_ambiguous': correct_failures,
                                'wrong_controls_false_passing': v2_false_passes},
-            'energy_boundary_metric': {'status': 'unspecified_and_unrun',
-                                       'reason': '10ms edge estimator/threshold not fixed by contract'},
+            'energy_boundary_metric': energy_boundary_calibration(),
             'scope': 'analyzer calibration only; no backend was run'}
 
 
@@ -418,7 +549,8 @@ def main(argv=None):
             raise ValueError('choose exactly one of --self-test or --input')
         if args.self_test:
             result = self_test()
-            passed = result['v2_calibration']['status'] == 'passed'
+            passed = (result['v2_calibration']['status'] == 'passed' and
+                      result['energy_boundary_metric']['status'] == 'passed')
         else:
             loaded = np.load(args.input, allow_pickle=False)
             if not isinstance(loaded, np.lib.npyio.NpzFile):

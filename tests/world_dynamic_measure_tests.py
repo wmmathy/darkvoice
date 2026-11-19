@@ -167,6 +167,90 @@ class CalibrationTests(unittest.TestCase):
             self.assertFalse(m.all_gates(m.sequence_silence_metrics(leaked, rate, silence,
                                                                    reference_rms)))
 
+    def test_energy_boundaries(self):
+        for rate in (48000, 96000):
+            time = np.arange(3 * rate) / rate
+            source = np.where((time >= .3) & (time < .95), 1., 0.)
+            source += np.where((time >= 1.6) & (time < 2.4), .5, 0.)
+            original = source.copy()
+            window, hop = int(rate / 100), int(rate / 200)
+            starts = range(0, len(source) - window + 1, hop)
+            # Scalar direct-sum oracle, independent of the analyzer's scaled views.
+            expected_rms = np.array([np.sqrt(np.mean(source[start:start+window] ** 2))
+                                     for start in starts])
+            expected_times = np.array([(start + window / 2) / rate for start in starts])
+            threshold = float(np.median(expected_rms[expected_rms > 0]) * 10 ** (-30 / 20))
+            for gain in (1., 10 ** (-3 / 20), 10 ** (3 / 20)):
+                result = m.energy_boundary_metrics(source, source * gain, rate)
+                self.assertTrue(m.all_gates(result), result['gates'])
+                self.assertEqual(result['threshold'], threshold)
+                self.assertEqual(result['window_samples'], window)
+                self.assertEqual(result['hop_samples'], hop)
+                np.testing.assert_allclose(result['input_frame_rms'], expected_rms, rtol=0, atol=1e-14)
+                np.testing.assert_array_equal(result['frame_center_seconds'], expected_times)
+                self.assertEqual(result['input_edge_count'], 4)
+                self.assertEqual([edge['kind'] for edge in result['input_edges']],
+                                 ['onset', 'offset', 'onset', 'offset'])
+                np.testing.assert_allclose([edge['time'] for edge in result['input_edges']],
+                                           [.3, .955, 1.6, 2.405], rtol=0, atol=1e-12)
+                self.assertEqual(result['maximum_displacement_seconds'], 0)
+            for milliseconds in (-80, -40, 40, 80):
+                frames = int(rate * milliseconds / 1000)
+                output = np.zeros_like(source)
+                if frames > 0:
+                    output[frames:] = source[:-frames]
+                else:
+                    output[:frames] = source[-frames:]
+                result = m.energy_boundary_metrics(source, output, rate)
+                self.assertTrue(result['gates']['edge_count_and_kind'])
+                self.assertFalse(result['gates']['maximum_displacement'])
+                self.assertEqual(len(result['paired_edges']), 4)
+                np.testing.assert_allclose([edge['displacement_seconds'] for edge in result['paired_edges']],
+                                           milliseconds / 1000, rtol=0, atol=1e-12)
+                self.assertAlmostEqual(result['maximum_displacement_seconds'], abs(milliseconds / 1000))
+            for milliseconds, passed in ((20, True), (25, True), (30, False)):
+                frames = int(rate * milliseconds / 1000)
+                output = np.zeros_like(source)
+                output[frames:] = source[:-frames]
+                result = m.energy_boundary_metrics(source, output, rate)
+                self.assertEqual(m.all_gates(result), passed)
+                self.assertEqual(result['maximum_displacement_seconds'], milliseconds / 1000)
+            extra = source.copy()
+            extra[(time >= 1.15) & (time < 1.35)] = 1
+            missing = source.copy()
+            missing[(time >= 1.6) & (time < 2.4)] = 0
+            for output in (extra, missing, source * 1e-4):
+                result = m.energy_boundary_metrics(source, output, rate)
+                self.assertFalse(m.all_gates(result))
+                self.assertFalse(result['gates']['edge_count_and_kind'])
+                self.assertEqual(result['paired_edges'], [])
+                self.assertIsNone(result['maximum_displacement_seconds'])
+            continuous = np.full(3 * rate, .2)
+            result = m.energy_boundary_metrics(continuous, continuous, rate)
+            self.assertTrue(m.all_gates(result))
+            self.assertEqual(result['input_edges'], [{'kind': 'onset', 'time': .005, 'frame_index': 0},
+                                                     {'kind': 'offset', 'time': 2.995, 'frame_index': 598}])
+            for amplitude in (1e-200, 1e200):
+                finite = np.full(3 * rate, amplitude)
+                self.assertTrue(m.all_gates(m.energy_boundary_metrics(finite, finite, rate)))
+            for output, silence_pass in ((np.zeros_like(source), True),
+                                          (np.full_like(source, .001), False)):
+                result = m.energy_boundary_metrics(np.zeros_like(source), output, rate)
+                self.assertEqual(result['status'], 'NotApplicable')
+                self.assertFalse(m.all_gates(result))
+                self.assertIsNone(result['threshold'])
+                self.assertEqual(m.all_gates(result['silence_output']), silence_pass)
+            np.testing.assert_array_equal(source, original)
+            for before, after, sample_rate in ((source[:-1], source, rate),
+                                               (source, source[:-1], rate),
+                                               (source, source, 44100),
+                                               (source, source + np.nan, rate)):
+                with self.assertRaises(ValueError):
+                    m.energy_boundary_metrics(before, after, sample_rate)
+            with self.assertRaises(ValueError):
+                tiny = np.full(3 * rate, np.nextafter(0., 1.))
+                m.energy_boundary_metrics(tiny, tiny, rate)
+
     def test_malformed(self):
         rate = 48000
         f0 = np.full(3 * rate, 100.)
@@ -223,7 +307,13 @@ class CalibrationTests(unittest.TestCase):
             self.assertEqual(report['v2_calibration']['status'], 'failed')
             self.assertEqual(len(report['v2_calibration']['correct_controls_failing_or_ambiguous']), 4)
             self.assertEqual(report['v2_calibration']['wrong_controls_false_passing'], [])
-            self.assertEqual(report['energy_boundary_metric']['status'], 'unspecified_and_unrun')
+            self.assertEqual(report['energy_boundary_metric']['status'], 'passed')
+            energy = report['energy_boundary_metric']
+            self.assertEqual((energy['correct_count'], energy['wrong_control_count'],
+                              energy['not_applicable_count']), (6, 12, 2))
+            self.assertEqual(energy['correct_controls_failing'], [])
+            self.assertEqual(energy['wrong_controls_false_passing'], [])
+            self.assertEqual(energy['invalid_not_applicable_results'], [])
             for args in ([], ['--input', str(root / 'missing.npz')],
                          ['--self-test', '--input', str(root / 'missing.npz')]):
                 result = subprocess.run([sys.executable, '-B', str(SCRIPT), *args], capture_output=True)
